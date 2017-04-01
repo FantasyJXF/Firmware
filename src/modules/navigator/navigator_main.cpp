@@ -37,6 +37,8 @@
  * Published the position setpoint triplet for the position controller.
  *
  * 处理任务、地理围栏以及失控保护下的导航行为
+ * 向位置控制器发布位置设定值triplet
+ *
  * @author Lorenz Meier <lm@inf.ethz.ch>
  * @author Jean Cyr <jean.m.cyr@gmail.com>
  * @author Julian Oes <julian@oes.ch>
@@ -330,16 +332,16 @@ Navigator::task_main()
 
 	/* Setup of loop */
 	fds[0].fd = _global_pos_sub;
-	fds[0].events = POLLIN;
+	fds[0].events = POLLIN; //普通或优先级带数据可读
 
 	bool global_pos_available_once = false;
 
 	while (!_task_should_exit) {
 
-		/* wait for up to 200ms for data */
+		/* wait for up to 1000ms for data */
 		int pret = px4_poll(&fds[0], (sizeof(fds) / sizeof(fds[0])), 1000);
 
-		if (pret == 0) {
+		if (pret == 0) { // 等待timeout设定的时间后返回
 			/* timed out - periodic check for _task_should_exit, etc. */
 			if (global_pos_available_once) {
 				global_pos_available_once = false;
@@ -347,12 +349,12 @@ Navigator::task_main()
 			}
 			/* Let the loop run anyway, don't do `continue` here. */
 
-		} else if (pret < 0) {
+		} else if (pret < 0) { // 报错
 			/* this is undesirable but not much we can do - might want to flag unhappy status */
 			PX4_ERR("nav: poll error %d, %d", pret, errno);
 			usleep(10000);
 			continue;
-		} else {
+		} else { // 正常情况下，轮询到了订阅的数据
 
 			if (fds[0].revents & POLLIN) {
 				/* success, global pos is available */
@@ -371,7 +373,7 @@ Navigator::task_main()
 		/* gps updated */
 		orb_check(_gps_pos_sub, &updated);
 		if (updated) {
-			gps_position_update();
+			gps_position_update(); //copy
 			if (_geofence.getSource() == Geofence::GF_SOURCE_GPS) {
 				have_geofence_position_data = true;
 			}
@@ -387,7 +389,7 @@ Navigator::task_main()
 		orb_check(_param_update_sub, &updated);
 		if (updated) {
 			params_update();
-			updateParams();
+			updateParams(); // #### 更新的什么参数 
 		}
 
 		/* vehicle control mode updated */
@@ -419,13 +421,14 @@ Navigator::task_main()
 		if (updated) {
 			home_position_update();
 		}
-
+///////////////// commander 更新
 		orb_check(_vehicle_command_sub, &updated);
 		if (updated) {
 			vehicle_command_s cmd;
 			orb_copy(ORB_ID(vehicle_command), _vehicle_command_sub, &cmd);
 
 			if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_REPOSITION) {
+///////////////// REPOSITION 重新定位
 
 				struct position_setpoint_triplet_s *rep = get_reposition_triplet();
 
@@ -465,16 +468,18 @@ Navigator::task_main()
 				rep->current.valid = true;
 				rep->next.valid = false;
 			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF) {
-				struct position_setpoint_triplet_s *rep = get_takeoff_triplet();
+///////////////// TAKEOFF 起飞
+				struct position_setpoint_triplet_s *rep = get_takeoff_triplet(); // takeoff_triplet
 
 				// store current position as previous position and goal as next
+				// 将现在的位置作为之前的位置存起来，将目标位置作为下一个航点
 				rep->previous.yaw = get_global_position()->yaw;
 				rep->previous.lat = get_global_position()->lat;
 				rep->previous.lon = get_global_position()->lon;
 				rep->previous.alt = get_global_position()->alt;
 
 				rep->current.loiter_radius = get_loiter_radius();
-				rep->current.loiter_direction = 1;
+				rep->current.loiter_direction = 1; // 顺时针
 				rep->current.type = position_setpoint_s::SETPOINT_TYPE_TAKEOFF;
 				rep->current.yaw = cmd.param4;
 
@@ -494,6 +499,7 @@ Navigator::task_main()
 				rep->next.valid = false;
 
 			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_LAND_START) {
+///////////////// LAND 着陆
 
 				/* find NAV_CMD_DO_LAND_START in the mission and
 				 * use MAV_CMD_MISSION_START to start the mission there
@@ -512,7 +518,7 @@ Navigator::task_main()
 				}
 
 			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_MISSION_START) {
-
+////////////////  MISSION 任务模式
 				if (get_mission_result()->valid &&
 					PX4_ISFINITE(cmd.param1) && (cmd.param1 >= 0) && (cmd.param1 < _mission_result.seq_total)) {
 
@@ -525,6 +531,7 @@ Navigator::task_main()
 		}
 
 		/* Check geofence violation */
+		// 地理围栏违反检查
 		static hrt_abstime last_geofence_check = 0;
 		if (have_geofence_position_data &&
 			(_geofence.getGeofenceAction() != geofence_result_s::GF_ACTION_NONE) &&

@@ -91,8 +91,8 @@ typedef short pollevent_t;
 typedef struct {
 	/* This part of the struct is POSIX-like */
 	int		fd;       /* The descriptor being polled */
-	pollevent_t 	events;   /* The input event flags */
-	pollevent_t 	revents;  /* The output event flags */
+	pollevent_t 	events;   /* 输入事件标志 */
+	pollevent_t 	revents;  /* 输出事件标志 */
 
 	/* Required for PX4 compatibility */
 	px4_sem_t   *sem;  	/* Pointer to semaphore used to post output event */

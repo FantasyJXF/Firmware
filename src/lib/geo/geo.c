@@ -187,7 +187,7 @@ __EXPORT int map_projection_reproject(const struct map_projection_reference_s *r
 	double lat_rad;
 	double lon_rad;
 
-	if (fabs(c) > DBL_EPSILON) {
+	if (fabs(c) > DBL_EPSILON) { // c > 0
 		lat_rad = asin(cos_c * ref->sin_lat + (x_rad * sin_c * ref->cos_lat) / c);
 		lon_rad = (ref->lon_rad + atan2(y_rad * sin_c, c * ref->cos_lat * cos_c - x_rad * ref->sin_lat * sin_c));
 
