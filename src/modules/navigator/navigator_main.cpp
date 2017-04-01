@@ -36,6 +36,7 @@
  * Handles mission items, geo fencing and failsafe navigation behavior.
  * Published the position setpoint triplet for the position controller.
  *
+ * 处理任务、地理围栏以及失控保护下的导航行为
  * @author Lorenz Meier <lm@inf.ethz.ch>
  * @author Jean Cyr <jean.m.cyr@gmail.com>
  * @author Julian Oes <julian@oes.ch>
