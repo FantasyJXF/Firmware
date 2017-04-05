@@ -481,8 +481,19 @@ Navigator::task_main()
 				rep->current.loiter_radius = get_loiter_radius();
 				rep->current.loiter_direction = 1; // 顺时针
 				rep->current.type = position_setpoint_s::SETPOINT_TYPE_TAKEOFF;
-				rep->current.yaw = cmd.param4;
+				rep->current.yaw = cmd.param4; // 偏航角(if magnetometer present), ignored without magnetometer
 
+				/****
+				MAV_CMD_NAV_TAKEOFF	Takeoff from ground / hand
+				Mission Param #1	Minimum pitch (if airspeed sensor present), desired pitch without sensor
+				Mission Param #2	Empty
+				Mission Param #3	Empty
+				Mission Param #4	Yaw angle (if magnetometer present), ignored without magnetometer
+				Mission Param #5	Latitude
+				Mission Param #6	Longitude
+				Mission Param #7	Altitude
+				*****/
+				
 				if (PX4_ISFINITE(cmd.param5) && PX4_ISFINITE(cmd.param6)) {
 					rep->current.lat = (cmd.param5 < 1000) ? cmd.param5 : cmd.param5 / (double)1e7;
 					rep->current.lon = (cmd.param6 < 1000) ? cmd.param6 : cmd.param6 / (double)1e7;
@@ -562,6 +573,7 @@ Navigator::task_main()
 		}
 
 		/* Do stuff according to navigation state set by commander */
+		// 根据commander设定的导航状态做事情
 		switch (_vstatus.nav_state) {
 			case vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION:
 				_pos_sp_triplet_published_invalid_once = false;
@@ -599,7 +611,7 @@ Navigator::task_main()
 				_pos_sp_triplet_published_invalid_once = false;
 				_navigation_mode = &_land;
 				break;
-			case vehicle_status_s::NAVIGATION_STATE_AUTO_RTGS:
+			case vehicle_status_s::NAVIGATION_STATE_AUTO_RTGS: // 数据链丢失时回到地面站
 				/* Use complex data link loss mode only when enabled via param
 				* otherwise use rtl */
 				_pos_sp_triplet_published_invalid_once = false;
@@ -640,6 +652,7 @@ Navigator::task_main()
 		}
 
 		/* iterate through navigation modes and set active/inactive for each */
+		// 遍历导航模式，并为每个模式设置active/inactive
 		for (unsigned int i = 0; i < NAVIGATOR_MODE_ARRAY_SIZE; i++) {
 			_navigation_mode_array[i]->run(_navigation_mode == _navigation_mode_array[i]);
 		}

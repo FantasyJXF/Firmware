@@ -34,6 +34,7 @@
  * @file navigator_mode.cpp
  *
  * Base class for different modes in navigator
+ * navigator中不同模式的基类
  *
  * @author Julian Oes <julian@oes.ch>
  * @author Anton Babushkin <anton.babushkin@me.com>
@@ -76,6 +77,7 @@ NavigatorMode::run(bool active)
 
 	} else {
 		/* periodic updates when inactive */
+		// 未激活时定期更新，查询
 		_first_run = true;
 		on_inactive();
 	}
