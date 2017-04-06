@@ -2344,6 +2344,7 @@ Sensors::calc_accel_inconsistency(sensor_preflight_s &preflt)
 			float accel_diff_sum_sq = 0.0f; // sum of differences squared for a single sensor comparison agains the primary
 
 			// calculate accel_diff_sum_sq for the specified sensor against the primary
+			// ππ‘Ï_accel_diffæÿ’Û
 			for (unsigned axis_index = 0; axis_index < 3; axis_index++) {
 				_accel_diff[axis_index][check_index] = 0.95f * _accel_diff[axis_index][check_index] + 0.05f *
 								       (_last_sensor_data[_accel.last_best_vote].accelerometer_m_s2[axis_index] -

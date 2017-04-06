@@ -1834,7 +1834,7 @@ MPU6000::measure()
 	 */
 
 	// sensor transfer at high clock speed
-
+	// ¸ßËÙ¶ÁÈ¡
 	if (sizeof(mpu_report) != _interface->read(MPU6000_SET_SPEED(MPUREG_INT_STATUS, MPU6000_HIGH_BUS_SPEED),
 			(uint8_t *)&mpu_report,
 			sizeof(mpu_report))) {
