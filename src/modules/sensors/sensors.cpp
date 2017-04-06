@@ -37,8 +37,11 @@
  * PX4 Flight Core transitional mapping layer.
  *
  * This app / class mapps the PX4 middleware layer / drivers to the application
- * layer of the PX4 Flight Core. Individual sensors can be accessed directly as
+ * layer of the PX4 Flight Core. 
+ *
+ * Individual sensors can be accessed directly as
  * well instead of relying on the sensor_combined topic.
+ * 单个传感器也可以直接访问，而不是依赖于sensor_combined主题。
  *
  * @author Lorenz Meier <lorenz@px4.io>
  * @author Julian Oes <julian@oes.ch>
@@ -131,6 +134,8 @@ using namespace DriverFramework;
 /**
  * HACK - true temperature is much less than indicated temperature in baro,
  * subtract 5 degrees in an attempt to account for the electrical upheating of the PCB
+ *
+ * 真实温度远远低于气压计指示温度，减去5度以试图解决PCB的电气过热
  */
 #define PCB_TEMP_ESTIMATE_DEG		5.0f
 #define STICK_ON_OFF_LIMIT		0.75f
@@ -855,11 +860,13 @@ Sensors::parameters_update()
 		tmpRevFactor = tmpScaleFactor * _parameters.rev[i];
 
 		/* handle blowup in the scaling factor calculation */
+		// 在缩放因子计算中处理放大
 		if (!PX4_ISFINITE(tmpScaleFactor) ||
 		    (tmpRevFactor < 0.000001f) ||
 		    (tmpRevFactor > 0.2f)) {
 			PX4_WARN("RC chan %u not sane, scaling: %8.6f, rev: %d", i, (double)tmpScaleFactor, (int)(_parameters.rev[i]));
 			/* scaling factors do not make sense, lock them down */
+			// 缩放因子没有意义，锁定它们
 			_parameters.scaling_factor[i] = 0.0f;
 			rc_valid = false;
 
@@ -1429,7 +1436,7 @@ Sensors::vehicle_control_mode_poll()
 	bool vcontrol_mode_updated;
 
 	/* Check HIL state if vehicle control mode has changed */
-	orb_check(_vcontrol_mode_sub, &vcontrol_mode_updated);
+	orb_check(_vcontrol_mode_sub, &vcontrol_mode_updated); // 由commander 发布
 
 	if (vcontrol_mode_updated) {
 
@@ -1467,6 +1474,7 @@ Sensors::parameter_update_poll(bool forced)
 		parameters_update();
 
 		/* set offset parameters to new values */
+		// 将偏移量参数置为校准后的值
 		bool failed;
 		char str[30];
 		unsigned mag_count = 0;
@@ -1525,6 +1533,7 @@ Sensors::parameter_update_poll(bool forced)
 
 					} else {
 						/* apply new scaling and offsets */
+						// 应用新的缩放值和偏移
 						config_ok = apply_gyro_calibration(h, &gscale, device_id);
 
 						if (!config_ok) {
@@ -1669,6 +1678,7 @@ Sensors::parameter_update_poll(bool forced)
 
 					if (h.ioctl(MAGIOCGEXTERNAL, 0) <= 0) {
 						/* mag is internal */
+						// 内部磁力计
 						_mag_rotation[s] = _board_rotation;
 						/* reset param to -1 to indicate internal mag */
 						int32_t minus_one;
@@ -2276,7 +2286,7 @@ Sensors::check_failover(SensorData &sensor, const char *sensor_name)
 					      ((flags & DataValidator::ERROR_FLAG_HIGH_ERRDENSITY) ? " High error density" : ""));
 		}
 
-		sensor.last_failover_count = sensor.voter.failover_count();
+		sensor.last_failover_count = sensor.voter.failover_count(); // 错误数更新，故障转移为真
 		return true;
 	}
 
@@ -2435,6 +2445,7 @@ Sensors::init_sensor_class(const struct orb_metadata *meta, SensorData &sensor_d
 
 			if (i > 0) {
 				/* the first always exists, but for each further sensor, add a new validator */
+				// 第一个始终存在，但对于每个其他传感器，添加一个新的验证器
 				if (!sensor_data.voter.add_new_validator()) {
 					PX4_ERR("failed to add validator for sensor %s %i", meta->o_name, i);
 				}
@@ -2490,7 +2501,9 @@ Sensors::task_main()
 	init_sensor_class(ORB_ID(sensor_baro), _baro);
 
 	/* reload calibration params */
-	parameter_update_poll(true);
+	// 重新加载校准参数
+	// 应用新的传感器缩放系数与偏移补偿，并更新遥控器输入
+	parameter_update_poll(true); // 强制更新
 
 	_rc_sub = orb_subscribe(ORB_ID(input_rc));
 
@@ -2504,7 +2517,7 @@ Sensors::task_main()
 
 	_manual_control_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
 
-	_actuator_ctrl_0_sub = orb_subscribe(ORB_ID(actuator_controls_0));
+	_actuator_ctrl_0_sub = orb_subscribe(ORB_ID(actuator_controls_0)); // 执行器控制组
 
 	raw.timestamp = 0;
 
@@ -2519,11 +2532,11 @@ Sensors::task_main()
 
 	baro_poll(raw);
 
-	diff_pres_poll(raw);
+	diff_pres_poll(raw); // 空速计
 
-	parameter_update_poll(true /* forced */);
+	parameter_update_poll(true /* forced */); // 强制查询传感器补偿，遥控参数，电池状态
 
-	rc_parameter_map_poll(true /* forced */);
+	rc_parameter_map_poll(true /* forced */); // 强制查询遥控参数映射->缩放系数，最大最小值
 
 	/* advertise the sensor_combined topic and make the initial publication */
 	_sensor_pub = orb_advertise(ORB_ID(sensor_combined), &raw);
@@ -2572,10 +2585,12 @@ Sensors::task_main()
 		perf_begin(_loop_perf);
 
 		/* check vehicle status for changes to publication state */
-		vehicle_control_mode_poll();
+		vehicle_control_mode_poll(); // 控制模式查询
 
 		/* the timestamp of the raw struct is updated by the gyro_poll() method (this makes the gyro
 		 * a mandatory sensor) */
+		 // 陀螺仪为主传感器
+//////////////////////  读取传感器原始数据 ////////////////////
 		gyro_poll(raw);
 		accel_poll(raw);
 		mag_poll(raw);
@@ -2601,20 +2616,20 @@ Sensors::task_main()
 				raw.baro_timestamp_relative = (int32_t)(_last_baro_timestamp[_baro.last_best_vote] - raw.timestamp);
 			}
 
-			orb_publish(ORB_ID(sensor_combined), _sensor_pub, &raw);
+			orb_publish(ORB_ID(sensor_combined), _sensor_pub, &raw); // 发布传感器数据
 
-			check_failover(_accel, "Accel");
+			check_failover(_accel, "Accel"); // 故障转移
 			check_failover(_gyro, "Gyro");
 			check_failover(_mag, "Mag");
 			check_failover(_baro, "Baro");
 
 			/* If the the vehicle is disarmed calculate the length of the maximum difference between
-			 * IMU units as a consistency metric and publish to the sensor preflight topic
-			*/
+			 * IMU units as a consistency metric(一致性度量) and publish to the sensor preflight topic
+			 */
 			if (!_armed) {
-				calc_accel_inconsistency(preflt);
+				calc_accel_inconsistency(preflt); // 对双IMU数据判定的部分
 				calc_gyro_inconsistency(preflt);
-				orb_publish(ORB_ID(sensor_preflight), _sensor_preflight, &preflt);
+				orb_publish(ORB_ID(sensor_preflight), _sensor_preflight, &preflt); // 如果误差太大，认为有故障
 
 			}
 

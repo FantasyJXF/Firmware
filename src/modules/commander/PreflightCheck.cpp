@@ -253,12 +253,13 @@ static bool accelerometerCheck(orb_advert_t *mavlink_log_pub, unsigned instance,
 	if (dynamic) {
 		/* check measurement result range */
 		struct accel_report acc;
-		ret = h.read(&acc, sizeof(acc));
+		ret = h.read(&acc, sizeof(acc)); // 读加速度计数据
 
 		if (ret == sizeof(acc)) {
 			/* evaluate values */
 			float accel_magnitude = sqrtf(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
 
+			// 判定加速度计读取的模值是否在一个合理范围内
 			if (accel_magnitude < 4.0f || accel_magnitude > 15.0f /* m/s^2 */) {
 				if (report_fail) {
 					mavlink_log_critical(mavlink_log_pub, "PREFLIGHT FAIL: ACCEL RANGE, hold still on arming");

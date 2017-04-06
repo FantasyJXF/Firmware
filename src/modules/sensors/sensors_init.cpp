@@ -126,9 +126,11 @@ accel_init()
 	} else {
 
 		/* set the accel internal sampling rate to default rate */
-		h_accel.ioctl(ACCELIOCSSAMPLERATE, ACCEL_SAMPLERATE_DEFAULT);
+		// 设置加速度计内部采样频率为默认速率
+		h_accel.ioctl(ACCELIOCSSAMPLERATE, ACCEL_SAMPLERATE_DEFAULT); // ioctl就是一个赋值write函数，向fd中写入数值
 
 		/* set the driver to poll at default rate */
+		// 设置传感器以默认速度轮询
 		h_accel.ioctl(SENSORIOCSPOLLRATE, SENSOR_POLLRATE_DEFAULT);
 	}
 
