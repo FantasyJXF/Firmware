@@ -35,6 +35,7 @@
  * @file device.cpp
  *
  * Fundamental driver base class for the device framework.
+ * 设备框架的基本驱动程序基类
  */
 
 #include "device.h"
@@ -61,9 +62,10 @@ static irq_entry	irq_entries[irq_nentries];	/**< interrupt dispatch table (XXX s
 
 /**
  * Register an interrupt to a specific device.
+ * 向特定设备注册中断。
  *
- * @param irq		The interrupt number to register.
- * @param owner		The device receiving the interrupt.
+ * @param irq		The interrupt number to register.   要注册的中断号码
+ * @param owner		The device receiving the interrupt. 接收中断的设备
  * @return		OK if the interrupt was registered.
  */
 static int	register_interrupt(int irq, Device *owner);
@@ -97,7 +99,7 @@ Device::Device(const char *name,
 
 	/* setup a default device ID. When bus_type is UNKNOWN the
 	   other fields are invalid */
-	_device_id.devid = 0;
+	_device_id.devid = 0; // 设备驱动ID
 	_device_id.devid_s.bus_type = DeviceBusType_UNKNOWN;
 	_device_id.devid_s.bus = 0;
 	_device_id.devid_s.address = 0;
@@ -124,6 +126,7 @@ Device::init()
 		up_disable_irq(_irq);
 
 		/* register */
+		// 注册一个中断请求
 		ret = register_interrupt(_irq, this);
 
 		if (ret != OK) {

@@ -71,11 +71,11 @@
 __EXPORT void stm32_spiinitialize(void)
 {
 #ifdef CONFIG_STM32_SPI1
-	px4_arch_configgpio(GPIO_SPI_CS_GYRO);
-	px4_arch_configgpio(GPIO_SPI_CS_ACCEL_MAG);
-	px4_arch_configgpio(GPIO_SPI_CS_BARO);
-	px4_arch_configgpio(GPIO_SPI_CS_HMC);
-	px4_arch_configgpio(GPIO_SPI_CS_MPU);
+	px4_arch_configgpio(GPIO_SPI_CS_GYRO); // PC13 L3GD20陀螺仪片选
+	px4_arch_configgpio(GPIO_SPI_CS_ACCEL_MAG); // PC15 LSM303D加速度计/磁力计片选
+	px4_arch_configgpio(GPIO_SPI_CS_BARO); // PD7 MS5611气压计片选
+	px4_arch_configgpio(GPIO_SPI_CS_HMC); // PC1 HMC5883磁力计片选 Pixhawk上木有HMC啊
+	px4_arch_configgpio(GPIO_SPI_CS_MPU); // PC2 MPU6000 加速度计/陀螺仪片选
 
 	/* De-activate all peripherals,
 	 * required for some peripheral
@@ -113,6 +113,7 @@ __EXPORT void stm32_spiinitialize(void)
 __EXPORT void stm32_spi1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool selected)
 {
 	/* SPI select is active low, so write !selected to select the device */
+	// SPI片选低电平有效。所以写!select就是选中了芯片
 
 	switch (devid) {
 	case PX4_SPIDEV_GYRO:
@@ -245,6 +246,7 @@ __EXPORT uint8_t stm32_spi4status(FAR struct spi_dev_s *dev, enum spi_dev_e devi
 __EXPORT void board_spi_reset(int ms)
 {
 	/* disable SPI bus */
+	// 禁用SPI总线
 	px4_arch_configgpio(GPIO_SPI_CS_GYRO_OFF);
 	px4_arch_configgpio(GPIO_SPI_CS_ACCEL_MAG_OFF);
 	px4_arch_configgpio(GPIO_SPI_CS_BARO_OFF);
@@ -274,6 +276,7 @@ __EXPORT void board_spi_reset(int ms)
 	px4_arch_gpiowrite(GPIO_EXTI_MPU_DRDY_OFF, 0);
 
 	/* set the sensor rail off */
+	// 传感器链路关闭
 	px4_arch_configgpio(GPIO_VDD_3V3_SENSORS_EN);
 	px4_arch_gpiowrite(GPIO_VDD_3V3_SENSORS_EN, 0);
 
@@ -284,6 +287,7 @@ __EXPORT void board_spi_reset(int ms)
 	/* re-enable power */
 
 	/* switch the sensor rail back on */
+	// 传感器重新连接
 	px4_arch_gpiowrite(GPIO_VDD_3V3_SENSORS_EN, 1);
 
 	/* wait a bit before starting SPI, different times didn't influence results */

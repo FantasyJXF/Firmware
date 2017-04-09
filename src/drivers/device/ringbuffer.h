@@ -143,6 +143,7 @@ public:
 
 	/*
 	 * Empties the buffer.
+	 * Çå¿Õ»º³åÇø
 	 */
 	void			flush();
 

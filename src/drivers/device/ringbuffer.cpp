@@ -35,6 +35,7 @@
  * @file ringbuffer.cpp
  *
  * A flexible ringbuffer class.
+ * 灵活的ringbuffer类。
  */
 
 #include "ringbuffer.h"
@@ -83,17 +84,18 @@ RingBuffer::size()
 }
 
 void
-RingBuffer::flush()
+RingBuffer::flush() // 清空缓冲区
 {
 	while (!empty()) {
 		get(NULL);
 	}
 }
 
+// 将val放入缓存中
 bool
 RingBuffer::put(const void *val, size_t val_size)
 {
-	unsigned next = _next(_head);
+	unsigned next = _next(_head); // 从头到尾
 
 	if (next != _tail) {
 		if ((val_size == 0) || (val_size > _item_size)) {
@@ -175,11 +177,11 @@ RingBuffer::force(const void *val, size_t val_size)
 	bool overwrote = false;
 
 	for (;;) {
-		if (put(val, val_size)) {
+		if (put(val, val_size)) { // 将val放入缓存中
 			break;
 		}
 
-		get(NULL);
+		get(NULL); // 从缓存中取值存到val中
 		overwrote = true;
 	}
 
@@ -262,6 +264,8 @@ static inline bool my_sync_bool_compare_and_swap(volatile unsigned *a, unsigned 
 #else
 #define __PX4_SBCAP __sync_bool_compare_and_swap
 #endif
+
+// 将缓存区的值取出存到 val指针所指向的地址中
 bool
 RingBuffer::get(void *val, size_t val_size)
 {
@@ -278,7 +282,7 @@ RingBuffer::get(void *val, size_t val_size)
 			candidate = _tail;
 
 			/* and what the corresponding next index will be */
-			next = _next(candidate);
+			next = _next(candidate); // 从尾到头取数
 
 			/* go ahead and read from this index */
 			if (val != NULL) {

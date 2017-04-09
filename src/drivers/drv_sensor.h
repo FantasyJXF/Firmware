@@ -118,6 +118,7 @@
 
 /**
  * Reset the sensor to its default configuration
+ * 将传感器重置为默认配置
  */
 #define SENSORIOCRESET		_SENSORIOC(4)
 

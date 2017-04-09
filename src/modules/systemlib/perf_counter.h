@@ -46,9 +46,9 @@
  * Counter types.
  */
 enum perf_counter_type {
-	PC_COUNT,		/**< count the number of times an event occurs */
-	PC_ELAPSED,		/**< measure the time elapsed performing an event */
-	PC_INTERVAL		/**< measure the interval between instances of an event */
+	PC_COUNT,		/**< count the number of times an event occurs  计算事件发生的次数 */
+	PC_ELAPSED,		/**< measure the time elapsed performing an event 测量执行事件的时间 */
+	PC_INTERVAL		/**< measure the interval between instances of an event  测量事件实例之间的间隔 */
 };
 
 struct perf_ctr_header;

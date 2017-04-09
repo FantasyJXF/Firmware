@@ -39,9 +39,11 @@
  *
  * When the device is on the SPI bus the hrt is used to provide thread of
  * execution to the driver.
+ * 当设备在SPI总线上时，hrt用于向驱动程序提供执行线程。
  *
  * When the device is on the I2C bus a work queue is used provide thread of
  * execution to the driver.
+ * 当器件在I2C总线上时，使用工作队列(work queue)向驱动程序提供执行线程。
  *
  * The I2C code is only included in the build if USE_I2C is defined by the
  * existance of any of PX4_I2C_MPU6050_ADDR, PX4_I2C_MPU6000_ADDR or
@@ -101,10 +103,12 @@
   accelerometer values. This time reduction is enough to cope with
   worst case timing jitter due to other timers
 
-  I2C bus is running at 100 kHz Transaction time is 2.163Ms
+ * 我们将定时器中断设置为比所需采样速率快一点，然后通过比较加速度计值来丢弃重复。 
+ * 这个时间减少足以应付由于其他定时器导致的最坏情况时序抖动
+ 
+ I2C bus is running at 100 kHz Transaction time is 2.163Ms
  I2C bus is running at 400 kHz (304 kHz acutal) Transaction time
  is 583 uS
-
  */
 #define MPU6000_TIMER_REDUCTION				200
 
@@ -237,6 +241,7 @@ private:
 
 	/**
 	 * Start automatic measurement.
+	 * 开始自动测量
 	 */
 	void			start();
 
@@ -301,12 +306,15 @@ private:
 	 * Called by the HRT in interrupt context at the specified rate if
 	 * automatic polling is enabled.
 	 *
+	 * 如果启用了自动轮询，则由HRT以指定的速率在中断上下文中调用。
+	 *
 	 * @param arg		Instance pointer for the driver that is polling.
 	 */
 	static void		measure_trampoline(void *arg);
 
 	/**
 	 * Fetch measurements from the sensor and update the report buffers.
+	 * 从传感器获取测量值并更新报告缓冲区。
 	 */
 	int			measure();
 
@@ -357,6 +365,7 @@ private:
 
 	/**
 	 * Swap a 16-bit value read from the MPU6000 to native byte order.
+	 * 数据交换 16位
 	 */
 	uint16_t		swap16(uint16_t val) { return (val >> 8) | (val << 8);	}
 
@@ -399,16 +408,18 @@ private:
 	void 			_set_icm_acc_dlpf_filter(uint16_t frequency_hz);
 
 	/*
-	  set sample rate (approximate) - 1kHz to 5Hz
-	*/
+	 *  set sample rate (approximate) - 1kHz to 5Hz
+	 */
 	void			_set_sample_rate(unsigned desired_sample_rate_hz);
 
 	/*
-	  check that key registers still have the right value
+	 * check that key registers still have the right value
+	 * 检查关键的寄存器是否仍然有正确的值
 	 */
 	void			check_registers(void);
 
 	/* do not allow to copy this class due to pointer data members */
+	// 由于指针数据成员，不允许复制此类
 	MPU6000(const MPU6000 &);
 	MPU6000 operator=(const MPU6000 &);
 
@@ -418,6 +429,7 @@ private:
   list of registers that will be checked in check_registers(). Note
   that MPUREG_PRODUCT_ID must be first in the list.
  */
+ // 使用的寄存器列表 
 const uint8_t MPU6000::_checked_registers[MPU6000_NUM_CHECKED_REGISTERS] = { MPUREG_PRODUCT_ID,
 									     MPUREG_PWR_MGMT_1,
 									     MPUREG_USER_CTRL,
@@ -476,7 +488,7 @@ MPU6000::MPU6000(device::Device *interface, const char *path_accel, const char *
 	_work {},
 	_use_hrt(false),
 #else
-	_use_hrt(true),
+	_use_hrt(true),  /* 使用SPI总线时，使用hrt  */ 
 #endif
 	_call {},
 	_call_interval(0),
@@ -578,6 +590,7 @@ MPU6000::~MPU6000()
 	perf_free(_duplicates);
 }
 
+// 将MPU6000注册到fs中作为一个字符设备
 int
 MPU6000::init()
 {
@@ -589,8 +602,8 @@ MPU6000::init()
 
 
 	/* probe again to get our settings that are based on the device type */
-
-	int ret = probe();
+	// 再次探测以获取基于设备类型的设置
+	int ret = probe(); // 设备就是MPU6000
 
 	/* if probe failed, bail now */
 
@@ -601,8 +614,7 @@ MPU6000::init()
 	}
 
 	/* do init */
-
-	ret = CDev::init();
+	ret = CDev::init(); // cdev.cpp 在src/device下，作用是把驱动注册到fs中
 
 	/* if init failed, bail now */
 	if (ret != OK) {
@@ -612,7 +624,7 @@ MPU6000::init()
 
 	ret = -ENOMEM;
 	/* allocate basic report buffers */
-	_accel_reports = new ringbuffer::RingBuffer(2, sizeof(accel_report));
+	_accel_reports = new ringbuffer::RingBuffer(2, sizeof(accel_report)); // 2倍加速度计结构体大小的环形缓冲区
 
 	if (_accel_reports == nullptr) {
 		goto out;
@@ -624,7 +636,7 @@ MPU6000::init()
 		goto out;
 	}
 
-	ret = -EIO;
+	ret = -EIO; // I/O error
 
 	if (reset() != OK) {
 		goto out;
@@ -647,6 +659,8 @@ MPU6000::init()
 
 
 	/* do CDev init for the gyro device node, keep it optional */
+	// 对陀螺仪设备节点执行CDev初始化
+	// 把陀螺仪注册到fs中
 	ret = _gyro->init();
 
 	/* if probe/setup failed, bail now */
@@ -660,8 +674,9 @@ MPU6000::init()
 	measure();
 
 	/* advertise sensor topic, measure manually to initialize valid report */
+	// 公告传感器主题，手动测量以初始化有效report
 	struct accel_report arp;
-	_accel_reports->get(&arp);
+	_accel_reports->get(&arp); // 从缓冲区取值存入arp中
 
 	/* measurement will have generated a report, publish */
 	_accel_topic = orb_advertise_multi(ORB_ID(sensor_accel), &arp,
@@ -687,6 +702,7 @@ out:
 	return ret;
 }
 
+// 芯片复位
 int MPU6000::reset()
 {
 	// if the mpu6000 is initialised after the l3gd20 and lsm303d
@@ -774,11 +790,13 @@ int MPU6000::reset()
 	return OK;
 }
 
+
+// 探测连接的是哪一个传感器，是不是MPU6000
 int
 MPU6000::probe()
 {
 	uint8_t whoami = read_reg(MPUREG_WHOAMI);
-	uint8_t expected = is_mpu_device() ? MPU_WHOAMI_6000 : ICM_WHOAMI_20608;
+	uint8_t expected = is_mpu_device() ? MPU_WHOAMI_6000 : ICM_WHOAMI_20608; // 哪个传感器
 
 	if (whoami != expected) {
 		DEVICE_DEBUG("unexpected WHOAMI 0x%02x", whoami);
@@ -927,8 +945,9 @@ MPU6000::read(struct file *filp, char *buffer, size_t buflen)
 	}
 
 	/* if automatic measurement is not enabled, get a fresh measurement into the buffer */
+	// 非自动测量
 	if (_call_interval == 0) {
-		_accel_reports->flush();
+		_accel_reports->flush(); // 清空缓存
 		measure();
 	}
 
@@ -940,11 +959,11 @@ MPU6000::read(struct file *filp, char *buffer, size_t buflen)
 	perf_count(_accel_reads);
 
 	/* copy reports out of our buffer to the caller */
-	accel_report *arp = reinterpret_cast<accel_report *>(buffer);
+	accel_report *arp = reinterpret_cast<accel_report *>(buffer); // 处理无关类型之间的转换
 	int transferred = 0;
 
 	while (count--) {
-		if (!_accel_reports->get(arp)) {
+		if (!_accel_reports->get(arp)) { // 取出缓存中的值放到arp
 			break;
 		}
 
@@ -1218,7 +1237,8 @@ MPU6000::factory_self_test()
 
 
 /*
-  deliberately trigger an error in the sensor to trigger recovery
+ * deliberately trigger an error in the sensor to trigger recovery
+ * 故意触发传感器发生错误以触发恢复
  */
 void
 MPU6000::test_error()
@@ -1288,12 +1308,14 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 			switch (arg) {
 
 			/* switching to manual polling */
+			// 切换到手动轮询格式
 			case SENSOR_POLLRATE_MANUAL:
 				stop();
 				_call_interval = 0;
 				return OK;
 
 			/* external signalling not supported */
+			// 不支持外部信令
 			case SENSOR_POLLRATE_EXTERNAL:
 
 			/* zero would be bad */
@@ -1316,13 +1338,14 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 					unsigned ticks = 1000000 / arg;
 
 					/* check against maximum sane rate */
+					// 检查最大合理的速度
 					if (ticks < 1000) {
 						return -EINVAL;
 					}
 
 					// adjust filters
 					float cutoff_freq_hz = _accel_filter_x.get_cutoff_freq();
-					float sample_rate = 1.0e6f / ticks;
+					float sample_rate = 1.0e6f / ticks; // 采样频率
 					_set_dlpf_filter(cutoff_freq_hz);
 
 					if (is_icm_device()) {
@@ -1350,12 +1373,15 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 					  them. This prevents aliasing due to a beat between the
 					  stm32 clock and the mpu6000 clock
 					 */
+					 // 设置调用间隔快于采样时间，然后可以去除重复的
 
 					if (!is_i2c()) {
 						_call.period = _call_interval - MPU6000_TIMER_REDUCTION;
 					}
 
 					/* if we need to start the poll state machine, do it */
+					// 如果我们需要启动轮询状态机，just do it
+					// 自动测量
 					if (want_start) {
 						start();
 					}
@@ -1374,18 +1400,19 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case SENSORIOCSQUEUEDEPTH: {
 			/* lower bound is mandatory, upper bound is a sanity check */
+			// 下限是强制性的，上界是一个健全检查
 			if ((arg < 1) || (arg > 100)) {
 				return -EINVAL;
 			}
 
-			irqstate_t flags = px4_enter_critical_section();
+			irqstate_t flags = px4_enter_critical_section(); // 保存中断
 
 			if (!_accel_reports->resize(arg)) {
 				px4_leave_critical_section(flags);
 				return -ENOMEM;
 			}
 
-			px4_leave_critical_section(flags);
+			px4_leave_critical_section(flags); // 恢复中断
 
 			return OK;
 		}
@@ -1405,6 +1432,7 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case ACCELIOCSLOWPASS:
 		// set hardware filtering
+		// 硬件滤波
 		_set_dlpf_filter(arg);
 
 		if (is_icm_device()) {
@@ -1412,6 +1440,7 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 		}
 
 		// set software filtering
+		// 软件滤波
 		_accel_filter_x.set_cutoff_frequency(1.0e6f / _call_interval, arg);
 		_accel_filter_y.set_cutoff_frequency(1.0e6f / _call_interval, arg);
 		_accel_filter_z.set_cutoff_frequency(1.0e6f / _call_interval, arg);
@@ -1558,8 +1587,8 @@ MPU6000::read_reg(unsigned reg, uint32_t speed)
 
 
 	uint8_t buf;
-	_interface->read(MPU6000_SET_SPEED(reg, speed), &buf, 1);
-	return buf;
+	_interface->read(MPU6000_SET_SPEED(reg, speed), &buf, 1); // read返回成功读取到的个数
+	return buf;//read_reg 返回的是存储读取到的值的缓冲区地址
 }
 
 uint16_t
@@ -1577,7 +1606,7 @@ int
 MPU6000::write_reg(unsigned reg, uint8_t value)
 {
 	// general register transfer at low clock speed
-
+	// 通用寄存器以低时钟速度传输
 	return _interface->write(MPU6000_LOW_SPEED_OP(reg), &value, 1);
 }
 
@@ -1595,11 +1624,11 @@ MPU6000::modify_reg(unsigned reg, uint8_t clearbits, uint8_t setbits)
 void
 MPU6000::write_checked_reg(unsigned reg, uint8_t value)
 {
-	write_reg(reg, value);
+	write_reg(reg, value); // 写寄存器
 
 	for (uint8_t i = 0; i < MPU6000_NUM_CHECKED_REGISTERS; i++) {
-		if (reg == _checked_registers[i]) {
-			_checked_values[i] = value;
+		if (reg == _checked_registers[i]) { // 寄存器列表中有这个寄存器
+			_checked_values[i] = value;  // 将读取到的寄存器值赋给_checked_values[i]
 		}
 	}
 }
@@ -1613,7 +1642,7 @@ MPU6000::set_accel_range(unsigned max_g_in)
 	case MPU6000ES_REV_C5:
 	case MPU6000_REV_C4:
 	case MPU6000_REV_C5:
-		write_checked_reg(MPUREG_ACCEL_CONFIG, 1 << 3);
+		write_checked_reg(MPUREG_ACCEL_CONFIG, 1 << 3); // AFS_SEL = 01 量程 +-4G
 		_accel_range_scale = (MPU6000_ONE_G / 4096.0f);
 		_accel_range_m_s2 = 8.0f * MPU6000_ONE_G;
 		return OK;
@@ -1625,7 +1654,7 @@ MPU6000::set_accel_range(unsigned max_g_in)
 
 	if (max_g_in > 8) { // 16g - AFS_SEL = 3
 		afs_sel = 3;
-		lsb_per_g = 2048;
+		lsb_per_g = 2048; // 2^16 = 64G   64 / 32 = 2G = 2048
 		max_accel_g = 16;
 
 	} else if (max_g_in > 4) { //  8g - AFS_SEL = 2
@@ -1645,7 +1674,7 @@ MPU6000::set_accel_range(unsigned max_g_in)
 	}
 
 	write_checked_reg(MPUREG_ACCEL_CONFIG, afs_sel << 3);
-	_accel_range_scale = (MPU6000_ONE_G / lsb_per_g);
+	_accel_range_scale = (MPU6000_ONE_G / lsb_per_g); // 分辨率
 	_accel_range_m_s2 = max_accel_g * MPU6000_ONE_G;
 
 	return OK;
@@ -1755,18 +1784,22 @@ MPU6000::check_registers(void)
 	uint8_t v;
 
 	// the MPUREG_ICM_UNDOC1 is specific to the ICM20608 (and undocumented)
+	// 不是 ICM20608
 	if (_checked_registers[_checked_next] == MPUREG_ICM_UNDOC1 && !is_icm_device()) {
 		_checked_next = (_checked_next + 1) % MPU6000_NUM_CHECKED_REGISTERS;
 	}
 
 	if ((v = read_reg(_checked_registers[_checked_next], MPU6000_HIGH_BUS_SPEED)) !=
-	    _checked_values[_checked_next]) {
+	    _checked_values[_checked_next]) { // 从寄存器读取到的值和写入的值不同
 		/*
 		  if we get the wrong value then we know the SPI bus
 		  or sensor is very sick. We set _register_wait to 20
 		  and wait until we have seen 20 good values in a row
 		  before we consider the sensor to be OK again.
 		 */
+		 // 如果我们得到错误的值，那么我们知道SPI总线或传感器问题很严重 。 
+		 // 我们将_register_wait设置为20，然后等连续看到20个良好的值。
+		 // 再次认为传感器健康，
 		perf_count(_bad_registers);
 
 		/*
@@ -1777,7 +1810,7 @@ MPU6000::check_registers(void)
 		if (_register_wait == 0 || _checked_next == 0) {
 			// if the product_id is wrong then reset the
 			// sensor completely
-			write_reg(MPUREG_PWR_MGMT_1, BIT_H_RESET);
+			write_reg(MPUREG_PWR_MGMT_1, BIT_H_RESET); // 0x80
 			// after doing a reset we need to wait a long
 			// time before we do any other register writes
 			// or we will end up with the mpu6000 in a
@@ -1788,7 +1821,7 @@ MPU6000::check_registers(void)
 			_checked_next = 0;
 
 		} else {
-			write_reg(_checked_registers[_checked_next], _checked_values[_checked_next]);
+			write_reg(_checked_registers[_checked_next], _checked_values[_checked_next]); // 向寄存器写入检验后的值
 			// waiting 3ms between register writes seems
 			// to raise the chance of the sensor
 			// recovering considerably
@@ -1801,6 +1834,8 @@ MPU6000::check_registers(void)
 	_checked_next = (_checked_next + 1) % MPU6000_NUM_CHECKED_REGISTERS;
 }
 
+
+// 从传感器读数并进行数据处理并发布数据
 int
 MPU6000::measure()
 {
@@ -1841,7 +1876,7 @@ MPU6000::measure()
 		return -EIO;
 	}
 
-	check_registers();
+	check_registers(); // 寄存器数据检查
 
 	/*
 	   see if this is duplicate accelerometer data. Note that we
@@ -1851,7 +1886,7 @@ MPU6000::measure()
 	   sampled at 8kHz, so we would incorrectly think we have new
 	   data when we are in fact getting duplicate accelerometer data.
 	*/
-	if (!_got_duplicate && memcmp(&mpu_report.accel_x[0], &_last_accel[0], 6) == 0) {
+	if (!_got_duplicate && memcmp(&mpu_report.accel_x[0], &_last_accel[0], 6) == 0) { // 查看数据是否重复
 		// it isn't new data - wait for next timer
 		perf_end(_sample_perf);
 		perf_count(_duplicates);
@@ -1864,9 +1899,13 @@ MPU6000::measure()
 
 	/*
 	 * Convert from big to little endian
+	 * 从大端到小端
+	 *
+	 * Little-Endian就是低位字节排放在内存的低地址端，高位字节排放在内存的高地址端。
+	 * Big-Endian就是高位字节排放在内存的低地址端，低位字节排放在内存的高地址端。
 	 */
 
-	report.accel_x = int16_t_from_bytes(mpu_report.accel_x);
+	report.accel_x = int16_t_from_bytes(mpu_report.accel_x); // 将测得的值mpu_report传递给将发布的值report
 	report.accel_y = int16_t_from_bytes(mpu_report.accel_y);
 	report.accel_z = int16_t_from_bytes(mpu_report.accel_z);
 
@@ -1906,6 +1945,11 @@ MPU6000::measure()
 
 	/*
 	 * Swap axes and negate y
+	 *
+	 * 交换xy轴读数并将新的y轴读取取负
+	 *
+	 * 理由是 正放的话，MPU6K y向前，x向右, z向上。 但是
+	 * Pixhawk 中，传感器是倒置的， x向前, y向右，z向下。
 	 */
 	int16_t accel_xt = report.accel_y;
 	int16_t accel_yt = ((report.accel_x == -32768) ? 32767 : -report.accel_x);
@@ -1925,10 +1969,11 @@ MPU6000::measure()
 	 * Report buffers.
 	 */
 	accel_report	arb;
-	gyro_report		grb;
+	gyro_report	grb;
 
 	/*
 	 * Adjust and scale results to m/s^2.
+	 * 调整并将结果缩放到 m/s^2
 	 */
 	grb.timestamp = arb.timestamp = hrt_absolute_time();
 
@@ -1943,6 +1988,9 @@ MPU6000::measure()
 	 * 2) Subtract static offset (in SI units)
 	 * 3) Scale the statically calibrated values with a linear
 	 *    dynamically obtained factor
+	 *
+	 * SI units ->International System of Units 国际单位制
+	 *
 	 *
 	 * Note: the static sensor offset is the number the sensor outputs
 	 * 	 at a nominally 'zero' input. Therefore the offset has to
@@ -1965,26 +2013,27 @@ MPU6000::measure()
 	float zraw_f = report.accel_z;
 
 	// apply user specified rotation
+	// 应用用户特定旋转
 	rotate_3f(_rotation, xraw_f, yraw_f, zraw_f);
 
 	float x_in_new = ((xraw_f * _accel_range_scale) - _accel_scale.x_offset) * _accel_scale.x_scale;
 	float y_in_new = ((yraw_f * _accel_range_scale) - _accel_scale.y_offset) * _accel_scale.y_scale;
 	float z_in_new = ((zraw_f * _accel_range_scale) - _accel_scale.z_offset) * _accel_scale.z_scale;
 
-	arb.x = _accel_filter_x.apply(x_in_new);
+	arb.x = _accel_filter_x.apply(x_in_new); // 二阶低通滤波
 	arb.y = _accel_filter_y.apply(y_in_new);
 	arb.z = _accel_filter_z.apply(z_in_new);
 
 	math::Vector<3> aval(x_in_new, y_in_new, z_in_new);
 	math::Vector<3> aval_integrated;
 
-	bool accel_notify = _accel_int.put(arb.timestamp, aval, aval_integrated, arb.integral_dt);
+	bool accel_notify = _accel_int.put(arb.timestamp, aval, aval_integrated, arb.integral_dt); // 积分环节
 	arb.x_integral = aval_integrated(0);
 	arb.y_integral = aval_integrated(1);
 	arb.z_integral = aval_integrated(2);
 
-	arb.scaling = _accel_range_scale;
-	arb.range_m_s2 = _accel_range_m_s2;
+	arb.scaling = _accel_range_scale; //分辨率  缩放因子
+	arb.range_m_s2 = _accel_range_m_s2; // 最大加速度
 
 	if (is_icm_device()) { // if it is an ICM20608
 		_last_temperature = (report.temp) / 326.8f + 25.0f;
@@ -2045,11 +2094,13 @@ MPU6000::measure()
 		/* log the time of this report */
 		perf_begin(_controller_latency_perf);
 		/* publish it */
+////////////////////////  发布加速度计主题 //////////////////////
 		orb_publish(ORB_ID(sensor_accel), _accel_topic, &arb);
 	}
 
 	if (gyro_notify && !(_pub_blocked)) {
 		/* publish it */
+////////////////////////  发布陀螺仪主题 //////////////////////
 		orb_publish(ORB_ID(sensor_gyro), _gyro->_gyro_topic, &grb);
 	}
 
@@ -2127,7 +2178,7 @@ MPU6000_gyro::init()
 	int ret;
 
 	// do base class init
-	ret = CDev::init();
+	ret = CDev::init(); // 注册到fs中
 
 	/* if probe/setup failed, bail now */
 	if (ret != OK) {
@@ -2135,7 +2186,7 @@ MPU6000_gyro::init()
 		return ret;
 	}
 
-	_gyro_class_instance = register_class_devname(GYRO_BASE_DEVICE_PATH);
+	_gyro_class_instance = register_class_devname(GYRO_BASE_DEVICE_PATH); //注册节点
 
 	return ret;
 }
@@ -2232,6 +2283,7 @@ struct mpu6000_bus_option &find_bus(enum MPU6000_BUS busid)
 
 /**
  * start driver for a specific bus option
+ * 启动特定总线选项的驱动程序
  */
 bool
 start_bus(struct mpu6000_bus_option &bus, enum Rotation rotation, int range, int device_type, bool external)
@@ -2243,6 +2295,7 @@ start_bus(struct mpu6000_bus_option &bus, enum Rotation rotation, int range, int
 		return false;
 	}
 
+	// 选择接口 总线序号 SPI/I2C 内部/外部 
 	device::Device *interface = bus.interface_constructor(bus.busnum, device_type, external);
 
 	if (interface == nullptr) {
@@ -2250,7 +2303,7 @@ start_bus(struct mpu6000_bus_option &bus, enum Rotation rotation, int range, int
 		return false;
 	}
 
-	if (interface->init() != OK) {
+	if (interface->init() != OK) { // 设备初始化，向特定的设备注册中断请求
 		delete interface;
 		warnx("no device on bus %u", (unsigned)bus.busid);
 		return false;
@@ -2263,12 +2316,11 @@ start_bus(struct mpu6000_bus_option &bus, enum Rotation rotation, int range, int
 		return false;
 	}
 
-	if (OK != bus.dev->init()) {
+	if (OK != bus.dev->init()) { // MPU6000::init()
 		goto fail;
 	}
 
 	/* set the poll rate to default, starts automatic data collection */
-
 	fd = open(bus.accelpath, O_RDONLY);
 
 	if (fd < 0) {
@@ -2303,9 +2355,11 @@ fail:
 
 /**
  * Start the driver.
+ * 打开驱动
  *
  * This function only returns if the driver is up and running
  * or failed to detect the sensor.
+ * 此函数仅在驱动程序启动或运行或检测不到传感器时才返回。
  */
 void
 start(enum MPU6000_BUS busid, enum Rotation rotation, int range, int device_type, bool external)
@@ -2316,11 +2370,13 @@ start(enum MPU6000_BUS busid, enum Rotation rotation, int range, int device_type
 	for (unsigned i = 0; i < NUM_BUS_OPTIONS; i++) {
 		if (busid == MPU6000_BUS_ALL && bus_options[i].dev != NULL) {
 			// this device is already started
+			// 设备已经打开了
 			continue;
 		}
 
 		if (busid != MPU6000_BUS_ALL && bus_options[i].busid != busid) {
 			// not the one that is asked for
+			// 不是想要的总线
 			continue;
 		}
 
@@ -2354,6 +2410,8 @@ stop(enum MPU6000_BUS busid)
  * make sure we can collect data from the sensor in polled
  * and automatic modes.
  */
+ // 传感器作为一个文件设备，操作步骤
+ // open -> ioctl -> read -> close
 void
 test(enum MPU6000_BUS busid)
 {
@@ -2600,7 +2658,7 @@ mpu6000_main(int argc, char *argv[])
 
 	/*
 	 * Start/load the driver.
-
+	 * 开始/加载驱动
 	 */
 	if (!strcmp(verb, "start")) {
 		mpu6000::start(busid, rotation, accel_range, device_type, external);

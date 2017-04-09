@@ -35,6 +35,7 @@
  * @file spi.cpp
  *
  * Base class for devices connected via SPI.
+ * 通过SPI总线连接的设备的基类
  *
  * @todo Work out if caching the mode/frequency would save any time.
  *
@@ -108,6 +109,7 @@ SPI::init()
 	SPI_SELECT(_dev, _device, false);
 
 	/* call the probe function to check whether the device is present */
+	// 调用probe函数检查设备是否存在
 	ret = probe();
 
 	if (ret != OK) {
@@ -116,6 +118,7 @@ SPI::init()
 	}
 
 	/* do base class init, which will create the device node, etc. */
+	// 初始化基类，创建设备节点。
 	ret = CDev::init();
 
 	if (ret != OK) {

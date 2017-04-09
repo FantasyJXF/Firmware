@@ -35,6 +35,11 @@
  * @file cdev.cpp
  *
  * Character device base class.
+ * 字符设备基类。
+ * 
+ * 完成一些硬件的初始化、资源的申请以及设备节点的生成等等工作，
+ * 初始化生成的设备节点作为一个设备文件，对应用层开放，可以像访问一个文件一样访问，
+ * 例如，read、write等等。
  */
 
 #include "device.h"
@@ -154,15 +159,17 @@ int
 CDev::init()
 {
 	// base class init first
-	int ret = Device::init();
+	// 首先初始化基类
+	int ret = Device::init(); // 注册irq中断
 
 	if (ret != OK) {
 		goto out;
 	}
 
 	// now register the driver
+	// 现在注册驱动
 	if (_devname != nullptr) {
-		ret = register_driver(_devname, &fops, 0666, (void *)this);
+		ret = register_driver(_devname, &fops, 0666, (void *)this); // 需要关注的是这个_devname对应的设备
 
 		if (ret != OK) {
 			goto out;
@@ -342,14 +349,14 @@ void
 CDev::poll_notify(pollevent_t events)
 {
 	/* lock against poll() as well as other wakeups */
-	irqstate_t state = px4_enter_critical_section();
+	irqstate_t state = px4_enter_critical_section(); // 存储中断
 
 	for (unsigned i = 0; i < _max_pollwaiters; i++)
 		if (nullptr != _pollset[i]) {
 			poll_notify_one(_pollset[i], events);
 		}
 
-	px4_leave_critical_section(state);
+	px4_leave_critical_section(state); // 从中断恢复
 }
 
 void

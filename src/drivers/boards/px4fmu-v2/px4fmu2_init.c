@@ -236,7 +236,7 @@ __EXPORT int nsh_archinitialize(void)
 	led_off(LED_AMBER);
 
 	/* Configure SPI-based devices */
-
+	// 配置基于SPI的设备
 	spi1 = px4_spibus_initialize(1);
 
 	if (!spi1) {
@@ -246,6 +246,7 @@ __EXPORT int nsh_archinitialize(void)
 	}
 
 	/* Default SPI1 to 1MHz and de-assert the known chip selects. */
+	// 默认SPI1频率为1MHz，并取消断言已知芯片选择
 	SPI_SETFREQUENCY(spi1, 10000000);
 	SPI_SETBITS(spi1, 8);
 	SPI_SETMODE(spi1, SPIDEV_MODE3);

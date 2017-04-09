@@ -99,11 +99,13 @@ public:
 
 	/**
 	 * Read directly from the device.
+	 * 直接从设备读取
 	 *
 	 * The actual size of each unit quantity is device-specific.
 	 *
 	 * @param offset	The device address at which to start reading
 	 * @param data		The buffer into which the read values should be placed.
+	 *                  读取值应该放在其中的缓冲区
 	 * @param count		The number of items to read.
 	 * @return		The number of items read on success, negative errno otherwise.
 	 */
@@ -111,11 +113,13 @@ public:
 
 	/**
 	 * Write directly to the device.
+	 * 直接写到设备中
 	 *
 	 * The actual size of each unit quantity is device-specific.
 	 *
 	 * @param address	The device address at which to start writing.
 	 * @param data		The buffer from which values should be read.
+	 *                  读取值的缓冲区。
 	 * @param count		The number of items to write.
 	 * @return		The number of items written on success, negative errno otherwise.
 	 */
@@ -439,6 +443,8 @@ protected:
 	/**
 	 * Register a class device name, automatically adding device
 	 * class instance suffix if need be.
+	 *
+	 * 注册类设备名称，如果需要，自动添加设备类实例后缀。
 	 *
 	 * @param class_devname   Device class name
 	 * @return class_instamce Class instance created, or -errno on failure

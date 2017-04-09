@@ -146,6 +146,7 @@
 #define ICM20608_REV_00		0
 
 // Product ID Description for MPU6000
+// MPU6000 µÄ²úÆ·IDÃèÊö
 // high 4 bits 	low 4 bits
 // Product Name	Product Revision
 #define MPU6000ES_REV_C4		0x14

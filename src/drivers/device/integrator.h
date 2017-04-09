@@ -35,6 +35,7 @@
  * @file integrator.h
  *
  * A resettable integrator
+ * 可复位积分器
  *
  * @author Lorenz Meier <lorenz@px4.io>
  * @author Julian Oes <julian@oes.ch>

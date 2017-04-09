@@ -50,7 +50,7 @@ get_rot_matrix(enum Rotation rot, math::Matrix<3, 3> *rot_matrix)
 	rot_matrix->from_euler(roll, pitch, yaw);
 }
 
-#define HALF_SQRT_2 0.70710678118654757f
+#define HALF_SQRT_2 0.70710678118654757f // 1/2/sqrt(2)
 
 __EXPORT void
 rotate_3f(enum Rotation rot, float &x, float &y, float &z)
