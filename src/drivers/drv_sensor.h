@@ -91,12 +91,14 @@
 /**
  * Set the driver polling rate to (arg) Hz, or one of the SENSOR_POLLRATE
  * constants
+ * 设置驱动的轮询频率
  */
 #define SENSORIOCSPOLLRATE	_SENSORIOC(0)
 
 /**
  * Return the driver's approximate polling rate in Hz, or one of the
  * SENSOR_POLLRATE values.
+ * 以Hz为单位返回驱动的近似轮询速率
  */
 #define SENSORIOCGPOLLRATE	_SENSORIOC(1)
 
@@ -110,10 +112,12 @@
  *
  * This sets the upper bound on the number of readings that can be
  * read from the driver.
+ * 设置可从驱动程序读取的读数数量的上限。
  */
 #define SENSORIOCSQUEUEDEPTH	_SENSORIOC(2)
 
 /** return the internal queue depth */
+// 返回内部队列深度
 #define SENSORIOCGQUEUEDEPTH	_SENSORIOC(3)
 
 /**

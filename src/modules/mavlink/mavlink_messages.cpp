@@ -416,6 +416,7 @@ protected:
 #ifndef __PX4_POSIX_EAGLE
 				/* write log messages in first instance to disk
 				 * timestamp each message with gps time
+				 * gps ±º‰
 				 */
 				timespec ts;
 				px4_clock_gettime(CLOCK_REALTIME, &ts);

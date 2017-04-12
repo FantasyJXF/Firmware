@@ -166,7 +166,7 @@ private:
 	int 			_device_type;
 	MPU6000_gyro		*_gyro;
 	uint8_t			_product;	/** product code */
-
+// 与I2C相关的所有都不用管，Pixhawk的MPU6000接在SPI总线上
 #if defined(USE_I2C)
 	/*
 	 * SPI bus based device use hrt
@@ -477,9 +477,10 @@ private:
 /** driver 'main' command */
 extern "C" { __EXPORT int mpu6000_main(int argc, char *argv[]); }
 
+//////////////////////////////////////// MPU60000类成员介绍部分 /////////////////
 MPU6000::MPU6000(device::Device *interface, const char *path_accel, const char *path_gyro, enum Rotation rotation,
 		 int device_type) :
-	CDev("MPU6000", path_accel),
+	CDev("MPU6000", path_accel), // 加速度计设备端口
 	_interface(interface),
 	_device_type(device_type),
 	_gyro(new MPU6000_gyro(this, path_gyro)),
@@ -1308,14 +1309,14 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 			switch (arg) {
 
 			/* switching to manual polling */
-			// 切换到手动轮询格式
+			// 切换到手动轮询模式
 			case SENSOR_POLLRATE_MANUAL:
 				stop();
 				_call_interval = 0;
 				return OK;
 
 			/* external signalling not supported */
-			// 不支持外部信令
+			// 目前暂不支持外部信令
 			case SENSOR_POLLRATE_EXTERNAL:
 
 			/* zero would be bad */
@@ -1323,11 +1324,12 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 				return -EINVAL;
 
 			/* set default/max polling rate */
+			// 设置默认/最大轮询速率
 			case SENSOR_POLLRATE_MAX:
-				return ioctl(filp, SENSORIOCSPOLLRATE, 1000);
+				return ioctl(filp, SENSORIOCSPOLLRATE, 1000); // 最大1000Hz
 
 			case SENSOR_POLLRATE_DEFAULT:
-				return ioctl(filp, SENSORIOCSPOLLRATE, MPU6000_ACCEL_DEFAULT_RATE);
+				return ioctl(filp, SENSORIOCSPOLLRATE, MPU6000_ACCEL_DEFAULT_RATE); // 默认1000Hz
 
 			/* adjust to a legal polling interval in Hz */
 			default: {
@@ -1398,7 +1400,7 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 		return 1000000 / _call_interval;
 
-	case SENSORIOCSQUEUEDEPTH: {
+	case SENSORIOCSQUEUEDEPTH: { // 读取数量上限
 			/* lower bound is mandatory, upper bound is a sanity check */
 			// 下限是强制性的，上界是一个健全检查
 			if ((arg < 1) || (arg > 100)) {
@@ -1417,20 +1419,20 @@ MPU6000::ioctl(struct file *filp, int cmd, unsigned long arg)
 			return OK;
 		}
 
-	case SENSORIOCGQUEUEDEPTH:
+	case SENSORIOCGQUEUEDEPTH: // 返回内部队列深度
 		return _accel_reports->size();
 
-	case ACCELIOCGSAMPLERATE:
+	case ACCELIOCGSAMPLERATE: // 返回加速度内部采样频率（Hz）
 		return _sample_rate;
 
-	case ACCELIOCSSAMPLERATE:
+	case ACCELIOCSSAMPLERATE: // 设置加速度计采样频率
 		_set_sample_rate(arg);
 		return OK;
 
 	case ACCELIOCGLOWPASS:
 		return _accel_filter_x.get_cutoff_freq();
 
-	case ACCELIOCSLOWPASS:
+	case ACCELIOCSLOWPASS: // 设置加速度计低通频率
 		// set hardware filtering
 		// 硬件滤波
 		_set_dlpf_filter(arg);
@@ -1603,7 +1605,7 @@ MPU6000::read_reg16(unsigned reg)
 }
 
 int
-MPU6000::write_reg(unsigned reg, uint8_t value)
+MPU6000::write_reg(unsigned reg, uint8_t value) // 把value写到reg中
 {
 	// general register transfer at low clock speed
 	// 通用寄存器以低时钟速度传输
@@ -1628,7 +1630,7 @@ MPU6000::write_checked_reg(unsigned reg, uint8_t value)
 
 	for (uint8_t i = 0; i < MPU6000_NUM_CHECKED_REGISTERS; i++) {
 		if (reg == _checked_registers[i]) { // 寄存器列表中有这个寄存器
-			_checked_values[i] = value;  // 将读取到的寄存器值赋给_checked_values[i]
+			_checked_values[i] = value;  // 将写入的寄存器值赋给_checked_values[i]  供后期检查是否一致?
 		}
 	}
 }
@@ -1689,11 +1691,13 @@ MPU6000::start()
 	_call_interval = last_call_interval;
 
 	/* discard any stale data in the buffers */
+	// 清空缓冲区
 	_accel_reports->flush();
 	_gyro_reports->flush();
 
 	if (!is_i2c()) {
 		/* start polling at the specified rate */
+		// 以指定的速率开始轮询
 		hrt_call_every(&_call,
 			       1000,
 			       _call_interval - MPU6000_TIMER_REDUCTION,
@@ -2154,10 +2158,14 @@ MPU6000::print_registers()
 
 	printf("\n");
 }
+/////////////////////////////////////////// MPU6000类成员函数介绍完毕 ///////////////
 
+/////////////////////////////////////////// 分割线  /////////////////////////////////
+
+/////////////////////////////////////////// MPU60000_gyro类成员部分 /////////////////
 
 MPU6000_gyro::MPU6000_gyro(MPU6000 *parent, const char *path) :
-	CDev("MPU6000_gyro", path),
+	CDev("MPU6000_gyro", path), // 陀螺仪设备端口
 	_parent(parent),
 	_gyro_topic(nullptr),
 	_gyro_orb_class_instance(-1),
@@ -2216,7 +2224,11 @@ MPU6000_gyro::ioctl(struct file *filp, int cmd, unsigned long arg)
 		return _parent->gyro_ioctl(filp, cmd, arg);
 	}
 }
+///////////////////////////////////// MPU6000_gyro类成员函数介绍完毕 ///////////////
 
+//////////////////////////////////////// 分割线  ///////////////////////////////////
+
+/////////////////////////////////////// shell命令支持函数部分 /////////////////
 /**
  * Local functions in support of the shell command.
  */
@@ -2245,6 +2257,7 @@ struct mpu6000_bus_option {
 #endif
 #ifdef PX4_SPIDEV_MPU
 	{ MPU6000_BUS_SPI_INTERNAL, MPU_DEVICE_PATH_ACCEL, MPU_DEVICE_PATH_GYRO, &MPU6000_SPI_interface, PX4_SPI_BUS_SENSORS, NULL },
+	/*内部SPI，加速度路径，陀螺仪路径，MPU6000的SPI接口，SPI1，null*/
 #endif
 #if defined(PX4_SPI_BUS_EXT)
 	{ MPU6000_BUS_SPI_EXTERNAL, MPU_DEVICE_PATH_ACCEL_EXT, MPU_DEVICE_PATH_GYRO_EXT, &MPU6000_SPI_interface, PX4_SPI_BUS_EXT, NULL },
@@ -2283,7 +2296,7 @@ struct mpu6000_bus_option &find_bus(enum MPU6000_BUS busid)
 
 /**
  * start driver for a specific bus option
- * 启动特定总线选项的驱动程序
+ * 启动特定总线的驱动程序
  */
 bool
 start_bus(struct mpu6000_bus_option &bus, enum Rotation rotation, int range, int device_type, bool external)

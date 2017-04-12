@@ -110,6 +110,7 @@ struct accel_calibration_s {
 #define ACCELIOCGHWLOWPASS	_ACCELIOC(11)
 
 /** determine if hardware is external or onboard */
+// 确定硬件是外部还是机载
 #define ACCELIOCGEXTERNAL	_ACCELIOC(12)
 
 
