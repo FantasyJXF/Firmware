@@ -2434,9 +2434,9 @@ Sensors::task_main_trampoline(int argc, char *argv[])
 void
 Sensors::init_sensor_class(const struct orb_metadata *meta, SensorData &sensor_data)
 {
-	unsigned group_count = orb_group_count(meta);
+	unsigned group_count = orb_group_count(meta); // 获取冗余度，有几个orb_advertise_multi
 
-	if (group_count > SENSOR_COUNT_MAX) {
+	if (group_count > SENSOR_COUNT_MAX) { // 至多三组冗余
 		group_count = SENSOR_COUNT_MAX;
 	}
 
