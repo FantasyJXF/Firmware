@@ -4,8 +4,8 @@
 
 extern orb_advert_t mavlink_log_pub;
 
-// required number of samples for sensor
-// to initialize
+// required number of samples for sensor to initialize
+// 初始化所需的传感器数据样本数
 static const uint32_t 		REQ_GPS_INIT_COUNT = 10;
 static const uint32_t 		GPS_TIMEOUT =      1000000; // 1.0 s
 
@@ -30,7 +30,7 @@ void BlockLocalPositionEstimator::gpsInit()
 	// measure
 	Vector<double, n_y_gps> y;
 
-	if (gpsMeasure(y) != OK) {
+	if (gpsMeasure(y) != OK) { // GPS 测量
 		_gpsStats.reset();
 		return;
 	}
@@ -38,6 +38,7 @@ void BlockLocalPositionEstimator::gpsInit()
 	// if finished
 	if (_gpsStats.getCount() > REQ_GPS_INIT_COUNT) {
 		// get mean gps values
+		// 取平均
 		double gpsLat = _gpsStats.getMean()(0);
 		double gpsLon = _gpsStats.getMean()(1);
 		float gpsAlt = _gpsStats.getMean()(2);
@@ -47,25 +48,30 @@ void BlockLocalPositionEstimator::gpsInit()
 		_gpsStats.reset();
 
 		if (!_receivedGps) {
+/////////////////  首次获取GPS信号
 			// this is the first time we have received gps
 			_receivedGps = true;
 
 			// note we subtract X_z which is in down directon so it is
 			// an addition
+			// GPS高度减去Z方向的高度
 			_gpsAltOrigin = gpsAlt + _x(X_z);
 
 			// find lat, lon of current origin by subtracting x and y
+			// 找到当前原点的经纬度
 			double gpsLatOrigin = 0;
 			double gpsLonOrigin = 0;
 			// reproject at current coordinates
 			map_projection_init(&_map_ref, gpsLat, gpsLon);
 			// find origin
-			map_projection_reproject(&_map_ref, -_x(X_x), -_x(X_y), &gpsLatOrigin, &gpsLonOrigin);
+			map_projection_reproject(&_map_ref, -_x(X_x), -_x(X_y), &gpsLatOrigin, &gpsLonOrigin); // 位置转换为经纬度
 			// reinit origin
 			map_projection_init(&_map_ref, gpsLatOrigin, gpsLonOrigin);
 
 			// always override alt origin on first GPS to fix
 			// possible baro offset in global altitude at init
+			// 用第一个GPS高度覆盖原点的高度
+			// 修复global高度初始化时可能的气压计偏移
 			_altOrigin = _gpsAltOrigin;
 			_altOriginInitialized = true;
 
@@ -90,7 +96,8 @@ int BlockLocalPositionEstimator::gpsMeasure(Vector<double, n_y_gps> &y)
 	y(5) = _sub_gps.get().vel_d_m_s;
 
 	// increament sums for mean
-	_gpsStats.update(y);
+	// 平均值的增量和
+	_gpsStats.update(y); // 求和
 	_time_last_gps = _timeStamp;
 	return OK;
 }
@@ -112,14 +119,15 @@ void BlockLocalPositionEstimator::gpsCorrect()
 	map_projection_project(&_map_ref, lat, lon, &px, &py);
 	Vector<float, 6> y;
 	y.setZero();
-	y(0) = px;
+	y(0) = px; 		 // GPS位置
 	y(1) = py;
 	y(2) = pz;
-	y(3) = y_global(3);
+	y(3) = y_global(3); // GPS速度
 	y(4) = y_global(4);
 	y(5) = y_global(5);
 
 	// gps measurement matrix, measures position and velocity
+	// GPS测量矩阵，测量位置速度
 	Matrix<float, n_y_gps, n_x> C;
 	C.setZero();
 	C(Y_gps_x, X_x) = 1;
@@ -130,16 +138,20 @@ void BlockLocalPositionEstimator::gpsCorrect()
 	C(Y_gps_vz, X_vz) = 1;
 
 	// gps covariance matrix
-	SquareMatrix<float, n_y_gps> R;
+	// GPS协方差矩阵
+	SquareMatrix<float, n_y_gps> R; // 方阵  6 * 6
 	R.setZero();
 
 	// default to parameter, use gps cov if provided
-	float var_xy = _gps_xy_stddev.get() * _gps_xy_stddev.get();
-	float var_z = _gps_z_stddev.get() * _gps_z_stddev.get();
-	float var_vxy = _gps_vxy_stddev.get() * _gps_vxy_stddev.get();
-	float var_vz = _gps_vz_stddev.get() * _gps_vz_stddev.get();
+	// 使用默认参数，如果提供了，则使用GPS的协方差
+	// 这里都是给定值  
+	float var_xy = _gps_xy_stddev.get() * _gps_xy_stddev.get(); // 1 * 1
+	float var_z = _gps_z_stddev.get() * _gps_z_stddev.get();      // 3 * 3 
+	float var_vxy = _gps_vxy_stddev.get() * _gps_vxy_stddev.get(); // 0.25 * 0.25
+	float var_vz = _gps_vz_stddev.get() * _gps_vz_stddev.get(); // 0.25 * 0.25
 
 	// if field is not below minimum, set it to the value provided
+	// 如果field不低于最小值，将其设置为默认给定值
 	if (_sub_gps.get().eph > _gps_xy_stddev.get()) {
 		var_xy = _sub_gps.get().eph * _sub_gps.get().eph;
 	}
@@ -148,7 +160,7 @@ void BlockLocalPositionEstimator::gpsCorrect()
 		var_z = _sub_gps.get().epv * _sub_gps.get().epv;
 	}
 
-	float gps_s_stddev =  _sub_gps.get().s_variance_m_s;
+	float gps_s_stddev =  _sub_gps.get().s_variance_m_s; // GPS速度精度估计
 
 	if (gps_s_stddev > _gps_vxy_stddev.get()) {
 		var_vxy = gps_s_stddev * gps_s_stddev;
@@ -158,7 +170,7 @@ void BlockLocalPositionEstimator::gpsCorrect()
 		var_vz = gps_s_stddev * gps_s_stddev;
 	}
 
-
+	// 更新测量噪声协方差矩阵
 	R(0, 0) = var_xy;
 	R(1, 1) = var_xy;
 	R(2, 2) = var_z;
@@ -174,22 +186,34 @@ void BlockLocalPositionEstimator::gpsCorrect()
 	Vector<float, n_x> x0 = _xDelay.get(i_hist);
 
 	// residual
+	// 残余量
 	Vector<float, n_y_gps> r = y - C * x0;
 
+	// 更新待发布的新息
 	for (int i = 0; i < 6; i ++) {
 		_pub_innov.get().vel_pos_innov[i] = r(i);
 		_pub_innov.get().vel_pos_innov_var[i] = R(i, i);
 	}
 
-	Matrix<float, n_y_gps, n_y_gps> S_I = inv<float, 6>(C * _P * C.transpose() + R);
+	// 求卡尔曼增益
+	// K(k) = P(k|k-1) * H(k) * ( H(k) * P(k|k-1) * H(k)^T ) + R )^(-1)
+	
+	// k(k) = P(k|k-1) * H(k) * S_I
+	Matrix<float, n_y_gps, n_y_gps> S_I = inv<float, 6>(C * _P * C.transpose() + R); // 矩阵求逆
 
+	// 卡尔曼滤波状态更新
+	// x(k) = x(k|k-1) + K(k) * ( y(k) - H(k) * x(k|k-1) )
+
+	// x(k) = x(k|k-1) + S_I * r
+	
 	// fault detection
+	// 错误检测  卡方分布
 	float beta = (r.transpose() * (S_I * r))(0, 0);
 
 	if (beta > BETA_TABLE[n_y_gps]) {
 		if (_gpsFault < FAULT_MINOR) {
 			if (beta > 3.0f * BETA_TABLE[n_y_gps]) {
-				mavlink_log_critical(&mavlink_log_pub, "[lpe] gps fault %3g %3g %3g %3g %3g %3g",
+				mavlink_log_critical(&mavlink_log_pub, "[lpe] gps fault %3g %3g %3g %3g %3g %3g", /* GPS故障 */
 						     double(r(0)*r(0) / S_I(0, 0)),  double(r(1)*r(1) / S_I(1, 1)), double(r(2)*r(2) / S_I(2, 2)),
 						     double(r(3)*r(3) / S_I(3, 3)),  double(r(4)*r(4) / S_I(4, 4)), double(r(5)*r(5) / S_I(5, 5)));
 			}
@@ -203,12 +227,13 @@ void BlockLocalPositionEstimator::gpsCorrect()
 	}
 
 	// kalman filter correction if no hard fault
+	// 卡尔曼滤波器校正
 	if (_gpsFault < fault_lvl_disable) {
-		Matrix<float, n_x, n_y_gps> K = _P * C.transpose() * S_I;
-		Vector<float, n_x> dx = K * r;
+		Matrix<float, n_x, n_y_gps> K = _P * C.transpose() * S_I; // 计算卡尔曼增益
+		Vector<float, n_x> dx = K * r;  // 计算测量校正量
 		correctionLogic(dx);
-		_x += dx;
-		_P -= K * C * _P;
+		_x += dx; // 状态更新
+		_P -= K * C * _P; // 协方差矩阵更新  P(k) = (I - K(k) * H(k) ) * P(k|k-1)
 	}
 }
 

@@ -134,6 +134,7 @@ __EXPORT int map_projection_global_project(double lat, double lon, float *x, flo
 
 }
 
+// 将经纬度换算成距离
 __EXPORT int map_projection_project(const struct map_projection_reference_s *ref, double lat, double lon, float *x,
 				    float *y)
 {

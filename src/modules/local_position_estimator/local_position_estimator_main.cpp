@@ -152,6 +152,8 @@ int local_position_estimator_thread_main(int argc, char *argv[])
 
 	using namespace control;
 
+	// 实例化 est
+	// 初始化 X A B U R Q
 	BlockLocalPositionEstimator est;
 
 	thread_running = true;

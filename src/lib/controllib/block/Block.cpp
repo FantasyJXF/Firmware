@@ -82,7 +82,7 @@ void Block::getName(char *buf, size_t n)
 
 void Block::updateParams()
 {
-	BlockParamBase *param = getParams().getHead();
+	BlockParamBase *param = getParams().getHead(); // 获取链表参数头指针 
 	int count = 0;
 
 	while (param != NULL) {
@@ -94,8 +94,8 @@ void Block::updateParams()
 		}
 
 		//printf("updating param: %s\n", param->getName());
-		param->update();
-		param = param->getSibling();
+		param->update();  
+		param = param->getSibling();  // 链表的下一个参数
 	}
 }
 
@@ -138,7 +138,7 @@ void Block::updatePublications()
 void SuperBlock::setDt(float dt)
 {
 	Block::setDt(dt);
-	Block *child = getChildren().getHead();
+	Block *child = getChildren().getHead(); // 链表的头节点
 	int count = 0;
 
 	while (child != NULL) {

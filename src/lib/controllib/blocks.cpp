@@ -89,7 +89,7 @@ float BlockHighPass::update(float input)
 {
 	float b = 2 * float(M_PI) * getFCut() * getDt();
 	float a = 1 / (1 + b);
-	setY(a * (getY() + input - getU()));
+	setY(a * (getY() + input - getU())); // Êä³ö
 	setU(input);
 	return getY();
 }

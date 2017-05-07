@@ -52,6 +52,7 @@ class Block;
 
 /**
  * A base class for block params that enables traversing linked list.
+ * block参数的基类，可以遍历链表
  */
 class __EXPORT BlockParamBase : public ListNode<BlockParamBase *>
 {
@@ -63,7 +64,7 @@ public:
 	 */
 	BlockParamBase(Block *parent, const char *name, bool parent_prefix = true);
 	virtual ~BlockParamBase() {};
-	virtual void update() = 0;
+	virtual void update() = 0; // 纯虚函数
 	const char *getName() { return param_name(_handle); }
 protected:
 	param_t _handle;
@@ -71,6 +72,7 @@ protected:
 
 /**
  * Parameters that are tied to blocks for updating and nameing.
+ * 与block更新和命名相关联的参数。
  */
 
 template <class T>

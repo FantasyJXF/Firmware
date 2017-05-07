@@ -180,6 +180,7 @@ static void inv(const float x[9], float y[9])
   float absx21;
   float absx31;
   int itmp;
+  // 向量x转存到b_x
   for (p1 = 0; p1 < 9; p1++) {
     b_x[p1] = x[p1];
   }
@@ -187,7 +188,7 @@ static void inv(const float x[9], float y[9])
   p1 = 0;
   p2 = 3;
   p3 = 6;
-  absx11 = (real32_T)fabs(x[0]);
+  absx11 = (real32_T)fabs(x[0]); // 取绝对值
   absx21 = (real32_T)fabs(x[1]);
   absx31 = (real32_T)fabs(x[2]);
   if ((absx21 > absx11) && (absx21 > absx31)) {

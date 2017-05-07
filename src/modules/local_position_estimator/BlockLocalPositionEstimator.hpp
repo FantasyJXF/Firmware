@@ -60,12 +60,16 @@ enum sensor_t {
 // change this to set when
 // the system will abort correcting a measurement
 // given a fault has been detected
+// 如果已经检测到了错误
+// 将此值置位时，系统会停止校正测量值
 static const fault_t fault_lvl_disable = FAULT_SEVERE;
 
 // for fault detection
 // chi squared distribution, false alarm probability 0.0001
 // see fault_table.py
 // note skip 0 index so we can use degree of freedom as index
+// 用于错误检测
+// 卡方分布，误报概率为0.0001
 static const float BETA_TABLE[7] = {0,
 				    8.82050518214,
 				    12.094592431,
@@ -84,9 +88,9 @@ class BlockLocalPositionEstimator : public control::SuperBlock
 //
 // kalman filter
 //
-//	E[xx'] = P
-//	E[uu'] = W
-//	E[y_iy_i'] = R_i
+//	E[xx'] = P     10*10
+//	E[uu'] = W     3*3
+//	E[y_iy_i'] = R_i   10*10
 //
 //	prediction
 //		x(+|-) = A*x(-|-) + B*u(+)
@@ -100,14 +104,15 @@ class BlockLocalPositionEstimator : public control::SuperBlock
 // 	ax, ay, az (acceleration NED)
 //
 // states:
+// 状态
 // 	px, py, pz , ( position NED, m)
 // 	vx, vy, vz ( vel NED, m/s),
 // 	bx, by, bz ( accel bias, m/s^2)
-// 	tz (terrain altitude, ASL, m)
+// 	tz (terrain altitude, ASL, m) 地面拔海高度
 //
 // measurements:
 //
-// 	sonar: pz (measured d*cos(phi)*cos(theta))
+// 	sonar: pz (measured d*cos(phi)*cos(theta)) 投影到Z轴上
 //
 // 	baro: pz
 //
@@ -121,13 +126,15 @@ class BlockLocalPositionEstimator : public control::SuperBlock
 //
 // 	mocap: px, py, pz
 //
-// 	land (detects when landed)): pz (always measures agl = 0)
+// 	land (detects when landed)): pz (always measures agl = 0) 高出地面高度
 //
 public:
 
 	// constants
-	enum {X_x = 0, X_y, X_z, X_vx, X_vy, X_vz, X_bx, X_by, X_bz, X_tz, n_x};
-	enum {U_ax = 0, U_ay, U_az, n_u};
+	// 常量
+	// n_ 为噪声
+	enum {X_x = 0, X_y, X_z, X_vx, X_vy, X_vz, X_bx, X_by, X_bz, X_tz, n_x}; // 10维状态变量
+	enum {U_ax = 0, U_ay, U_az, n_u}; // 输入
 	enum {Y_baro_z = 0, n_y_baro};
 	enum {Y_lidar_z = 0, n_y_lidar};
 	enum {Y_flow_vx = 0, Y_flow_vy, n_y_flow};
@@ -306,11 +313,11 @@ private:
 	// land parameters
 	BlockParamFloat  _land_z_stddev;
 
-	// process noise
-	BlockParamFloat  _pn_p_noise_density;
-	BlockParamFloat  _pn_v_noise_density;
-	BlockParamFloat  _pn_b_noise_density;
-	BlockParamFloat  _pn_t_noise_density;
+	// process noise   -> _pn
+	BlockParamFloat  _pn_p_noise_density; // 位置 _p
+	BlockParamFloat  _pn_v_noise_density; // 速度 _v
+	BlockParamFloat  _pn_b_noise_density; // 加速器偏差 _b
+	BlockParamFloat  _pn_t_noise_density; // 地面海拔高度
 	BlockParamFloat  _t_max_grade;
 
 	// init origin
@@ -405,8 +412,8 @@ private:
 	matrix::Dcm<float> _R_att;
 	Vector3f _eul;
 
-	Matrix<float, n_x, n_x>  _A; // dynamics matrix
-	Matrix<float, n_x, n_u>  _B; // input matrix
-	Matrix<float, n_u, n_u>  _R; // input covariance
-	Matrix<float, n_x, n_x>  _Q; // process noise covariance
+	Matrix<float, n_x, n_x>  _A; // dynamics matrix   动态矩阵 10 * 10
+	Matrix<float, n_x, n_u>  _B; // input matrix      输入矩阵 10 * 3
+	Matrix<float, n_u, n_u>  _R; // input covariance  输入协方差矩阵 3 * 3
+	Matrix<float, n_x, n_x>  _Q; // process noise covariance 过程噪声协方差矩阵 10 * 10
 };

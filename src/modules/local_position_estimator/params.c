@@ -158,6 +158,7 @@ PARAM_DEFINE_FLOAT(LPE_GPS_DELAY, 0.29f);
 
 /**
  * Minimum GPS xy standard deviation, uses reported EPH if greater.
+ * GPS在xy方向上的最小标准差，如果EPH水平位置精度大于此值，则使用EPH覆盖此值
  *
  * @group Local Position Estimator
  * @unit m
@@ -169,6 +170,7 @@ PARAM_DEFINE_FLOAT(LPE_GPS_XY, 1.0f);
 
 /**
  * Minimum GPS z standard deviation, uses reported EPV if greater.
+ * GPS在z方向上的最小标准差，如果EPH竖直位置精度大于此值，则使用EPV覆盖此值
  *
  * @group Local Position Estimator
  * @unit m
@@ -277,6 +279,7 @@ PARAM_DEFINE_FLOAT(LPE_VIC_P, 0.001f);
 
 /**
  * Position propagation noise density
+ * 位置传播噪声密度
  *
  * Increase to trust measurements more.
  * Decrease to trust model more.
@@ -291,6 +294,7 @@ PARAM_DEFINE_FLOAT(LPE_PN_P, 0.1f);
 
 /**
  * Velocity propagation noise density
+ * 速度传播噪声密度
  *
  * Increase to trust measurements more.
  * Decrease to trust model more.
@@ -372,6 +376,7 @@ PARAM_DEFINE_FLOAT(LPE_LON, -86.929);
 
 /**
  * Cut frequency for state publication
+ * 状态发布的截止频率
  *
  * @group Local Position Estimator
  * @unit Hz
