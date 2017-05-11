@@ -20,8 +20,8 @@ void BlockLocalPositionEstimator::baroInit()
 	}
 
 	// if finished
-	if (_baroStats.getCount() > REQ_BARO_INIT_COUNT) {
-		_baroAltOrigin = _baroStats.getMean()(0);
+	if (_baroStats.getCount() > REQ_BARO_INIT_COUNT) { // 取100次
+		_baroAltOrigin = _baroStats.getMean()(0); //  取平均
 		mavlink_and_console_log_info(&mavlink_log_pub,
 					     "[lpe] baro init %d m std %d cm",
 					     (int)_baroStats.getMean()(0),
@@ -40,7 +40,7 @@ int BlockLocalPositionEstimator::baroMeasure(Vector<float, n_y_baro> &y)
 {
 	//measure
 	y.setZero();
-	y(0) = _sub_sensor.get().baro_alt_meter;
+	y(0) = _sub_sensor.get().baro_alt_meter; // 已进行温度补偿的高度
 	_baroStats.update(y);
 	_time_last_baro = _timeStamp;
 	return OK;
@@ -54,12 +54,14 @@ void BlockLocalPositionEstimator::baroCorrect()
 	if (baroMeasure(y) != OK) { return; }
 
 	// subtract baro origin alt
+	// 减去气压计原始高度
 	y -= _baroAltOrigin;
 
 	// baro measurement matrix
-	Matrix<float, n_y_baro, n_x> C;
+	Matrix<float, n_y_baro, n_x> C; // 1 行 10 列
 	C.setZero();
 	C(Y_baro_z, X_z) = -1; // measured altitude, negative down dir.
+						// 测量高度  负方向
 
 	Matrix<float, n_y_baro, n_y_baro> R;
 	R.setZero();

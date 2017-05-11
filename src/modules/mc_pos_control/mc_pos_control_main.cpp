@@ -36,15 +36,20 @@
  * Multicopter position controller.
  *
  * Original publication for the desired attitude generation:
+ * 计算期望姿态的原始论文
  * Daniel Mellinger and Vijay Kumar. Minimum Snap Trajectory Generation and Control for Quadrotors.
  * Int. Conf. on Robotics and Automation, Shanghai, China, May 2011
  *
  * Also inspired by https://pixhawk.org/firmware/apps/fw_pos_control_l1
+ * 以及L1导航算法
  *
  * The controller has two loops: P loop for position error and PID loop for velocity error.
  * Output of velocity controller is thrust vector that splitted to thrust direction
  * (i.e. rotation matrix for multicopter orientation) and thrust module (i.e. multicopter thrust itself).
  * Controller doesn't use Euler angles for work, they generated only for more human-friendly control and logging.
+ * 控制器有两个环路:外环位置误差P环；内环速度误差PID环
+ * 速度控制环的输出是推力向量 :分为推力方向(用于多旋翼方位的旋转矩阵)和推力模块(多旋翼推力本身)。
+ * 控制器不使用欧拉角工作，欧拉角只是为了便于控制以及日志记录
  *
  * @author Anton Babushkin <anton.babushkin@me.com>
  */
@@ -140,9 +145,9 @@ private:
 	int		_local_pos_sp_sub;		/**< offboard local position setpoint */
 	int		_global_vel_sp_sub;		/**< offboard global velocity setpoint */
 
-	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication */
-	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication */
-	orb_advert_t	_global_vel_sp_pub;		/**< vehicle global velocity setpoint publication */
+	orb_advert_t	_att_sp_pub;			/**< attitude setpoint publication 姿态设定值的发布 */
+	orb_advert_t	_local_pos_sp_pub;		/**< vehicle local position setpoint publication 本地位置发布 */
+	orb_advert_t	_global_vel_sp_pub;		/**< vehicle global velocity setpoint publication 全球位置发布 */
 
 	orb_id_t _attitude_setpoint_id;
 
@@ -255,10 +260,10 @@ private:
 	math::Vector<3> _pos_sp;
 	math::Vector<3> _vel;
 	math::Vector<3> _vel_sp;
-	math::Vector<3> _vel_prev;			/**< velocity on previous step */
+	math::Vector<3> _vel_prev;			/**< velocity on previous step 前一刻的速度 */
 	math::Vector<3> _vel_ff;
 	math::Vector<3> _vel_sp_prev;
-	math::Vector<3> _vel_err_d;		/**< derivative of current velocity */
+	math::Vector<3> _vel_err_d;		/**< derivative of current velocity 当前速度的微分 */
 
 	math::Matrix<3, 3> _R;			/**< rotation matrix from attitude quaternions */
 	float _yaw;				/**< yaw angle (euler) */
@@ -272,6 +277,7 @@ private:
 
 	// counters for reset events on position and velocity states
 	// they are used to identify a reset event
+	// 位置和速度状态下的复位事件的计数器，用于识别复位事件
 	uint8_t _z_reset_counter;
 	uint8_t _xy_reset_counter;
 	uint8_t _vz_reset_counter;
@@ -298,10 +304,12 @@ private:
 
 	/**
 	 * Update reference for local position projection
+	 * 更新参考用于本地位置投影
 	 */
 	void		update_ref();
 	/**
 	 * Reset position setpoint to current position.
+	 * 将位置设定值重置为当前位置
 	 *
 	 * This reset will only occur if the _reset_pos_sp flag has been set.
 	 * The general logic is to first "activate" the flag in the flight
@@ -313,6 +321,7 @@ private:
 
 	/**
 	 * Reset altitude setpoint to current altitude.
+	 * 将高度设定值复位为当前高度
 	 *
 	 * This reset will only occur if the _reset_alt_sp flag has been set.
 	 * The general logic follows the reset_pos_sp() architecture.
@@ -326,16 +335,19 @@ private:
 
 	/**
 	 * Set position setpoint using manual control
+	 * 手动控制模式
 	 */
 	void		control_manual(float dt);
 
 	/**
 	 * Set position setpoint using offboard control
+	 * 外部控制模式
 	 */
 	void		control_offboard(float dt);
 
 	/**
 	 * Set position setpoint for AUTO
+	 * 自动控制模式
 	 */
 	void		control_auto(float dt);
 
@@ -670,19 +682,21 @@ MulticopterPositionControl::poll_subscriptions()
 		orb_copy(ORB_ID(control_state), _ctrl_state_sub, &_ctrl_state);
 
 		/* get current rotation matrix and euler angles from control state quaternions */
+		// 从控制状态四元数获取当前的旋转矩阵和欧拉角，_ctrl_state.q[4]来自于姿态估计
 		math::Quaternion q_att(_ctrl_state.q[0], _ctrl_state.q[1], _ctrl_state.q[2], _ctrl_state.q[3]);
 		_R = q_att.to_dcm();
 		math::Vector<3> euler_angles;
 		euler_angles = _R.to_euler();
 		_yaw = euler_angles(2);
 
-		if (_control_mode.flag_control_manual_enabled) {
-			if (_heading_reset_counter != _ctrl_state.quat_reset_counter) {
-				_heading_reset_counter = _ctrl_state.quat_reset_counter;
+		if (_control_mode.flag_control_manual_enabled) { // 手动模式
+			if (_heading_reset_counter != _ctrl_state.quat_reset_counter) { // 四元数复位计数器
+				_heading_reset_counter = _ctrl_state.quat_reset_counter;  
 				math::Quaternion delta_q(_ctrl_state.delta_q_reset[0], _ctrl_state.delta_q_reset[1], _ctrl_state.delta_q_reset[2],
-							 _ctrl_state.delta_q_reset[3]);
+							 _ctrl_state.delta_q_reset[3]); // 四元数从上一次复位到现在的变化量
 
 				// we only extract the heading change from the delta quaternion
+				// 从四元数变化量提取航向改变
 				math::Vector<3> delta_euler = delta_q.to_euler();
 				_att_sp.yaw_body += delta_euler(2);
 			}
@@ -723,6 +737,7 @@ MulticopterPositionControl::poll_subscriptions()
 		// if the vehicle is in manual mode we will shift the setpoints of the
 		// states which were reset. In auto mode we do not shift the setpoints
 		// since we want the vehicle to track the original state.
+		// 检查复位事件是否发生
 		if (_control_mode.flag_control_manual_enabled) {
 			if (_z_reset_counter != _local_pos.z_reset_counter) {
 				_pos_sp(2) += _local_pos.delta_z;
@@ -747,6 +762,7 @@ MulticopterPositionControl::poll_subscriptions()
 		}
 
 		// update the reset counters in any case
+		// 更新复位计数器
 		_z_reset_counter = _local_pos.z_reset_counter;
 		_xy_reset_counter = _local_pos.xy_reset_counter;
 		_vz_reset_counter = _local_pos.vz_reset_counter;
@@ -1306,6 +1322,7 @@ MulticopterPositionControl::task_main()
 
 	/*
 	 * do subscriptions
+	 * 订阅
 	 */
 	_vehicle_status_sub = orb_subscribe(ORB_ID(vehicle_status));
 	_vehicle_land_detected_sub = orb_subscribe(ORB_ID(vehicle_land_detected));
@@ -1324,9 +1341,11 @@ MulticopterPositionControl::task_main()
 	parameters_update(true);
 
 	/* initialize values of critical structs until first regular update */
+	// 初始化关键结构体的值直到第一次常规更新
 	_arming.armed = false;
 
 	/* get an initial update for all sensor and status data */
+	// 为所有的传感器和状态数据获得初始更新
 	poll_subscriptions();
 
 	/* We really need to know from the beginning if we're landed or in-air. */
@@ -2256,7 +2275,7 @@ int mc_pos_control_main(int argc, char *argv[])
 			return 1;
 		}
 
-		pos_control::g_control = new MulticopterPositionControl;
+		pos_control::g_control = new MulticopterPositionControl; // 实例化
 
 		if (pos_control::g_control == nullptr) {
 			warnx("alloc failed");

@@ -80,7 +80,8 @@ static const uint16_t	r_page_config[] = {
 /**
  * PAGE 1
  *
- * Status values.
+ * Status values. 
+ * 状态值
  */
 uint16_t		r_page_status[] = {
 	[PX4IO_P_STATUS_FREEMEM]		= 0,
@@ -99,6 +100,7 @@ uint16_t		r_page_status[] = {
  * PAGE 2
  *
  * Post-mixed actuator values.
+ * 混控后的执行器值
  */
 uint16_t 		r_page_actuators[PX4IO_SERVO_COUNT];
 
@@ -106,6 +108,7 @@ uint16_t 		r_page_actuators[PX4IO_SERVO_COUNT];
  * PAGE 3
  *
  * Servo PWM values
+ * 电机的PWM值
  */
 uint16_t		r_page_servos[PX4IO_SERVO_COUNT];
 
@@ -113,6 +116,7 @@ uint16_t		r_page_servos[PX4IO_SERVO_COUNT];
  * PAGE 4
  *
  * Raw RC input
+ * 原始油门输出
  */
 uint16_t		r_page_raw_rc_input[] = {
 	[PX4IO_P_RAW_RC_COUNT]			= 0,
@@ -128,6 +132,7 @@ uint16_t		r_page_raw_rc_input[] = {
  * PAGE 5
  *
  * Scaled/routed RC input
+ * 缩放/路由 后的RC遥控输入
  */
 uint16_t		r_page_rc_input[] = {
 	[PX4IO_P_RC_VALID]			= 0,
@@ -146,6 +151,7 @@ uint16_t		r_page_scratch[32];
  * PAGE 100
  *
  * Setup registers
+ * 设置寄存器
  */
 volatile uint16_t	r_page_setup[] = {
 #ifdef CONFIG_ARCH_BOARD_PX4IO_V2
@@ -211,6 +217,7 @@ volatile uint16_t	r_page_setup[] = {
  * PAGE 101
  *
  * Control values from the FMU.
+ * 控制来自FMU的值
  */
 volatile uint16_t	r_page_controls[PX4IO_CONTROL_GROUPS * PX4IO_CONTROL_CHANNELS];
 
@@ -222,10 +229,12 @@ volatile uint16_t	r_page_controls[PX4IO_CONTROL_GROUPS * PX4IO_CONTROL_CHANNELS]
  * PAGE 103
  *
  * R/C channel input configuration.
+ * R/C 通道输入配置
  */
 uint16_t		r_page_rc_input_config[PX4IO_RC_INPUT_CHANNELS * PX4IO_P_RC_CONFIG_STRIDE];
 
 /* valid options */
+// 有效选项
 #define PX4IO_P_RC_CONFIG_OPTIONS_VALID	(PX4IO_P_RC_CONFIG_OPTIONS_REVERSE | PX4IO_P_RC_CONFIG_OPTIONS_ENABLED)
 
 /*
@@ -261,6 +270,7 @@ uint16_t		r_page_servo_control_max[PX4IO_SERVO_COUNT] = { PWM_DEFAULT_MAX, PWM_D
  * PAGE 108
  *
  * disarmed PWM values for difficult ESCs
+ * 对有困难的电调禁用PWM
  *
  */
 uint16_t		r_page_servo_disarmed[PX4IO_SERVO_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0 };

@@ -36,6 +36,7 @@
  * Multicopter attitude controller.
  *
  * Publication for the desired attitude tracking:
+ * 期望姿态跟踪的发布:
  * Daniel Mellinger and Vijay Kumar. Minimum Snap Trajectory Generation and Control for Quadrotors.
  * Int. Conf. on Robotics and Automation, Shanghai, China, May 2011.
  *
@@ -51,6 +52,14 @@
  * When thrust vector directed near-horizontally (e.g. roll ~= PI/2) yaw setpoint ignored because of singularity.
  * Controller doesn't use Euler angles for work, they generated only for more human-friendly control and logging.
  * If rotation matrix setpoint is invalid it will be generated from Euler angles for compatibility with old position controllers.
+ * 姿态控制有两个环:外环角度误差P环；内环角速度误差PID环
+ * 注意偏航响应比横滚/俯仰慢。
+ * 对于小的偏差，控制器以最短的路径旋转飞行器绕偏航轴独立旋转， 因此旋转轴并非常值
+ * 对于大的偏差，控制器绕固定的轴旋转飞行器。
+ * 这两种方法根据角度误差得到的加权系数无缝地融合
+ * 当推力向量指向几乎水平(roll = PI/2)时，由于奇点问题，需要忽略偏航设定值。
+ * 控制器不使用欧拉角工作，欧拉角只是为了便于控制以及日志记录
+ * 如果旋转矩阵的设定值无效，将由欧拉角生成旋转矩阵，以与旧的位置控制器兼容。
  */
 
 #include <px4_config.h>
@@ -684,8 +693,11 @@ MulticopterAttitudeControl::battery_status_poll()
 
 /**
  * Attitude controller.
+ * 姿态角控制    外环 P
  * Input: 'vehicle_attitude_setpoint' topics (depending on mode)
+ * 输入: 姿态设定值'vehicle_attitude_setpoint'
  * Output: '_rates_sp' vector, '_thrust_sp'
+ * 输出: 角速度设定值  '_rates_sp'  油门设定值   '_thrust_sp'
  */
 void
 MulticopterAttitudeControl::control_attitude(float dt)
@@ -726,7 +738,7 @@ MulticopterAttitudeControl::control_attitude(float dt)
 		float e_R_z_angle = atan2f(e_R_z_sin, e_R_z_cos);
 		math::Vector<3> e_R_z_axis = e_R / e_R_z_sin;
 
-		e_R = e_R_z_axis * e_R_z_angle;
+		e_R = e_R_z_axis * e_R_z_angle; // 旋转向量: 长度为 theta角大小
 
 		/* cross product matrix for e_R_axis */
 		math::Matrix<3, 3> e_R_cp;
@@ -739,6 +751,8 @@ MulticopterAttitudeControl::control_attitude(float dt)
 		e_R_cp(2, 1) = e_R_z_axis(0);
 
 		/* rotation matrix for roll/pitch only rotation */
+		// 罗德里格斯公式
+		// R = cos(theta) * I + (1 - cos(theta)) * n * n^T + sin(theta) * skewmatrix(n)
 		R_rp = R * (_I + e_R_cp * e_R_z_sin + e_R_cp * e_R_cp * (1.0f - e_R_z_cos));
 
 	} else {
@@ -751,6 +765,7 @@ MulticopterAttitudeControl::control_attitude(float dt)
 	math::Vector<3> R_rp_x(R_rp(0, 0), R_rp(1, 0), R_rp(2, 0));
 	e_R(2) = atan2f((R_rp_x % R_sp_x) * R_sp_z, R_rp_x * R_sp_x) * yaw_w;
 
+////////////////////////  大角度旋转 ///////////////////////
 	if (e_R_z_cos < 0.0f) {
 		/* for large thrust vector rotations use another rotation method:
 		 * calculate angle and axis for R -> R_sp rotation directly */
@@ -764,7 +779,8 @@ MulticopterAttitudeControl::control_attitude(float dt)
 	}
 
 	/* calculate angular rates setpoint */
-	_rates_sp = _params.att_p.emult(e_R);
+//////////////// 计算角速度设定值    角速度控制P环
+	_rates_sp = _params.att_p.emult(e_R);  // P控制
 
 	/* limit rates */
 	for (int i = 0; i < 3; i++) {
@@ -778,7 +794,8 @@ MulticopterAttitudeControl::control_attitude(float dt)
 	}
 
 	/* feed forward yaw setpoint rate */
-	_rates_sp(2) += _v_att_sp.yaw_sp_move_rate * yaw_w * _params.yaw_ff;
+	// 偏航角速度设定值前馈
+	_rates_sp(2) += _v_att_sp.yaw_sp_move_rate * yaw_w * _params.yaw_ff; // 偏航前馈
 
 	/* weather-vane mode, dampen yaw rate */
 	if ((_v_control_mode.flag_control_velocity_enabled || _v_control_mode.flag_control_auto_enabled) &&
@@ -792,8 +809,11 @@ MulticopterAttitudeControl::control_attitude(float dt)
 
 /*
  * Attitude rates controller.
+ * 角速度控制环     内环 PID
  * Input: '_rates_sp' vector, '_thrust_sp'
+ * 输入: 角速度设定值'_rates_sp'   推力设定值 '_thrust_sp'
  * Output: '_att_control' vector
+ * 输出: 姿态控制量  '_att_control'
  */
 void
 MulticopterAttitudeControl::control_attitude_rates(float dt)
@@ -804,32 +824,39 @@ MulticopterAttitudeControl::control_attitude_rates(float dt)
 	}
 
 	/* current body angular rates */
+	// 当前机体的角速度
 	math::Vector<3> rates;
 	rates(0) = _ctrl_state.roll_rate;
 	rates(1) = _ctrl_state.pitch_rate;
 	rates(2) = _ctrl_state.yaw_rate;
 
 	/* throttle pid attenuation factor */
+	// 油门量的PID衰减因子
 	float tpa =  fmaxf(0.0f, fminf(1.0f, 1.0f - _params.tpa_slope * (fabsf(_v_rates_sp.thrust) - _params.tpa_breakpoint)));
+	// 衰减因子范围为 0 ~ 1 之间
 
 	/* angular rates error */
+	// 角速度误差
 	math::Vector<3> rates_err = _rates_sp - rates;
 
 	_att_control = _params.rate_p.emult(rates_err * tpa) + _params.rate_d.emult(_rates_prev - rates) / dt + _rates_int +
 		       _params.rate_ff.emult(_rates_sp);
+	// 上面姿态控制的微分环节D，直接采用陀螺仪的输出作为误差计算因子
 
 	_rates_sp_prev = _rates_sp;
 	_rates_prev = rates;
 
 	/* update integral only if not saturated on low limit and if motor commands are not saturated */
+	// 只有在下限不饱和时，如果电机命令不饱和，才更新积分
 	if (_thrust_sp > MIN_TAKEOFF_THRUST && !_motor_limits.lower_limit && !_motor_limits.upper_limit) {
 		for (int i = AXIS_INDEX_ROLL; i < AXIS_COUNT; i++) {
-			if (fabsf(_att_control(i)) < _thrust_sp) {
-				float rate_i = _rates_int(i) + _params.rate_i(i) * rates_err(i) * dt;
+			if (fabsf(_att_control(i)) < _thrust_sp) { // 姿态控制量 小于 推力设定值
+				float rate_i = _rates_int(i) + _params.rate_i(i) * rates_err(i) * dt;  // 积分控制器
 
 				if (PX4_ISFINITE(rate_i) && rate_i > -RATES_I_LIMIT && rate_i < RATES_I_LIMIT &&
 				    _att_control(i) > -RATES_I_LIMIT && _att_control(i) < RATES_I_LIMIT &&
 				    /* if the axis is the yaw axis, do not update the integral if the limit is hit */
+  			          // 如果Z轴是旋转轴，并且已经达到了偏航的上限，则不更新
 				    !((i == AXIS_INDEX_YAW) && _motor_limits.yaw)) {
 					_rates_int(i) = rate_i;
 				}
@@ -932,6 +959,7 @@ MulticopterAttitudeControl::task_main()
 				if (_ts_opt_recovery == nullptr) {
 					// the  tailsitter recovery instance has not been created, thus, the vehicle
 					// is not a tailsitter, do normal attitude control
+////////////////////// 姿态控制环 //////////////////////
 					control_attitude(dt);
 
 				} else {
@@ -968,6 +996,7 @@ MulticopterAttitudeControl::task_main()
 				/* attitude controller disabled, poll rates setpoint topic */
 				if (_v_control_mode.flag_control_manual_enabled) {
 					/* manual rates control - ACRO mode */
+					// 手动角速度控制模式  -> 特技模式
 					_rates_sp = math::Vector<3>(_manual_control_sp.y, -_manual_control_sp.x,
 								    _manual_control_sp.r).emult(_params.acro_rate_max);
 					_thrust_sp = math::min(_manual_control_sp.z, MANUAL_THROTTLE_MAX_MULTICOPTER);
@@ -997,8 +1026,8 @@ MulticopterAttitudeControl::task_main()
 			}
 
 			if (_v_control_mode.flag_control_rates_enabled) {
+//////////////////////////  角速率控制模式  ////////////////
 				control_attitude_rates(dt);
-
 				/* publish actuator controls */
 				_actuators.control[0] = (PX4_ISFINITE(_att_control(0))) ? _att_control(0) : 0.0f;
 				_actuators.control[1] = (PX4_ISFINITE(_att_control(1))) ? _att_control(1) : 0.0f;

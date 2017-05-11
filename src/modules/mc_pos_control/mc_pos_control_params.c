@@ -193,9 +193,11 @@ PARAM_DEFINE_FLOAT(MPC_Z_VEL_D, 0.0f);
 
 /**
  * Maximum vertical ascent velocity
+ * 最大上升速度
  *
  * Maximum vertical velocity in AUTO mode and endpoint for stabilized modes (ALTCTRL, POSCTRL).
- *
+ * AUTO模式下的最大垂直速度，稳定模式的终点 (ALTCTRL，POSCTRL)
+ * 
  * @unit m/s
  * @min 0.5
  * @max 8.0

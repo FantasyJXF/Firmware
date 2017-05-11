@@ -923,6 +923,10 @@ void BlockLocalPositionEstimator::updateSSStates()
 	 */
 	// i_e、j_e、k_e是机体系三轴向量在地理系中的表示
 	// I_b、J_b、K_b是地理系三轴向量在机体系中的表示
+	//
+	//  加速度计模型 a = R^T * ( v_dot - g) + a_b
+	// 低频状态下 v_dot远小于g
+	// va = - R^T * e
 	_A(X_vx, X_bx) = -_R_att(0, 0); // I_b
 	_A(X_vx, X_by) = -_R_att(0, 1);
 	_A(X_vx, X_bz) = -_R_att(0, 2);
