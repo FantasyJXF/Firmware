@@ -80,7 +80,7 @@ float BlockLowPass::update(float input)
 
 	float b = 2 * float(M_PI) * getFCut() * getDt();
 	float a = b / (1 + b);
-	setState(a * input + (1 - a)*getState());
+	setState(a * input + (1 - a)*getState()); // 低通滤波
 	return getState();
 }
 
@@ -118,6 +118,7 @@ float BlockIntegral::update(float input)
 float BlockIntegralTrap::update(float input)
 {
 	// trapezoidal integration
+	// 梯形积分
 	setY(_limit.update(getY() +
 			   (getU() + input) / 2.0f * getDt()));
 	setU(input);
@@ -129,7 +130,7 @@ float BlockDerivative::update(float input)
 	float output;
 
 	if (_initialized) {
-		output = _lowPass.update((input - getU()) / getDt());
+		output = _lowPass.update((input - getU()) / getDt()); // (当前速度 - 前一刻速度) / dt
 
 	} else {
 		// if this is the first call to update

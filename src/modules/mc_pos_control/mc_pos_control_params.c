@@ -363,6 +363,7 @@ PARAM_DEFINE_FLOAT(MPC_LAND_SPEED, 0.5f);
 
 /**
  * Takeoff climb rate
+ * 起飞爬升速度
  *
  * @unit m/s
  * @min 1
@@ -462,11 +463,12 @@ PARAM_DEFINE_FLOAT(MPC_ACC_HOR_MAX, 5.0f);
 
 /**
  * Altitude control mode, note mode 1 only tested with LPE
+ * 高度控制模式，mode 1仅用于测试LPE
  *
  * @min 0
  * @max 1
- * @value 0 Altitude following
- * @value 1 Terrain following
- * @group Multicopter Position Control
+ * @value 0 Altitude following  高度跟随
+ * @value 1 Terrain following   地形跟随
+ * @group Multicopter Position Control 
  */
 PARAM_DEFINE_INT32(MPC_ALT_MODE, 0);

@@ -304,7 +304,7 @@ private:
 
 	/**
 	 * Update reference for local position projection
-	 * 更新参考用于本地位置投影
+	 * 更新本地位置投影参考点
 	 */
 	void		update_ref();
 	/**
@@ -595,6 +595,7 @@ MulticopterPositionControl::parameters_update(bool force)
 		_params.vel_cruise(0) = v;
 		_params.vel_cruise(1) = v;
 		/* using Z max up for now */
+		// 目前垂直方向最大上升速度
 		param_get(_params_handles.z_vel_max_up, &v);
 		_params.vel_cruise(2) = v;
 		param_get(_params_handles.xy_ff, &v);
@@ -616,6 +617,7 @@ MulticopterPositionControl::parameters_update(bool force)
 		/*
 		 * increase the maximum horizontal acceleration such that stopping
 		 * within 1 s from full speed is feasible
+		 * 增加最大水平加速度，使得在全速下1秒内停止是可行的
 		 */
 		_params.acc_hor_max = math::max(_params.vel_cruise(0), _params.acc_hor_max);
 		param_get(_params_handles.alt_mode, &v_i);
@@ -625,10 +627,12 @@ MulticopterPositionControl::parameters_update(bool force)
 		param_get(_params_handles.opt_recover, &i);
 		_params.opt_recover = i;
 
-		_params.sp_offs_max = _params.vel_cruise.edivide(_params.pos_p) * 2.0f;
-
+		_params.sp_offs_max = _params.vel_cruise.edivide(_params.pos_p) * 2.0f; // 设定值最大偏移量
+		
 		/* mc attitude control parameters*/
+		// 姿态控制参数 
 		/* manual control scale */
+		// 手动控制缩放值
 		param_get(_params_handles.man_roll_max, &_params.man_roll_max);
 		param_get(_params_handles.man_pitch_max, &_params.man_pitch_max);
 		param_get(_params_handles.man_yaw_max, &_params.man_yaw_max);
@@ -642,6 +646,7 @@ MulticopterPositionControl::parameters_update(bool force)
 		_params.mc_att_yaw_p = v;
 
 		/* takeoff and land velocities should not exceed maximum */
+		// 起飞与着陆速度 不应该超过最大值
 		_params.tko_speed = fminf(_params.tko_speed, _params.vel_max_up);
 		_params.land_speed = fminf(_params.land_speed, _params.vel_max_down);
 	}
@@ -738,6 +743,8 @@ MulticopterPositionControl::poll_subscriptions()
 		// states which were reset. In auto mode we do not shift the setpoints
 		// since we want the vehicle to track the original state.
 		// 检查复位事件是否发生
+		// 如果飞行器处于手动模式，我们将转移复位状态的设定值；
+		// 自动模式下，我们不会转移设定值，因为需要飞行器去追踪原始状态
 		if (_control_mode.flag_control_manual_enabled) {
 			if (_z_reset_counter != _local_pos.z_reset_counter) {
 				_pos_sp(2) += _local_pos.delta_z;
@@ -812,16 +819,21 @@ MulticopterPositionControl::update_ref()
 
 		if (_ref_timestamp != 0) {
 			/* calculate current position setpoint in global frame */
-			map_projection_reproject(&_ref_pos, _pos_sp(0), _pos_sp(1), &lat_sp, &lon_sp);
-			alt_sp = _ref_alt - _pos_sp(2);
+			// 计算全球坐标系中的当前位置设定值
+			// 将 X Y轴的长度换算为经纬度值
+			map_projection_reproject(&_ref_pos, _pos_sp(0), _pos_sp(1), &lat_sp, &lon_sp); // 设定值由poll更新而来
+			alt_sp = _ref_alt - _pos_sp(2); // 由于z轴向下，这样用z方向的设定值减去高度参考值正好得到飞机的高度设定值
 		}
 
 		/* update local projection reference */
-		map_projection_init(&_ref_pos, _local_pos.ref_lat, _local_pos.ref_lon);
+		// 更新本地投影参考
+		map_projection_init(&_ref_pos, _local_pos.ref_lat, _local_pos.ref_lon); // 初始化参考点_ref_pos的经纬度信息
 		_ref_alt = _local_pos.ref_alt;
 
 		if (_ref_timestamp != 0) {
 			/* reproject position setpoint to new reference */
+			// 重新位置设定值为新的参考值
+			// 将经纬度值换算成x y方向上的长度
 			map_projection_project(&_ref_pos, lat_sp, lon_sp, &_pos_sp.data[0], &_pos_sp.data[1]);
 			_pos_sp(2) = -(alt_sp - _ref_alt);
 		}
@@ -1337,7 +1349,7 @@ MulticopterPositionControl::task_main()
 	_local_pos_sp_sub = orb_subscribe(ORB_ID(vehicle_local_position_setpoint));
 	_global_vel_sp_sub = orb_subscribe(ORB_ID(vehicle_global_velocity_setpoint));
 
-
+//////////////  初始参数更新 强制更新  ////////////////
 	parameters_update(true);
 
 	/* initialize values of critical structs until first regular update */
@@ -1349,6 +1361,7 @@ MulticopterPositionControl::task_main()
 	poll_subscriptions();
 
 	/* We really need to know from the beginning if we're landed or in-air. */
+	// 已着陆还是在空中
 	orb_copy(ORB_ID(vehicle_land_detected), _vehicle_land_detected_sub, &_vehicle_land_detected);
 
 	bool reset_int_z = true;
@@ -1363,13 +1376,14 @@ MulticopterPositionControl::task_main()
 	thrust_int.zero();
 
 	// Let's be safe and have the landing gear down by default
-	_att_sp.landing_gear = -1.0f;
+	_att_sp.landing_gear = -1.0f; // 放下起落架
 
 
 	matrix::Dcmf R;
 	R.identity();
 
 	/* wakeup source */
+	// 唤醒源
 	px4_pollfd_struct_t fds[1];
 
 	fds[0].fd = _local_pos_sub;
@@ -1390,18 +1404,19 @@ MulticopterPositionControl::task_main()
 			continue;
 		}
 
-		poll_subscriptions();
+		poll_subscriptions(); // 查询订阅更新
 
+///////////////////////// 仅当有数据更新时才读取 ////////////
 		parameters_update(false);
 
 		hrt_abstime t = hrt_absolute_time();
-		float dt = t_prev != 0 ? (t - t_prev) * 0.000001f : 0.0f;
+		float dt = t_prev != 0 ? (t - t_prev) * 0.000001f : 0.0f; // 单位为 秒 s
 		t_prev = t;
 
 		// set dt for control blocks
 		setDt(dt);
 
-		if (_control_mode.flag_armed && !was_armed) {
+		if (_control_mode.flag_armed && !was_armed) { // 已解锁
 			/* reset setpoints and integrals on arming */
 			_reset_pos_sp = true;
 			_reset_alt_sp = true;
@@ -1420,14 +1435,16 @@ MulticopterPositionControl::task_main()
 			}
 		}
 
-		//Update previous arming state
+		// Update previous arming state
 		was_armed = _control_mode.flag_armed;
 
+		// 更新参考点的位置
 		update_ref();
 
 		/* Update velocity derivative,
 		 * independent of the current flight mode
 		 */
+		 // 更新速度微分，独立于当前的飞行模式
 		if (_local_pos.timestamp > 0) {
 
 			if (PX4_ISFINITE(_local_pos.x) &&
@@ -1437,7 +1454,7 @@ MulticopterPositionControl::task_main()
 				_pos(0) = _local_pos.x;
 				_pos(1) = _local_pos.y;
 
-				if (_params.alt_mode == 1 && _local_pos.dist_bottom_valid) {
+				if (_params.alt_mode == 1 && _local_pos.dist_bottom_valid) { // mode - 1 仅用于LPE 地形跟随
 					_pos(2) = -_local_pos.dist_bottom;
 
 				} else {
@@ -1467,6 +1484,7 @@ MulticopterPositionControl::task_main()
 
 		// reset the horizontal and vertical position hold flags for non-manual modes
 		// or if position / altitude is not controlled
+		// 重置非手动模式的水平和垂直位置保持标志，或者不控制位置/高度
 		if (!_control_mode.flag_control_position_enabled || !_control_mode.flag_control_manual_enabled) {
 			_pos_hold_engaged = false;
 		}
@@ -1485,39 +1503,48 @@ MulticopterPositionControl::task_main()
 
 			/* by default, run position/altitude controller. the control_* functions
 			 * can disable this and run velocity controllers directly in this cycle */
+			 // 默认情况下，运行位置/高度控制器
+			 // control_*函数可以禁用此项并直接在这个循环中运行速度控制器
 			_run_pos_control = true;
 			_run_alt_control = true;
 
 			/* select control source */
+			// 选择控制源
 			if (_control_mode.flag_control_manual_enabled) {
 				/* manual control */
+//////////////// 手动控制模式
 				control_manual(dt);
 
 			} else if (_control_mode.flag_control_offboard_enabled) {
 				/* offboard control */
+//////////////// 外部控制模式
 				control_offboard(dt);
 				_mode_auto = false;
 
 			} else {
 				/* AUTO */
+///////////////  自控模式
 				control_auto(dt);
 			}
 
 			/* weather-vane mode for vtol: disable yaw control */
+			// VTOL的风向标模式:禁用偏航控制
 			if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.disable_mc_yaw_control == true) {
 				_att_sp.disable_mc_yaw_control = true;
 
 			} else {
 				/* reset in case of setpoint updates */
+				// 复位以防设定值更新
 				_att_sp.disable_mc_yaw_control = false;
 			}
 
 			if (!_control_mode.flag_control_manual_enabled && _pos_sp_triplet.current.valid
-			    && _pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_IDLE) {
+			    && _pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_IDLE) { 
+			    	 //不要做任何事情，关闭电机或保持怠速
 				/* idle state, don't run controller and set zero thrust */
 				R.identity();
 				matrix::Quatf qd = R;
-				memcpy(&_att_sp.q_d[0], qd.data(), sizeof(_att_sp.q_d));
+				memcpy(&_att_sp.q_d[0], qd.data(), sizeof(_att_sp.q_d)); // q_d : 用于四元数控制的期望四元数
 				_att_sp.q_d_valid = true;
 
 				_att_sp.roll_body = 0.0f;
@@ -1528,6 +1555,7 @@ MulticopterPositionControl::task_main()
 				_att_sp.timestamp = hrt_absolute_time();
 
 				/* publish attitude setpoint */
+///////////////// 发布姿态设定值
 				if (_att_sp_pub != nullptr) {
 					orb_publish(_attitude_setpoint_id, _att_sp_pub, &_att_sp);
 
@@ -1555,6 +1583,7 @@ MulticopterPositionControl::task_main()
 				_att_sp.timestamp = hrt_absolute_time();
 
 				/* publish attitude setpoint */
+///////////////// 发布姿态设定值
 				if (_att_sp_pub != nullptr) {
 					orb_publish(_attitude_setpoint_id, _att_sp_pub, &_att_sp);
 
@@ -1564,6 +1593,7 @@ MulticopterPositionControl::task_main()
 
 			} else {
 				/* run position & altitude controllers, if enabled (otherwise use already computed velocity setpoints) */
+				// 运行位置&高度控制器，如果使能(否则使用已经计算好的速度设定值)
 				if (_run_pos_control) {
 					_vel_sp(0) = (_pos_sp(0) - _pos(0)) * _params.pos_p(0);
 					_vel_sp(1) = (_pos_sp(1) - _pos(1)) * _params.pos_p(1);
@@ -1576,7 +1606,7 @@ MulticopterPositionControl::task_main()
 						      _pos_sp_triplet.current.velocity_valid;
 
 				// do not go slower than the follow target velocity when position tracking is active (set to valid)
-
+				// 当位置跟踪激活时，不要慢于跟随目标速度（设置为有效）
 				if (_pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_FOLLOW_TARGET &&
 				    velocity_valid &&
 				    _pos_sp_triplet.current.position_valid) {
@@ -1587,10 +1617,11 @@ MulticopterPositionControl::task_main()
 
 					// only override velocity set points when uav is traveling in same direction as target and vector component
 					// is greater than calculated position set point velocity component
-
+					// 只有当uav沿着与目标相同的方向行进并且矢量分量大于计算的位置设定点速度分量时，才能覆盖速度设定点
 					if (cos_ratio > 0) {
 						ft_vel *= (cos_ratio);
 						// min speed a little faster than target vel
+						// 最小速度高于目标速度
 						ft_vel += ft_vel.normalized() * 1.5f;
 
 					} else {

@@ -32,6 +32,7 @@ uint8 vz_reset_counter
 float32 yaw				# Euler yaw angle transforming the tangent plane relative to NED earth-fixed frame, -PI..+PI,  (radians) 
 
 # Position of reference point (local NED frame origin) in global (GPS / WGS84) frame
+# 参考点(本地坐标系原点)在全球坐标系的位置
 bool xy_global				# true if position (x, y) is valid and has valid global reference (ref_lat, ref_lon)
 bool z_global				# true if z is valid and has valid global reference (ref_alt)
 uint64 ref_timestamp			# Time when reference position was set since system start, (microseconds)
