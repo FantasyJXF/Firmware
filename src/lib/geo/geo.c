@@ -172,6 +172,7 @@ __EXPORT int map_projection_global_reproject(float x, float y, double *lat, doub
 	return map_projection_reproject(&mp_ref, x, y, lat, lon);
 }
 
+// XY方向上的位移转换成精纬度
 __EXPORT int map_projection_reproject(const struct map_projection_reference_s *ref, float x, float y, double *lat,
 				      double *lon)
 {
