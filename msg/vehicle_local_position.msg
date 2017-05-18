@@ -11,6 +11,7 @@ float32 y				# East position in NED earth-fixed frame, (metres)
 float32 z				# Down position (negative altitude) in NED earth-fixed frame, (metres)
 
 # Position reset delta
+# 位置复位增量
 float32[2] delta_xy
 float32 delta_z
 
@@ -36,7 +37,7 @@ float32 yaw				# Euler yaw angle transforming the tangent plane relative to NED 
 bool xy_global				# true if position (x, y) is valid and has valid global reference (ref_lat, ref_lon)
 bool z_global				# true if z is valid and has valid global reference (ref_alt)
 uint64 ref_timestamp			# Time when reference position was set since system start, (microseconds)
-float64 ref_lat				# Reference point latitude, (degrees)
+float64 ref_lat				# Reference point latitude, (degrees)  经纬度单位为度数 (需要转换成弧度)
 float64 ref_lon				# Reference point longitude, (degrees)
 float32 ref_alt				# Reference altitude AMSL, MUST be set to current (not at reference point!) ground level, (metres)
 

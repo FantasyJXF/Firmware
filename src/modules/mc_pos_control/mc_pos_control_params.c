@@ -357,6 +357,7 @@ PARAM_DEFINE_FLOAT(MPC_TILTMAX_AIR, 45.0f);
 
 /**
  * Maximum tilt during landing
+ * 着陆过程中的最大倾斜角
  *
  * Limits maximum tilt angle on landing.
  *
