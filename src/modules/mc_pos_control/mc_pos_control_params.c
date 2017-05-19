@@ -54,13 +54,18 @@ PARAM_DEFINE_FLOAT(MPC_THR_MIN, 0.12f);
 
 /**
  * Hover thrust
+ * 悬停推力
  *
  * Vertical thrust required to hover.
+ * 悬停所需的垂直推力
  * This value is mapped to center stick for manual throttle control.
  * With this value set to the thrust required to hover, transition
  * from manual to ALTCTL mode while hovering will occur with the
  * throttle stick near center, which is then interpreted as (near)
  * zero demand for vertical speed.
+ * 该值映射到手动油门控制杆的中心。
+ * 将该值设置为悬停所需的推力，当悬停时会随着油门杆靠近中心而发生从手动转换到ALTCTL模式，
+ * 其解释为对垂直速度的（零）需求。
  *
  * @unit norm
  * @min 0.2
