@@ -378,8 +378,10 @@ PARAM_DEFINE_FLOAT(MC_RATT_TH, 1.0f);
 
 /**
  * Threshold for Throttle PID Attenuation (TPA)
+ * 油门PID的衰减阈值
  *
  * Magnitude of throttle setpoint at which to begin attenuating roll/pitch P gain
+ * 油门设定值的大小，从此处开始衰减roll/pitch的增益
  *
  * @min 0.0
  * @max 1.0
@@ -391,10 +393,14 @@ PARAM_DEFINE_FLOAT(MC_TPA_BREAK, 1.0f);
 
 /**
  * Slope for Throttle PID Attenuation (TPA)
+ * 油门PID的衰减斜率
  *
  * Rate at which to attenuate roll/pitch P gain
  * Attenuation factor is 1.0 when throttle magnitude is below the setpoint
  * Above the setpoint, the attenuation factor is (1 - slope*(abs(throttle)-breakpoint))
+ * P增益衰减的速率
+ * 当油门大小低于设定值时，衰减因子为1.0
+ * 油门大小高度设定值时，衰减因子以此式计算(1 - slope*(abs(throttle)-breakpoint))
  *
  * @min 0.0
  * @max 2.0

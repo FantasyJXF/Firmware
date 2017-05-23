@@ -612,6 +612,7 @@ bool AttitudeEstimatorQ::init()
 	_q.from_dcm(R);
 
 	// Compensate for magnetic declination
+	// 补偿地磁偏移
 	Quaternion decl_rotation;
 	decl_rotation.from_yaw(_mag_decl);
 	_q = decl_rotation * _q;
@@ -670,6 +671,7 @@ bool AttitudeEstimatorQ::update(float dt)
 	if (_ext_hdg_mode == 0  || !_ext_hdg_good) {
 		// Magnetometer correction
 		// Project mag field vector to global frame and extract XY component
+		// 将磁场向量投影到全球坐标系并提取XY轴上的分量
 		Vector<3> mag_earth = _q.conjugate(_mag);
 		float mag_err = _wrap_pi(atan2f(mag_earth(1), mag_earth(0)) - _mag_decl);
 		float gainMult = 1.0f;

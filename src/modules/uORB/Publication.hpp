@@ -165,6 +165,7 @@ public:
 
 	/**
 	 * Create an update function that uses the embedded struct.
+	 * 创建使用嵌入结构体的更新函数
 	 */
 	void update()
 	{

@@ -43,6 +43,7 @@ void BlockLocalPositionEstimator::flowDeinit()
 int BlockLocalPositionEstimator::flowMeasure(Vector<float, n_y_flow> &y)
 {
 	// check for sane pitch/roll
+	// 检查健康的 pitch/roll
 	if (_eul(0) > 0.5f || _eul(1) > 0.5f) {
 		return -1;
 	}
@@ -66,11 +67,12 @@ int BlockLocalPositionEstimator::flowMeasure(Vector<float, n_y_flow> &y)
 
 	matrix::Eulerf euler = matrix::Quatf(_sub_att.get().q);
 
-	float d = agl() * cosf(euler.phi()) * cosf(euler.theta());
+	float d = agl() * cosf(euler.phi()) * cosf(euler.theta()); // 计算对地距离
 
 	// optical flow in x, y axis
 	// TODO consider making flow scale a states of the kalman filter
-	float flow_x_rad = _sub_flow.get().pixel_flow_x_integral * _flow_scale.get();
+	// 考虑使用光流缩放卡尔曼滤波器的状态
+	float flow_x_rad = _sub_flow.get().pixel_flow_x_integral * _flow_scale.get(); // 1.3 * 绕x轴转动角度   单位弧度
 	float flow_y_rad = _sub_flow.get().pixel_flow_y_integral * _flow_scale.get();
 	float dt_flow = _sub_flow.get().integration_timespan / 1.0e6f;
 
@@ -79,6 +81,7 @@ int BlockLocalPositionEstimator::flowMeasure(Vector<float, n_y_flow> &y)
 	}
 
 	// angular rotation in x, y axis
+	// X Y轴的角旋转
 	float gyro_x_rad = 0;
 	float gyro_y_rad = 0;
 
@@ -94,6 +97,9 @@ int BlockLocalPositionEstimator::flowMeasure(Vector<float, n_y_flow> &y)
 
 	// compute velocities in camera frame using ground distance
 	// assume camera frame is body frame
+	// 使用离地面的距离计算相机坐标系的速度
+	// 陀螺仪的角度补偿光流角度
+	// 小角度假设   sin(theta) = theta ?
 	Vector3f delta_b(
 		-(flow_x_rad - gyro_x_rad)*d,
 		-(flow_y_rad - gyro_y_rad)*d,
@@ -106,7 +112,7 @@ int BlockLocalPositionEstimator::flowMeasure(Vector<float, n_y_flow> &y)
 	_time_last_flow = _timeStamp;
 
 	// measurement
-	y(Y_flow_vx) = delta_n(0) / dt_flow;
+	y(Y_flow_vx) = delta_n(0) / dt_flow; // 光流测得的速度
 	y(Y_flow_vy) = delta_n(1) / dt_flow;
 
 	_flowQStats.update(Scalarf(_sub_flow.get().quality));
@@ -119,7 +125,7 @@ void BlockLocalPositionEstimator::flowCorrect()
 	// measure flow
 	Vector<float, n_y_flow> y;
 
-	if (flowMeasure(y) != OK) { return; }
+	if (flowMeasure(y) != OK) { return; } // 光流测速 水平方向  xy 
 
 	// flow measurement matrix and noise matrix
 	Matrix<float, n_y_flow, n_x> C;
@@ -131,10 +137,12 @@ void BlockLocalPositionEstimator::flowCorrect()
 	R.setZero();
 
 	// polynomial noise model, found using least squares fit
+	// 多项式噪声模型，使用最小二乘法拟合
 	// h, h**2, v, v*h, v*h**2
 	const float p[5] = {0.04005232f, -0.00656446f, -0.26265873f,  0.13686658f, -0.00397357f};
 
 	// prevent extrapolation past end of polynomial fit by bounding independent variables
+	// 通过界定自变量防止外推多项式拟合的结束
 	float h = agl();
 	float v = y.norm();
 	const float h_min = 2.0f;
@@ -159,6 +167,7 @@ void BlockLocalPositionEstimator::flowCorrect()
 	}
 
 	// compute polynomial value
+	// 计算多项式的值    光流水平速度标准差
 	float flow_vxy_stddev = p[0] * h + p[1] * h * h + p[2] * v + p[3] * v * h + p[4] * v * h * h;
 
 	R(Y_flow_vx, Y_flow_vx) = flow_vxy_stddev * flow_vxy_stddev;

@@ -18,9 +18,9 @@ static const uint32_t 		EST_STDDEV_TZ_VALID = 2.0; // 2.0 m
 static const bool integrate = true; // use accel for integrating
 
 static const float P_MAX = 1.0e6f; // max allowed value in state covariance
-static const float LAND_RATE = 10.0f; // rate of land detector correction
+static const float LAND_RATE = 10.0f; // rate of land detector correction 着陆检测器校正速率
 
-BlockLocalPositionEstimator::BlockLocalPositionEstimator() :
+BlockLocalPositionEstimator::BlockLocalPositionEstimator() : // 一般构造函数
 	// this block has no parent, and has name LPE
 	SuperBlock(NULL, "LPE"),
 	// subscriptions, set rate, add to list
@@ -28,10 +28,13 @@ BlockLocalPositionEstimator::BlockLocalPositionEstimator() :
 	_sub_land(ORB_ID(vehicle_land_detected), 1000 / 2, 0, &getSubscriptions()),
 	_sub_att(ORB_ID(vehicle_attitude), 1000 / 100, 0, &getSubscriptions()),
 	// set flow max update rate higher than expected to we don't lose packets
+	// 设置光流的最大更新速率高于期望值，避免丢包
 	_sub_flow(ORB_ID(optical_flow), 1000 / 100, 0, &getSubscriptions()),
 	// main prediction loop, 100 hz
+	// 主预测环 100Hz
 	_sub_sensor(ORB_ID(sensor_combined), 1000 / 100, 0, &getSubscriptions()),
 	// status updates 2 hz
+	// 状态更新2Hz
 	_sub_param_update(ORB_ID(parameter_update), 1000 / 2, 0, &getSubscriptions()),
 	_sub_manual(ORB_ID(manual_control_setpoint), 1000 / 2, 0, &getSubscriptions()),
 	// gps 10 hz
@@ -113,7 +116,7 @@ BlockLocalPositionEstimator::BlockLocalPositionEstimator() :
 	_gpsStats(this, ""),
 
 	// low pass
-	_xLowPass(this, "X_LP"),
+	_xLowPass(this, "X_LP"), // 状态发布的截止频率
 	// use same lp constant for agl
 	_aglLowPass(this, "X_LP"),
 
@@ -180,6 +183,7 @@ BlockLocalPositionEstimator::BlockLocalPositionEstimator() :
 	_err_perf(),
 
 	// kf matrices
+	// 卡尔曼滤波器的几个矩阵
 	_x(), _u(), _P(), _R_att(), _eul()
 {
 	// assign distance subs to array
@@ -189,16 +193,18 @@ BlockLocalPositionEstimator::BlockLocalPositionEstimator() :
 	_dist_subs[3] = &_sub_dist3;
 
 	// setup event triggering based on new flow messages to integrate
-	_polls[POLL_FLOW].fd = _sub_flow.getHandle();
+	// 基于要积分的新的光流消息设置事件触发
+	_polls[POLL_FLOW].fd = _sub_flow.getHandle();   // fd[0] 为感兴趣的光流数据
 	_polls[POLL_FLOW].events = POLLIN;
 
-	_polls[POLL_PARAM].fd = _sub_param_update.getHandle();
+	_polls[POLL_PARAM].fd = _sub_param_update.getHandle();  // fd[1]为感兴趣的参数更新
 	_polls[POLL_PARAM].events = POLLIN;
 
-	_polls[POLL_SENSORS].fd = _sub_sensor.getHandle();
+	_polls[POLL_SENSORS].fd = _sub_sensor.getHandle();   // fd[2]为感兴趣的传感器数据
 	_polls[POLL_SENSORS].events = POLLIN;
 
 	// initialize A, B,  P, x, u
+////////////////  初始化	
 	_x.setZero();
 	_u.setZero();
 	initSS();
@@ -214,6 +220,7 @@ BlockLocalPositionEstimator::BlockLocalPositionEstimator() :
 	_map_ref.init_done = false;
 
 	// intialize parameter dependent matrices
+	// 初始化参数依赖矩阵
 	updateParams();
 }
 
@@ -233,6 +240,7 @@ void BlockLocalPositionEstimator::update()
 {
 
 	// wait for a sensor update, check for exit condition every 100 ms
+	// 等待传感器更新
 	int ret = px4_poll(_polls, 3, 100);
 
 	if (ret < 0) {
@@ -249,17 +257,20 @@ void BlockLocalPositionEstimator::update()
 	setDt(dt);
 
 	// auto-detect connected rangefinders while not armed
+	// 未解锁时自动检测已连接的测距仪
 	bool armedState = _sub_armed.get().armed;
 
 	if (!armedState && (_sub_lidar == NULL || _sub_sonar == NULL)) {
-		detectDistanceSensors();
+		detectDistanceSensors(); // 检测是什么测距仪 并 更新距离
 	}
 
 	// reset pos, vel, and terrain on arming
+	// 解锁时重置位置、速度、海拔高度
 
 	// XXX this will be re-enabled for indoor use cases using a
 	// selection param, but is really not helping outdoors
 	// right now.
+	// 下列被注释的内容将使用参数选择重新用于室内飞行
 
 	// if (!_lastArmedState && armedState) {
 
@@ -284,9 +295,10 @@ void BlockLocalPositionEstimator::update()
 	_lastArmedState = armedState;
 
 	// see which updates are available
+	// 检查可用更新
 	bool flowUpdated = _sub_flow.updated();
 	bool paramsUpdated = _sub_param_update.updated();
-	bool baroUpdated = _sub_sensor.updated();
+	bool baroUpdated = _sub_sensor.updated(); // sensor_combined
 	bool gpsUpdated = _gps_on.get() && _sub_gps.updated();
 	bool visionUpdated = _vision_on.get() && _sub_vision_pos.updated();
 	bool mocapUpdated = _sub_mocap.updated();
@@ -299,12 +311,14 @@ void BlockLocalPositionEstimator::update()
 				   && ((_timeStamp - _time_last_land) > 1.0e6f / LAND_RATE));
 
 	// get new data
+	// 获取新数据
 	updateSubscriptions();
 
 	// update parameters
+	// 更新参数
 	if (paramsUpdated) {
 		updateParams();
-		updateSSParams();
+		updateSSParams(); // 更新噪声矩阵
 	}
 
 	// is xy valid?
@@ -316,6 +330,7 @@ void BlockLocalPositionEstimator::update()
 
 	if (_validXY) {
 		// if valid and gps has timed out, set to not valid
+		// 如果其有效，而且GPS超时了，那么还是设置其无效
 		if (!vxy_stddev_ok && !_gpsInitialized) {
 			_validXY = false;
 		}
@@ -323,16 +338,17 @@ void BlockLocalPositionEstimator::update()
 	} else {
 		if (vxy_stddev_ok) {
 			if (_flowInitialized || _gpsInitialized || _visionInitialized || _mocapInitialized) {
-				_validXY = true;
+				_validXY = true; // 各种设备初始化完成，设置 XY位置有效
 			}
 		}
 	}
 
 	// is z valid?
-	bool z_stddev_ok = sqrtf(_P(X_z, X_z)) < _z_pub_thresh.get();
+	bool z_stddev_ok = sqrtf(_P(X_z, X_z)) < _z_pub_thresh.get(); // 标准差在阈值内
 
 	if (_validZ) {
 		// if valid and baro has timed out, set to not valid
+		// Z有效，但是气压计超时，设置为无效
 		if (!z_stddev_ok && !_baroInitialized) {
 			_validZ = false;
 		}
@@ -371,9 +387,11 @@ void BlockLocalPositionEstimator::update()
 	}
 
 	// check timeouts
+	// 检测位置估计以及各种传感器是否超时
 	checkTimeouts();
 
 	// if we have no lat, lon initialize projection at 0,0
+	// GPS无效，初始化原点投影在 0,0
 	if (_validXY && !_map_ref.init_done) {
 		map_projection_init(&_map_ref,
 				    _init_origin_lat.get(),
@@ -381,12 +399,14 @@ void BlockLocalPositionEstimator::update()
 	}
 
 	// reinitialize x if necessary
+	// 必要时重新初始化x
 	bool reinit_x = false;
 
 	for (int i = 0; i < n_x; i++) {
 		// should we do a reinit
 		// of sensors here?
 		// don't want it to take too long
+		// 是否应该在这里重新初始化传感器
 		if (!PX4_ISFINITE(_x(i))) {
 			reinit_x = true;
 			mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] reinit x, x(%d) not finite", i);
@@ -403,6 +423,7 @@ void BlockLocalPositionEstimator::update()
 	}
 
 	// force P symmetry and reinitialize P if necessary
+	// 强制P对称，必要时重新初始化P
 	bool reinit_P = false;
 
 	for (int i = 0; i < n_x; i++) {
@@ -415,6 +436,7 @@ void BlockLocalPositionEstimator::update()
 
 			if (i == j) {
 				// make sure diagonal elements are positive
+				// 确保对角线元素为正
 				if (_P(i, i) <= 0) {
 					mavlink_and_console_log_info(&mavlink_log_pub,
 								     "[lpe] reinit P (%d, %d) negative", i, j);
@@ -422,8 +444,8 @@ void BlockLocalPositionEstimator::update()
 				}
 
 			} else {
-				// copy elememnt from upper triangle to force
-				// symmetry
+				// copy elememnt from upper triangle to force symmetry
+				// 从上三角形复制元素以强制对称
 				_P(j, i) = _P(i, j);
 			}
 
@@ -438,15 +460,17 @@ void BlockLocalPositionEstimator::update()
 	}
 
 	// do prediction
-	predict();
+	// EKF的预测阶段
+	predict(); // 模型预测
 
 	// sensor corrections/ initializations
+////////////// 传感器校正/初始化///////////
 	if (gpsUpdated) {
 		if (!_gpsInitialized) {
-			gpsInit();
+			gpsInit(); // GPS初始化/测量
 
 		} else {
-			gpsCorrect();
+			gpsCorrect(); // GPS测量/校正   EKF的校正阶段
 		}
 	}
 
@@ -518,12 +542,13 @@ void BlockLocalPositionEstimator::update()
 
 	if (_altOriginInitialized) {
 		// update all publications if possible
-		publishLocalPos();
-		publishEstimatorStatus();
-		_pub_innov.update();
+		// 更新所有的发布
+		publishLocalPos(); // 发布位置
+		publishEstimatorStatus(); // 发布估计状态
+		_pub_innov.update(); // 发布EKF2的新息 ??
 
 		if (_validXY) {
-			publishGlobalPos();
+			publishGlobalPos(); // 发布全球位置信息
 		}
 	}
 
@@ -534,7 +559,7 @@ void BlockLocalPositionEstimator::update()
 
 	if (_time_last_hist == 0 ||
 	    (dt_hist > HIST_STEP)) {
-		_tDelay.update(Scalar<uint64_t>(_timeStamp));
+		_tDelay.update(Scalar<uint64_t>(_timeStamp)); // 更新滞后时间
 		_xDelay.update(_x);
 		_time_last_hist = _timeStamp;
 	}
@@ -575,6 +600,7 @@ void BlockLocalPositionEstimator::checkTimeouts()
 		_tzTimeout = false;
 	}
 
+	// 各种设备的超时阈值不同，因此分开进行检测
 	lidarCheckTimeout();
 	sonarCheckTimeout();
 	baroCheckTimeout();
@@ -592,7 +618,7 @@ float BlockLocalPositionEstimator::agl()
 void BlockLocalPositionEstimator::correctionLogic(Vector<float, n_x> &dx)
 {
 	// don't correct bias when rotating rapidly
-	float ang_speed = sqrtf(
+	float ang_speed = sqrtf( // 计算角速度 sqrt(phi^2 + theta^2 + psi^2)
 				  _sub_att.get().rollspeed * _sub_att.get().rollspeed +
 				  _sub_att.get().pitchspeed * _sub_att.get().pitchspeed +
 				  _sub_att.get().yawspeed * _sub_att.get().yawspeed);
@@ -604,6 +630,7 @@ void BlockLocalPositionEstimator::correctionLogic(Vector<float, n_x> &dx)
 	}
 
 	// if xy not valid, stop estimating
+	// 水平位置无效，停止估计
 	if (!_validXY) {
 		dx(X_x) = 0;
 		dx(X_y) = 0;
@@ -614,6 +641,7 @@ void BlockLocalPositionEstimator::correctionLogic(Vector<float, n_x> &dx)
 	}
 
 	// if z not valid, stop estimating
+	// 垂直位置无效，停止估计
 	if (!_validZ) {
 		dx(X_z) = 0;
 		dx(X_vz) = 0;
@@ -621,17 +649,19 @@ void BlockLocalPositionEstimator::correctionLogic(Vector<float, n_x> &dx)
 	}
 
 	// if terrain not valid, stop estimating
+	// 地面海拔高度无效，停止估计
 	if (!_validTZ) {
 		dx(X_tz) = 0;
 	}
 
 	// saturate bias
-	float bx = dx(X_bx) + _x(X_bx);
+	// 累加加速度偏差 供后面检测
+	float bx = dx(X_bx) + _x(X_bx); // _x状态变量中的加速度偏差始终在更新
 	float by = dx(X_by) + _x(X_by);
 	float bz = dx(X_bz) + _x(X_bz);
 
 	if (std::abs(bx) > BIAS_MAX) {
-		bx = BIAS_MAX * bx / std::abs(bx);
+		bx = BIAS_MAX * bx / std::abs(bx); // bx = 0.1 * bx
 		dx(X_bx) = bx - _x(X_bx);
 	}
 
@@ -669,19 +699,19 @@ void BlockLocalPositionEstimator::detectDistanceSensors()
 
 		if (s == _sub_lidar || s == _sub_sonar) { continue; }
 
-		if (s->updated()) {
-			s->update();
+		if (s->updated()) { // 发布是否已更新
+			s->update(); // 更新距离
 
 			if (s->get().timestamp == 0) { continue; }
 
 			if (s->get().type == \
-			    distance_sensor_s::MAV_DISTANCE_SENSOR_LASER &&
+			    distance_sensor_s::MAV_DISTANCE_SENSOR_LASER && /* 激光测距 */
 			    _sub_lidar == NULL) {
 				_sub_lidar = s;
 				mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] Lidar detected with ID %i", i);
 
 			} else if (s->get().type == \
-				   distance_sensor_s::MAV_DISTANCE_SENSOR_ULTRASOUND &&
+				   distance_sensor_s::MAV_DISTANCE_SENSOR_ULTRASOUND && /* 超声波测距 */
 				   _sub_sonar == NULL) {
 				_sub_sonar = s;
 				mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] Sonar detected with ID %i", i);
@@ -847,8 +877,10 @@ void BlockLocalPositionEstimator::initP()
 	_P(X_vx, X_vx) = 2 * _vxy_pub_thresh.get() * _vxy_pub_thresh.get();
 	_P(X_vy, X_vy) = 2 * _vxy_pub_thresh.get() * _vxy_pub_thresh.get();
 	// use vxy thresh for vz init as well
+	// 同时使用 vxy 初始化vz
 	_P(X_vz, X_vz) = 2 * _vxy_pub_thresh.get() * _vxy_pub_thresh.get();
 	// initialize bias uncertainty to small values to keep them stable
+	// 初始化加速度偏差的不确定度为一个很小的值以使其保持稳定
 	_P(X_bx, X_bx) = 1e-6;
 	_P(X_by, X_by) = 1e-6;
 	_P(X_bz, X_bz) = 1e-6;
@@ -862,6 +894,7 @@ void BlockLocalPositionEstimator::initSS()
 	// dynamics matrix
 	_A.setZero();
 	// derivative of position is velocity
+	// 位置的微分得到速度
 	_A(X_x, X_vx) = 1;
 	_A(X_y, X_vy) = 1;
 	_A(X_z, X_vz) = 1;
@@ -873,15 +906,28 @@ void BlockLocalPositionEstimator::initSS()
 	_B(X_vz, U_az) = 1;
 
 	// update components that depend on current state
-	updateSSStates();
-	updateSSParams();
+	// 根据当前状态更新组件
+	updateSSStates(); // 更新状态矩阵 A
+	updateSSParams(); // 更新噪声矩阵 R Q
 }
 
 void BlockLocalPositionEstimator::updateSSStates()
 {
 	// derivative of velocity is accelerometer acceleration
 	// (in input matrix) - bias (in body frame)
-	_A(X_vx, X_bx) = -_R_att(0, 0);
+	// 速度的微分为加速度计测得的加速度(用于输入矩阵) -> 机体系下的偏移
+	/*    DCM_e = [i_e j_e k_e] 
+	 *          = [ I_b; 
+	 *              J_b; 
+	 *              K_b ]
+	 */
+	// i_e、j_e、k_e是机体系三轴向量在地理系中的表示
+	// I_b、J_b、K_b是地理系三轴向量在机体系中的表示
+	//
+	//  加速度计模型 a = R^T * ( v_dot - g) + a_b
+	// 低频状态下 v_dot远小于g
+	// va = - R^T * e
+	_A(X_vx, X_bx) = -_R_att(0, 0); // I_b
 	_A(X_vx, X_by) = -_R_att(0, 1);
 	_A(X_vx, X_bz) = -_R_att(0, 2);
 
@@ -897,12 +943,14 @@ void BlockLocalPositionEstimator::updateSSStates()
 void BlockLocalPositionEstimator::updateSSParams()
 {
 	// input noise covariance matrix
+	// 输入噪声协方差矩阵
 	_R.setZero();
 	_R(U_ax, U_ax) = _accel_xy_stddev.get() * _accel_xy_stddev.get();
 	_R(U_ay, U_ay) = _accel_xy_stddev.get() * _accel_xy_stddev.get();
 	_R(U_az, U_az) = _accel_z_stddev.get() * _accel_z_stddev.get();
 
 	// process noise power matrix
+	// 过程噪声能量矩阵
 	_Q.setZero();
 	float pn_p_sq = _pn_p_noise_density.get() * _pn_p_noise_density.get();
 	float pn_v_sq = _pn_v_noise_density.get() * _pn_v_noise_density.get();
@@ -916,12 +964,14 @@ void BlockLocalPositionEstimator::updateSSParams()
 	// technically, the noise is in the body frame,
 	// but the components are all the same, so
 	// ignoring for now
+	// 噪声是在机体系下的，但是由于成分相同，暂时忽略这一点
 	float pn_b_sq = _pn_b_noise_density.get() * _pn_b_noise_density.get();
 	_Q(X_bx, X_bx) = pn_b_sq;
 	_Q(X_by, X_by) = pn_b_sq;
 	_Q(X_bz, X_bz) = pn_b_sq;
 
 	// terrain random walk noise ((m/s)/sqrt(hz)), scales with velocity
+	// 地势随机游走噪声，随速度缩放
 	float pn_t_noise_density =
 		_pn_t_noise_density.get() +
 		(_t_max_grade.get() / 100.0f) * sqrtf(_x(X_vx) * _x(X_vx) + _x(X_vy) * _x(X_vy));
@@ -941,7 +991,8 @@ void BlockLocalPositionEstimator::predict()
 		_R_att = matrix::Dcm<float>(q);
 		Vector3f a(_sub_sensor.get().accelerometer_m_s2);
 		// note, bias is removed in dynamics function
-		_u = _R_att * a;
+		// 在动力学函数中去除了偏差
+		_u = _R_att * a; // 非线性系统的输入向量   加速度
 		_u(U_az) += 9.81f; // add g
 
 	} else {
@@ -949,27 +1000,31 @@ void BlockLocalPositionEstimator::predict()
 	}
 
 	// update state space based on new states
-	updateSSStates();
+	// 基于新的状态更新状态空间矩阵 A
+	updateSSStates(); // 用 _R_att 更新 A
 
+	// 连续时间的卡尔曼滤波器预测值
 	// continuous time kalman filter prediction
 	// integrate runge kutta 4th order
 	// TODO move rk4 algorithm to matrixlib
 	// https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
+	// 四元数微分求解，四阶龙格库塔法
 	float h = getDt();
 	Vector<float, n_x> k1, k2, k3, k4;
-	k1 = dynamics(0, _x, _u);
-	k2 = dynamics(h / 2, _x + k1 * h / 2, _u);
-	k3 = dynamics(h / 2, _x + k2 * h / 2, _u);
-	k4 = dynamics(h, _x + k3 * h, _u);
-	Vector<float, n_x> dx = (k1 + k2 * 2 + k3 * 2 + k4) * (h / 6);
+	k1 = dynamics(0, _x, _u); // A * _x + B * _u
+	k2 = dynamics(h / 2, _x + k1 * h / 2, _u); // A * (x + k1 * h/2) + B * u
+	k3 = dynamics(h / 2, _x + k2 * h / 2, _u);  // A * (x + k2 * h/2) + B * u
+	k4 = dynamics(h, _x + k3 * h, _u); // A * ( x + k3 * h) + B * u
+	Vector<float, n_x> dx = (k1 + k2 * 2 + k3 * 2 + k4) * (h / 6); // 状态增量
 
 	// propagate
-	correctionLogic(dx);
-	_x += dx;
+	// 传播
+	correctionLogic(dx); // 逻辑校正，积分量逻辑判断
+	_x += dx; // 状态估计
 	Matrix<float, n_x, n_x> dP = (_A * _P + _P * _A.transpose() +
-				      _B * _R * _B.transpose() + _Q) * getDt();
-	covPropagationLogic(dP);
-	_P += dP;
+				      _B * _R * _B.transpose() + _Q) * getDt(); // 过程噪声协方差矩阵增量
+	covPropagationLogic(dP); // 逻辑校正
+	_P += dP; // 状态协方差估计
 
 	_xLowPass.update(_x);
 	_aglLowPass.update(agl());

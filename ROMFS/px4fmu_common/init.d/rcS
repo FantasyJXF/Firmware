@@ -2,8 +2,34 @@
 #
 # PX4FMU startup script.
 #
-#  NOTE: COMMENT LINES ARE REMOVED BEFORE STORED IN ROMFS.
+# NOTE: environment variable references:
+#    If the dollar sign ('$') is followed by a left bracket ('{') then the
+#    variable name is terminated with the right bracket character ('}').
+#    Otherwise, the variable name goes to the end of the argument.
 #
+# NOTE: COMMENT LINES ARE REMOVED BEFORE STORED IN ROMFS.
+#
+# UART mapping on FMUv1/2/3/4:
+#
+# UART1			/dev/ttyS0		IO debug
+# USART2		/dev/ttyS1		TELEM1 (flow control)
+# USART3		/dev/ttyS2		TELEM2 (flow control)
+# UART4			/dev/ttyS3          GPS
+# NULL                /dev/ttyS4          N/A
+# UART7			/dev/ttyS5		CONSOLE
+# UART8			/dev/ttyS6		SERIAL4
+#
+#
+# UART mapping on FMUv5:
+#
+# UART1			/dev/ttyS0		GPS
+# USART2		/dev/ttyS1		TELEM1 (flow control)
+# USART3		/dev/ttyS2		TELEM2 (flow control)
+# UART4			/dev/ttyS3		?
+# USART6		/dev/ttyS4		TELEM3 (flow control)
+# UART7			/dev/ttyS5		?
+# UART8			/dev/ttyS6		CONSOLE
+
 
 #
 # Start CDC/ACM serial driver
@@ -691,9 +717,15 @@ then
 	then
 		px4flow start &
 	fi
-
-	# Start MAVLink
-	mavlink start -r 800000 -d /dev/ttyACM0 -m config -x
+	
+	# Start USB shell if no microSD present, MAVLink else
+	if [ $LOG_FILE == /dev/null ]
+	then
+		# Try to get an USB console
+		nshterm /dev/ttyACM0 &
+	else
+		mavlink start -r 800000 -d /dev/ttyACM0 -m config -x
+	fi
 
 	#
 	# Logging

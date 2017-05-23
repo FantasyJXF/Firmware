@@ -153,15 +153,16 @@ mixer_tick(void)
 
 	/*
 	 * Decide whether the servos should be armed right now.
+	 * 决定电机是否应该立刻解锁
 	 *
 	 * We must be armed, and we must have a PWM source; either raw from
 	 * FMU or from the mixer.
 	 *
 	 */
 	should_arm = (
-			     /* IO initialised without error */ (r_status_flags & PX4IO_P_STATUS_FLAGS_INIT_OK)
-			     /* and IO is armed */ 		  && (r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF)
-			     /* and FMU is armed */ 		  && (
+      /* IO初始化成功 IO initialised without error */ (r_status_flags & PX4IO_P_STATUS_FLAGS_INIT_OK)
+		 /* IO解锁了 and IO is armed */ 		  && (r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF)
+	       /* FMU解锁了 and FMU is armed */ 	  && (
 				     ((r_setup_arming & PX4IO_P_SETUP_ARMING_FMU_ARMED)
 				      /* and there is valid input via or mixer */         && (r_status_flags & PX4IO_P_STATUS_FLAGS_MIXER_OK))
 				     /* or direct PWM is set */               || (r_status_flags & PX4IO_P_STATUS_FLAGS_RAW_PWM)
@@ -183,6 +184,7 @@ mixer_tick(void)
 	 * Check if failsafe termination is set - if yes,
 	 * set the force failsafe flag once entering the first
 	 * failsafe condition.
+	 * 如果设置了，立即进入失控终止模式
 	 */
 	if ( /* if we have requested flight termination style failsafe (noreturn) */
 		(r_setup_arming & PX4IO_P_SETUP_ARMING_TERMINATION_FAILSAFE) &&
@@ -214,15 +216,20 @@ mixer_tick(void)
 
 	/*
 	 * Run the mixers.
+	 * 运行混控器
 	 */
 	if (source == MIX_FAILSAFE) {
 
 		/* copy failsafe values to the servo outputs */
+		/* 将失控保护的值复制到电机输出 */
 		for (unsigned i = 0; i < PX4IO_SERVO_COUNT; i++) {
 			r_page_servos[i] = r_page_servo_failsafe[i];
 
 			/* safe actuators for FMU feedback */
-			r_page_actuators[i] = FLOAT_TO_REG((r_page_servos[i] - 1500) / 600.0f);
+			// FMU反馈的安全执行器
+			r_page_actuators[i] = FLOAT_TO_REG((r_page_servos[i] - 1500) / 600.0f); 
+			// 其中 r_page_servos[i] 为电机的PWM值
+			// r_page_actuators[i] 为混控后的执行器值
 		}
 
 
@@ -234,6 +241,7 @@ mixer_tick(void)
 
 		if (REG_TO_FLOAT(r_setup_slew_max) > FLT_EPSILON) {
 			// maximum value the ouputs of the multirotor mixer are allowed to change in this cycle
+			// 在这个循环中允许多旋翼混控器输出的最大值
 			// factor 2 is needed because actuator ouputs are in the range [-1,1]
 			float delta_out_max = 2.0f * 1000.0f * dt / (r_page_servo_control_max[0] - r_page_servo_control_min[0]) / REG_TO_FLOAT(
 						      r_setup_slew_max);
@@ -267,6 +275,7 @@ mixer_tick(void)
 	bool needs_to_arm = (should_arm || should_arm_nothrottle || should_always_enable_pwm);
 
 	/* lockdown means to send a valid pulse which disables the outputs */
+	// 锁定表示发送一个有效脉冲来禁用输出
 	if (r_setup_arming & PX4IO_P_SETUP_ARMING_LOCKDOWN) {
 		needs_to_arm = true;
 	}
@@ -324,7 +333,7 @@ mixer_tick(void)
 
 static int
 mixer_callback(uintptr_t handle,
-	       uint8_t control_group,
+	       uint8_t control_group, /* 控制组 */
 	       uint8_t control_index,
 	       float &control)
 {
@@ -351,7 +360,9 @@ mixer_callback(uintptr_t handle,
 
 	case MIX_OVERRIDE_FMU_OK:
 
-		/* FMU is ok but we are in override mode, use direct rc control for the available rc channels. The remaining channels are still controlled by the fmu */
+		/* FMU is ok but we are in override mode, use direct rc control for the available rc channels. 
+		 * The remaining channels are still controlled by the fmu */
+		// FMU没有问题但是override模式
 		if (r_page_rc_input[PX4IO_P_RC_VALID] & (1 << CONTROL_PAGE_INDEX(control_group, control_index))) {
 			control = REG_TO_FLOAT(r_page_rc_input[PX4IO_P_RC_BASE + control_index]);
 			break;
@@ -370,6 +381,7 @@ mixer_callback(uintptr_t handle,
 	}
 
 	/* apply trim offsets for override channels */
+	// 为override通道应用修正偏移
 	if (source == MIX_OVERRIDE || source == MIX_OVERRIDE_FMU_OK) {
 		if (control_group == actuator_controls_s::GROUP_INDEX_ATTITUDE &&
 		    control_index == actuator_controls_s::INDEX_ROLL) {
@@ -409,6 +421,7 @@ mixer_callback(uintptr_t handle,
 	}
 
 	/* only safety off, but not armed - set throttle as invalid */
+	// 安全开关按下，但是没有解锁
 	if (should_arm_nothrottle && !should_arm) {
 		if ((control_group == actuator_controls_s::GROUP_INDEX_ATTITUDE ||
 		     control_group == actuator_controls_s::GROUP_INDEX_ATTITUDE_ALTERNATE) &&

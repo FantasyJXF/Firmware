@@ -65,11 +65,13 @@
  * readable pages to be densely packed. Page numbers do not need to be
  * packed.
  *
- * Definitions marked [1] are only valid on PX4IOv1 boards. Likewise,
+ * Definitions marked 
+ * [1] are only valid on PX4IOv1 boards. Likewise,
  * [2] denotes definitions specific to the PX4IOv2 board.
  */
 
 /* Per C, this is safe for all 2's complement systems */
+// 2µÄ²¹Âë
 #define REG_TO_SIGNED(_reg)	((int16_t)(_reg))
 #define SIGNED_TO_REG(_signed)	((uint16_t)(_signed))
 

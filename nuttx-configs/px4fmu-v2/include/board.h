@@ -188,8 +188,8 @@
  * is we set aside more DMA channels/streams.
  *
  * SDIO DMA
- *   DMAMAP_SDIO_1 = Channel 4, Stream 3 <- may later be used by SPI DMA
- *   DMAMAP_SDIO_2 = Channel 4, Stream 6
+ * ? DMAMAP_SDIO_1 = Channel 4, Stream 3 <- may later be used by SPI DMA
+ * ? DMAMAP_SDIO_2 = Channel 4, Stream 6
  */
 
 #define DMAMAP_SDIO DMAMAP_SDIO_1
@@ -260,9 +260,9 @@
  *
  * There are sensors on SPI1, and SPI2 is connected to the FRAM.
  */
-#define GPIO_SPI1_MISO	(GPIO_SPI1_MISO_1|GPIO_SPEED_50MHz)
-#define GPIO_SPI1_MOSI	(GPIO_SPI1_MOSI_1|GPIO_SPEED_50MHz)
-#define GPIO_SPI1_SCK	(GPIO_SPI1_SCK_1|GPIO_SPEED_50MHz)
+#define GPIO_SPI1_MISO	(GPIO_SPI1_MISO_1|GPIO_SPEED_50MHz) // PA6
+#define GPIO_SPI1_MOSI	(GPIO_SPI1_MOSI_1|GPIO_SPEED_50MHz) // PA7
+#define GPIO_SPI1_SCK	(GPIO_SPI1_SCK_1|GPIO_SPEED_50MHz) // PA5
 
 #define GPIO_SPI2_MISO	(GPIO_SPI2_MISO_1|GPIO_SPEED_50MHz)
 #define GPIO_SPI2_MOSI	(GPIO_SPI2_MOSI_1|GPIO_SPEED_50MHz)

@@ -30,7 +30,7 @@ bool disable_mc_yaw_control			# control yaw for mc (used for vtol weather-vane m
 
 bool apply_flaps
 
-float32 landing_gear
+float32 landing_gear  # qi luo jia
 
 # WAS vehicle_attitude_setpoint mc_virtual_attitude_setpoint fw_virtual_attitude_setpoint
 # TOPICS vehicle_attitude_setpoint

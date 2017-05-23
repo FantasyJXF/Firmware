@@ -51,6 +51,7 @@ namespace uORB
  * Base subscription warapper class, used in list traversal
  * of various subscriptions.
  */
+ // 基本订阅包装类，用于各种订阅的列表遍历。
 class __EXPORT SubscriptionBase
 {
 public:

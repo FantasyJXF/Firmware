@@ -615,7 +615,7 @@ MPU6000::init()
 	}
 
 	/* do init */
-	ret = CDev::init(); // cdev.cpp 在src/device下，作用是把驱动注册到fs中
+	ret = CDev::init(); // cdev.cpp 在src/device下，作用是把设备注册到fs中
 
 	/* if init failed, bail now */
 	if (ret != OK) {
@@ -2308,8 +2308,16 @@ start_bus(struct mpu6000_bus_option &bus, enum Rotation rotation, int range, int
 		return false;
 	}
 
-	// 选择接口 总线序号 SPI/I2C 内部/外部 
-	device::Device *interface = bus.interface_constructor(bus.busnum, device_type, external);
+	device::Device *interface = bus.interface_constructor(bus.busnum, device_type, external); 
+	/*
+	 * 确定设备接口Interface(很重要)
+	 * busid = MPU6000_BUS_SPI_INTERNAL
+	 * accelpath = MPU_DEVICE_PATH_ACCEL(/dev/accel)
+	 * gyropath = MPU_DEVICE_PATH_GYRO(/dev/gyro)
+	 * interface_constructor =  MPU6000的内部SPI片选(作为SPI类的加速度计实例)
+	 * busnum = PX4_SPI_BUS_SENSORS(Pixhawk传感器连在SPI1上)
+	 * dev = 是否存在设备连接在此端口上
+	 */
 
 	if (interface == nullptr) {
 		warnx("no device on bus %u", (unsigned)bus.busid);
@@ -2380,7 +2388,7 @@ start(enum MPU6000_BUS busid, enum Rotation rotation, int range, int device_type
 
 	bool started = false;
 
-	for (unsigned i = 0; i < NUM_BUS_OPTIONS; i++) {
+	for (unsigned i = 0; i < NUM_BUS_OPTIONS; i++) { // 遍历
 		if (busid == MPU6000_BUS_ALL && bus_options[i].dev != NULL) {
 			// this device is already started
 			// 设备已经打开了

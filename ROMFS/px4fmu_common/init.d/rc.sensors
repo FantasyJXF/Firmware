@@ -152,6 +152,11 @@ then
 		if mpu6000 start
 		then
 		fi
+		
+		#if mpu6500 start
+		#then
+		#fi
+		
 
 		if mpu9250 start
 		then

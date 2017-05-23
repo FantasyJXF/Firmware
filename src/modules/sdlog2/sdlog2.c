@@ -1397,7 +1397,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	hrt_abstime magnetometer_timestamp = 0;
 	hrt_abstime barometer_timestamp = 0;
 
-	/* initialize calculated mean SNR */
+	/* initialize calculated mean SNR 信噪比 */
 	float snr_mean = 0.0f;
 
 	/* enable logging on start if needed */
@@ -1409,7 +1409,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			}
 		}
 
-		sdlog2_start_log();
+		sdlog2_start_log(); // 开始记录
 	}
 
 	/* running, report */

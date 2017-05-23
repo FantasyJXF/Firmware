@@ -54,13 +54,18 @@ PARAM_DEFINE_FLOAT(MPC_THR_MIN, 0.12f);
 
 /**
  * Hover thrust
+ * 悬停推力
  *
  * Vertical thrust required to hover.
+ * 悬停所需的垂直推力
  * This value is mapped to center stick for manual throttle control.
  * With this value set to the thrust required to hover, transition
  * from manual to ALTCTL mode while hovering will occur with the
  * throttle stick near center, which is then interpreted as (near)
  * zero demand for vertical speed.
+ * 该值映射到手动油门控制杆的中心。
+ * 将该值设置为悬停所需的推力，当悬停时会随着油门杆靠近中心而发生从手动转换到ALTCTL模式，
+ * 其解释为对垂直速度的（零）需求。
  *
  * @unit norm
  * @min 0.2
@@ -73,10 +78,13 @@ PARAM_DEFINE_FLOAT(MPC_THR_HOVER, 0.5f);
 
 /**
  * ALTCTL throttle curve breakpoint
+ * ACTCTL模式下油门曲线断点高度
  *
  * Halfwidth of deadband or reduced sensitivity center portion of curve.
+ * 死区的半径或曲线的灵敏度中心部分减少。
  * This is the halfwidth of the center region of the ALTCTL throttle
  * curve. It extends from center-dz to center+dz.
+ * 这是ALTCTL油门曲线中心区域的半宽。其处于中点上下dz范围内的高度
  *
  * @unit norm
  * @min 0.0
@@ -89,10 +97,13 @@ PARAM_DEFINE_FLOAT(MPC_ALTCTL_DZ, 0.1f);
 
 /**
  * ALTCTL throttle curve breakpoint height
+ * ACTCTL模式下油门曲线断点高度
  *
  * Controls the slope of the reduced sensitivity region.
+ * 控制灵敏度降低区域的斜率。
  * This is the height of the ALTCTL throttle
  * curve at center-dz and center+dz.
+ * 这是ALTCTL模式下油门曲线在中点上下dz范围内的高度
  *
  * @min 0.0
  * @max 0.2
@@ -151,6 +162,7 @@ PARAM_DEFINE_FLOAT(MPC_MANTHR_MAX, 0.9f);
 
 /**
  * Proportional gain for vertical position error
+ * 垂直位置误差的比例增益
  *
  * @min 0.0
  * @max 1.5
@@ -193,9 +205,11 @@ PARAM_DEFINE_FLOAT(MPC_Z_VEL_D, 0.0f);
 
 /**
  * Maximum vertical ascent velocity
+ * 最大上升速度
  *
  * Maximum vertical velocity in AUTO mode and endpoint for stabilized modes (ALTCTRL, POSCTRL).
- *
+ * AUTO模式下的最大垂直速度，稳定模式的终点 (ALTCTRL，POSCTRL)
+ * 
  * @unit m/s
  * @min 0.5
  * @max 8.0
@@ -218,6 +232,7 @@ PARAM_DEFINE_FLOAT(MPC_Z_VEL_MAX, 1.0f);
 
 /**
  * Transitional support, do not change / use
+ * 过渡支持，不要改变/使用
  *
  * @unit m/s
  * @min 0.5
@@ -240,6 +255,7 @@ PARAM_DEFINE_FLOAT(MPC_Z_FF, 0.5f);
 
 /**
  * Proportional gain for horizontal position error
+ * 水平位置误差的比例增益
  *
  * @min 0.0
  * @max 2.0
@@ -298,9 +314,13 @@ PARAM_DEFINE_FLOAT(MPC_XY_CRUISE, 5.0f);
 
 /**
  * Maximum horizontal velocity
+ * 最大水平速度
  *
  * Maximum horizontal velocity in AUTO mode. If higher speeds
  * are commanded in a mission they will be capped to this velocity.
+ *
+ * AUTO模式下的最大水平速度。
+ * 如果任务需要更大的速度，将以此速度飞行。
  *
  * @unit m/s
  * @min 0.0
@@ -313,8 +333,12 @@ PARAM_DEFINE_FLOAT(MPC_XY_VEL_MAX, 8.0f);
 
 /**
  * Horizontal velocity feed forward
+ * 水平速度前馈
  *
- * Feed forward weight for position control in position control mode (POSCTRL). 0 will give slow responce and no overshot, 1 - fast responce and big overshot.
+ * Feed forward weight for position control in position control mode (POSCTRL). 
+ * 0 will give slow responce and no overshot, 1 - fast responce and big overshot.
+ * 在位置控制模式（POSCTRL）中给位置控制的前馈权重。
+ * 0表示响应慢无超调；1表示快速响应超调大
  *
  * @min 0.0
  * @max 1.0
@@ -338,6 +362,7 @@ PARAM_DEFINE_FLOAT(MPC_TILTMAX_AIR, 45.0f);
 
 /**
  * Maximum tilt during landing
+ * 着陆过程中的最大倾斜角
  *
  * Limits maximum tilt angle on landing.
  *
@@ -351,6 +376,7 @@ PARAM_DEFINE_FLOAT(MPC_TILTMAX_LND, 12.0f);
 
 /**
  * Landing descend rate
+ * 着陆过程中的下降速度
  *
  * @unit m/s
  * @min 0.2
@@ -361,6 +387,7 @@ PARAM_DEFINE_FLOAT(MPC_LAND_SPEED, 0.5f);
 
 /**
  * Takeoff climb rate
+ * 起飞爬升速度
  *
  * @unit m/s
  * @min 1
@@ -405,6 +432,7 @@ PARAM_DEFINE_FLOAT(MPC_MAN_Y_MAX, 200.0f);
 
 /**
  * Deadzone of X,Y sticks where position hold is enabled
+ * HOLD模式下X Y摇杆的死区
  *
  * @min 0.0
  * @max 1.0
@@ -415,6 +443,7 @@ PARAM_DEFINE_FLOAT(MPC_HOLD_XY_DZ, 0.1f);
 
 /**
  * Maximum horizontal velocity for which position hold is enabled (use 0 to disable check)
+ * 启用HOLD模式的最大水平速度(为0时禁用检查)
  *
  * @unit m/s
  * @min 0.0
@@ -460,11 +489,12 @@ PARAM_DEFINE_FLOAT(MPC_ACC_HOR_MAX, 5.0f);
 
 /**
  * Altitude control mode, note mode 1 only tested with LPE
+ * 高度控制模式，mode 1仅用于测试LPE
  *
  * @min 0
  * @max 1
- * @value 0 Altitude following
- * @value 1 Terrain following
- * @group Multicopter Position Control
+ * @value 0 Altitude following  高度跟随
+ * @value 1 Terrain following   地形跟随
+ * @group Multicopter Position Control 
  */
 PARAM_DEFINE_INT32(MPC_ALT_MODE, 0);
