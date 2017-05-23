@@ -331,6 +331,7 @@ Navigator::task_main()
 	px4_pollfd_struct_t fds[1] = {};
 
 	/* Setup of loop */
+	// 循环设置
 	fds[0].fd = _global_pos_sub;
 	fds[0].events = POLLIN; //普通或优先级带数据可读
 
@@ -358,7 +359,7 @@ Navigator::task_main()
 
 			if (fds[0].revents & POLLIN) {
 				/* success, global pos is available */
-				global_position_update();
+				global_position_update(); // 复制全球位置数据
 				if (_geofence.getSource() == Geofence::GF_SOURCE_GLOBALPOS) {
 					have_geofence_position_data = true;
 				}
@@ -373,7 +374,7 @@ Navigator::task_main()
 		/* gps updated */
 		orb_check(_gps_pos_sub, &updated);
 		if (updated) {
-			gps_position_update(); //copy
+			gps_position_update(); // 复制GPS原始数据
 			if (_geofence.getSource() == Geofence::GF_SOURCE_GPS) {
 				have_geofence_position_data = true;
 			}
@@ -388,7 +389,7 @@ Navigator::task_main()
 		/* parameters updated */
 		orb_check(_param_update_sub, &updated);
 		if (updated) {
-			params_update();
+			params_update();// 保存数据 
 			updateParams(); // #### 更新的什么参数 
 		}
 

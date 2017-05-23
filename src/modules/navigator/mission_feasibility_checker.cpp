@@ -72,11 +72,13 @@ bool MissionFeasibilityChecker::checkMissionFeasible(orb_advert_t *mavlink_log_p
 	bool failed = false;
 	bool warned = false;
 	/* Init if not done yet */
+	// 如果还没有完成，则初始化
 	init();
 
 	_mavlink_log_pub = mavlink_log_pub;
 
 	// first check if we have a valid position
+	// 首先检测位置是否有效
 	if (!home_valid /* can later use global / local pos for finer granularity */) {
 		failed = true;
 		warned = true;
@@ -396,6 +398,7 @@ MissionFeasibilityChecker::check_dist_1wp(dm_item_t dm_current, size_t nMissionI
 
 					} else {
 						/* item is too far from home */
+						// 目标离home点太远
 						mavlink_log_critical(_mavlink_log_pub, "First waypoint too far: %d m,refusing mission", (int)dist_to_1wp, (int)dist_first_wp);
 						warning_issued = true;
 						return false;

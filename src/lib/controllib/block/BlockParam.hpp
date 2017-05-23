@@ -71,6 +71,7 @@ protected:
 
 /**
  * Parameters that are tied to blocks for updating and nameing.
+ * 绑定到blocks的参数，用于更新以及命名
  */
 
 template <class T>

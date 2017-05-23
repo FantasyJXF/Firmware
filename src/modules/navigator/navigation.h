@@ -95,14 +95,17 @@ enum ORIGIN {
 
 /**
  * Global position setpoint in WGS84 coordinates.
+ * 在WGS84坐标系下的全球位置设定值
  *
  * This is the position the MAV is heading towards. If it of type loiter,
  * the MAV is circling around it with the given loiter radius in meters.
+ * 这是飞机朝向的位置。如果是悬停模式
+ * 飞行器会以给定的半径绕其转圈
  */
 #pragma pack(push, 1)
 struct mission_item_s {
-	double lat;			/**< latitude in degrees				*/
-	double lon;			/**< longitude in degrees				*/
+	double lat;			/**< latitude in degrees */
+	double lon;			/**< longitude in degrees */
 	union {
 		struct {
 			union {
@@ -110,16 +113,17 @@ struct mission_item_s {
 				float pitch_min;		/**< minimal pitch angle for fixed wing takeoff waypoints */
 			};
 			float acceptance_radius;	/**< default radius in which the mission is accepted as reached in meters */
+									/* 默认半径，到达此范围内认为任务航点已达到，单位m */
 			float loiter_radius;		/**< loiter radius in meters, 0 for a VTOL to hover, negative for counter-clockwise */
-			float yaw;					/**< in radians NED -PI..+PI, NAN means don't change yaw		*/
+			float yaw;					/**< in radians NED -PI..+PI, NAN means don't change yaw 在NED系下以弧度为单位*/
 			float ___lat_float;			/**< padding */
 			float ___lon_float;			/**< padding */
-			float altitude;				/**< altitude in meters	(AMSL)			*/
+			float altitude;				/**< altitude in meters	(AMSL) */
 		};
 		float params[7];				/**< array to store mission command values for MAV_FRAME_MISSION ***/
 	};
-	uint16_t nav_cmd;					/**< navigation command					*/
-	int16_t do_jump_mission_index;		/**< index where the do jump will go to                 */
+	uint16_t nav_cmd;					/**< navigation command */
+	int16_t do_jump_mission_index;		/**< index where the do jump will go to */
 	uint16_t do_jump_repeat_count;		/**< how many times do jump needs to be done            */
 	uint16_t do_jump_current_count;		/**< count how many times the jump has been done	*/
 	struct {
