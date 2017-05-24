@@ -87,7 +87,7 @@ Mission::Mission(Navigator *navigator, const char *name) :
 	_missionFeasibilityChecker(),
 	_min_current_sp_distance_xy(FLT_MAX),
 	_distance_current_previous(0.0f),
-	_work_item_type(WORK_ITEM_TYPE_DEFAULT)
+	_work_item_type(WORK_ITEM_TYPE_DEFAULT) // 默认任务模式
 {
 	/* load initial params */
 	updateParams();
@@ -112,21 +112,23 @@ Mission::on_inactive()
 
 	if (_inited) {
 		/* check if missions have changed so that feedback to ground station is given */
+		// 检查任务是否改变，得到给地面站的反馈
 		bool onboard_updated = false;
-		orb_check(_navigator->get_onboard_mission_sub(), &onboard_updated);
+		orb_check(_navigator->get_onboard_mission_sub(), &onboard_updated); // 板上任务
 
 		if (onboard_updated) {
 			update_onboard_mission();
 		}
 
 		bool offboard_updated = false;
-		orb_check(_navigator->get_offboard_mission_sub(), &offboard_updated);
+		orb_check(_navigator->get_offboard_mission_sub(), &offboard_updated); // 外部任务
 
 		if (offboard_updated) {
 			update_offboard_mission();
 		}
 
 		/* reset the current offboard mission if needed */
+		// 必要时复位当前外部任务
 		if (need_to_reset_mission(false)) {
 			reset_offboard_mission(_offboard_mission);
 			update_offboard_mission();
@@ -305,14 +307,15 @@ Mission::update_onboard_mission()
 		if (_onboard_mission.current_seq >= 0
 		    && _onboard_mission.current_seq < (int)_onboard_mission.count) {
 
-			_current_onboard_mission_index = _onboard_mission.current_seq;
+			_current_onboard_mission_index = _onboard_mission.current_seq;  // 更新索引
 
 		} else {
 			/* if less WPs available, reset to first WP */
+			// 当前任务序号大于板上任务总数  复位成第一个航点
 			if (_current_onboard_mission_index >= (int)_onboard_mission.count) {
 				_current_onboard_mission_index = 0;
 				/* if not initialized, set it to 0 */
-
+				// 未初始化，当前无航点，设置为0
 			} else if (_current_onboard_mission_index < 0) {
 				_current_onboard_mission_index = 0;
 			}
@@ -1357,12 +1360,14 @@ bool
 Mission::need_to_reset_mission(bool active)
 {
 	/* reset mission state when disarmed */
+	// 上锁时复位任务状态
 	if (_navigator->get_vstatus()->arming_state != vehicle_status_s::ARMING_STATE_ARMED && _need_mission_reset) {
 		_need_mission_reset = false;
 		return true;
 
 	} else if (_navigator->get_vstatus()->arming_state == vehicle_status_s::ARMING_STATE_ARMED && active) {
 		/* mission is running, need reset after disarm */
+		// 任务正在运行，上锁后需要复位
 		_need_mission_reset = true;
 	}
 

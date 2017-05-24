@@ -45,6 +45,7 @@
 
 /**
  * Take-off altitude
+ * 起飞高度
  *
  * This is the minimum altitude the system will take off to.
  *
@@ -73,9 +74,11 @@ PARAM_DEFINE_FLOAT(MIS_LTRMIN_ALT, 1.2f);
 
 /**
  * Persistent onboard mission storage
+ * 板上固有的任务存储
  *
  * When enabled, missions that have been uploaded by the GCS are stored
  * and reloaded after reboot persistently.
+ * 此项使能时，由GCS上传的任务被永久存储，每次上电会重新加载
  *
  * @boolean
  * @group Mission

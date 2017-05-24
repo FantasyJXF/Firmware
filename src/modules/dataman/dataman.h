@@ -51,14 +51,14 @@ extern "C" {
 
 /** Types of items that the data manager can store */
 typedef enum {
-	DM_KEY_SAFE_POINTS = 0,		/* Safe points coordinates, safe point 0 is home point */
-	DM_KEY_FENCE_POINTS,		/* Fence vertex coordinates */
-	DM_KEY_WAYPOINTS_OFFBOARD_0,	/* Mission way point coordinates sent over mavlink */
+	DM_KEY_SAFE_POINTS = 0,		/* Safe points coordinates, safe point 0 is home point 安全点的坐标 */
+	DM_KEY_FENCE_POINTS,		/* Fence vertex coordinates 地理围栏顶点坐标 */
+	DM_KEY_WAYPOINTS_OFFBOARD_0,	/* Mission way point coordinates sent over mavlink 通过MAVLink设置的任务航点坐标 */
 	DM_KEY_WAYPOINTS_OFFBOARD_1,	/* (alernate between 0 and 1) */
-	DM_KEY_WAYPOINTS_ONBOARD,	/* Mission way point coordinates generated onboard */
-	DM_KEY_MISSION_STATE,		/* Persistent mission state */
+	DM_KEY_WAYPOINTS_ONBOARD,	/* Mission way point coordinates generated onboard 板上产生的任务航点坐标 */
+	DM_KEY_MISSION_STATE,		/* Persistent mission state 固定任务状态 */
 	DM_KEY_COMPAT,
-	DM_KEY_NUM_KEYS			/* Total number of item types defined */
+	DM_KEY_NUM_KEYS			/* Total number of item types defined 定义的项目类型的总数量 */
 } dm_item_t;
 
 #define DM_KEY_WAYPOINTS_OFFBOARD(_id) (_id == 0 ? DM_KEY_WAYPOINTS_OFFBOARD_0 : DM_KEY_WAYPOINTS_OFFBOARD_1)
