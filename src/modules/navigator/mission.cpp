@@ -103,6 +103,10 @@ Mission::on_inactive()
 	/* We need to reset the mission cruising speed, otherwise the
 	 * mission velocity which might have been set using mission items
 	 * is used for missions such as RTL. */
+      /*
+     * 复位任务巡航速度，
+     * 否则在任务模式下设置的速度可能会用于RTL之类的任务
+	 */
 	_navigator->set_cruising_speed();
 
 	/* Without home a mission can't be valid yet anyway, let's wait. */
@@ -112,7 +116,7 @@ Mission::on_inactive()
 
 	if (_inited) {
 		/* check if missions have changed so that feedback to ground station is given */
-		// 检查任务是否改变，得到给地面站的反馈
+		// 检查任务是否已经改变，由此给出传送给地面站的反馈
 		bool onboard_updated = false;
 		orb_check(_navigator->get_onboard_mission_sub(), &onboard_updated); // 板上任务
 
@@ -137,6 +141,7 @@ Mission::on_inactive()
 	} else {
 
 		/* load missions from storage */
+		// 从存储中加载任务
 		mission_s mission_state;
 
 		dm_lock(DM_KEY_MISSION_STATE);
@@ -153,6 +158,7 @@ Mission::on_inactive()
 		}
 
 		/* On init let's check the mission, maybe there is already one available. */
+		// 初始化时检查任务，可能已经有一个可用
 		check_mission_valid(false);
 
 		_inited = true;
@@ -209,6 +215,7 @@ Mission::on_active()
 	}
 
 	/* lets check if we reached the current mission item */
+	// 检查是否已经到达了当前的任务目标
 	if (_mission_type != MISSION_TYPE_NONE && is_mission_item_reached()) {
 
 		/* If we just completed a takeoff which was inserted before the right waypoint,
@@ -329,6 +336,7 @@ Mission::update_onboard_mission()
 		_navigator->get_mission_result()->mission_failure = false;
 
 		/* reset reached info as well */
+		// 同时复位已完成的信息
 		_navigator->get_mission_result()->reached = false;
 		_navigator->get_mission_result()->seq_reached = 0;
 		_navigator->get_mission_result()->seq_total = _onboard_mission.count;
@@ -1288,22 +1296,22 @@ Mission::check_mission_valid(bool force)
 
 		_navigator->get_mission_result()->valid =
 			_missionFeasibilityChecker.checkMissionFeasible(
-				_navigator->get_mavlink_log_pub(),
-				(_navigator->get_vstatus()->is_rotary_wing || _navigator->get_vstatus()->is_vtol),
-				dm_current, (size_t) _offboard_mission.count, _navigator->get_geofence(),
-				_navigator->get_home_position()->alt,
-				_navigator->home_position_valid(),
-				_navigator->get_global_position()->lat,
-				_navigator->get_global_position()->lon,
-				_param_dist_1wp.get(),
-				_navigator->get_mission_result()->warning,
-				_navigator->get_default_acceptance_radius(),
-				_navigator->get_land_detected()->landed);
+				_navigator->get_mavlink_log_pub(), /* MAVLink消息 */
+				(_navigator->get_vstatus()->is_rotary_wing || _navigator->get_vstatus()->is_vtol), /* 机型 */
+				dm_current, (size_t) _offboard_mission.count, _navigator->get_geofence(), 
+				_navigator->get_home_position()->alt, /* home点高度 */
+				_navigator->home_position_valid(),  /* home点有效 */
+				_navigator->get_global_position()->lat, /* 全球位置纬度 */
+				_navigator->get_global_position()->lon, /* 全球位置经度 */
+				_param_dist_1wp.get(), /* Home点到第一个航点的最大水平距离 */
+				_navigator->get_mission_result()->warning,  /* 任务结果 */
+				_navigator->get_default_acceptance_radius(), /* 航点半径范围 */
+				_navigator->get_land_detected()->landed);  /* 着陆检测 */
 
 		_navigator->get_mission_result()->seq_total = _offboard_mission.count;
-		_navigator->increment_mission_instance_count();
-		_navigator->set_mission_result_updated();
-		_home_inited = _navigator->home_position_valid();
+		_navigator->increment_mission_instance_count(); /* 任务数增加 */
+		_navigator->set_mission_result_updated(); /* 任务结果更新置位 */
+		_home_inited = _navigator->home_position_valid();  /* 起点GPS数据更新 */
 	}
 }
 

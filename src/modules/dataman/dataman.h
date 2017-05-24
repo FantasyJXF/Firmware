@@ -50,6 +50,8 @@ extern "C" {
 #endif
 
 /** Types of items that the data manager can store */
+// datamanager可以储存的项目种类
+
 typedef enum {
 	DM_KEY_SAFE_POINTS = 0,		/* Safe points coordinates, safe point 0 is home point 安全点的坐标 */
 	DM_KEY_FENCE_POINTS,		/* Fence vertex coordinates 地理围栏顶点坐标 */

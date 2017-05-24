@@ -252,7 +252,7 @@ private:
 	bool _home_inited;
 	bool _need_mission_reset;
 
-	MissionFeasibilityChecker _missionFeasibilityChecker; /**< class that checks if a mission is feasible */
+	MissionFeasibilityChecker _missionFeasibilityChecker; /**< class that checks if a mission is feasible 检查任务是否可行的类 */
 
 	float _min_current_sp_distance_xy; /**< minimum distance which was achieved to the current waypoint  */
 

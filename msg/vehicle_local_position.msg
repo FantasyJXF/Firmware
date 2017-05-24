@@ -2,7 +2,7 @@
 
 bool xy_valid				# true if x and y are valid
 bool z_valid				# true if z is valid
-bool v_xy_valid				# true if vy and vy are valid
+bool v_xy_valid				# true if vx and vy are valid
 bool v_z_valid				# true if vz is valid
 
 # Position in local NED frame
@@ -30,7 +30,7 @@ uint8 vxy_reset_counter
 uint8 vz_reset_counter
 
 # Heading
-float32 yaw				# Euler yaw angle transforming the tangent plane relative to NED earth-fixed frame, -PI..+PI,  (radians) 
+float32 yaw				# Euler yaw angle transforming the tangent(切线) plane relative to NED earth-fixed frame, -PI..+PI,  (radians) 
 
 # Position of reference point (local NED frame origin) in global (GPS / WGS84) frame
 # 参考点(本地坐标系原点)在全球坐标系的位置

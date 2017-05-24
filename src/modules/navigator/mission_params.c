@@ -87,6 +87,7 @@ PARAM_DEFINE_INT32(MIS_ONBOARD_EN, 1);
 
 /**
  * Maximal horizontal distance from home to first waypoint
+ * home点到第一个航点的最大水平距离
  *
  * Failsafe check to prevent running mission stored from previous flight at a new takeoff location.
  * Set a value of zero or less to disable. The mission will not be started if the current
