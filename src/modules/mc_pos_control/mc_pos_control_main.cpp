@@ -1770,7 +1770,7 @@ MulticopterPositionControl::task_main()
 							// copter has reached our takeoff speed. split the thrust setpoint up
 							// into an integral part and into a P part
 							// 飞行器已经达到TAKEOFF速度(1.5m/s)。
-							// 将推力设定值分隔成积分I部分和比例P部分
+							// 将推力设定值分成积分I部分和比例P部分
 							thrust_int(2) = _takeoff_thrust_sp - _params.vel_p(2) * fabsf(_vel(2));
 							thrust_int(2) = -math::constrain(thrust_int(2), _params.thr_min, _params.thr_max);
 							_vel_sp_prev(2) = -_params.tko_speed;

@@ -750,6 +750,7 @@ _file_restart(dm_reset_reason reason)
 }
 
 /** Write to the data manager file */
+// 写航点到数据管理器文件中
 __EXPORT ssize_t
 dm_write(dm_item_t item, unsigned char index, dm_persitence_t persistence, const void *buf, size_t count)
 {

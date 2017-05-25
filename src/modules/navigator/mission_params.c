@@ -104,8 +104,9 @@ PARAM_DEFINE_FLOAT(MIS_DIST_1WP, 900);
 
 /**
  * Altitude setpoint mode
+ * 高度设定值模式
  *
- * 0: the system will follow a zero order hold altitude setpoint
+ * 0: the system will follow a zero order hold altitude setpoint 
  * 1: the system will follow a first order hold altitude setpoint
  * values follow the definition in enum mission_altitude_mode
  *

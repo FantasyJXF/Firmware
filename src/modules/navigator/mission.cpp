@@ -104,12 +104,13 @@ Mission::on_inactive()
 	 * mission velocity which might have been set using mission items
 	 * is used for missions such as RTL. */
       /*
-     * 复位任务巡航速度，
-     * 否则在任务模式下设置的速度可能会用于RTL之类的任务
-	 */
+    * 复位任务巡航速度，
+    * 否则在任务模式下设置的速度可能会用于RTL之类的任务
+    */
 	_navigator->set_cruising_speed();
 
 	/* Without home a mission can't be valid yet anyway, let's wait. */
+	// 等待home点坐标才能进入misssion 
 	if (!_navigator->home_position_valid()) {
 		return;
 	}
@@ -203,6 +204,7 @@ Mission::on_active()
 	}
 
 	/* reset the current offboard mission if needed */
+	// 必要时复位当前的外部任务
 	if (need_to_reset_mission(true)) {
 		reset_offboard_mission(_offboard_mission);
 		update_offboard_mission();
@@ -210,6 +212,7 @@ Mission::on_active()
 	}
 
 	/* reset mission items if needed */
+	// 必要时复位任务项
 	if (onboard_updated || offboard_updated) {
 		set_mission_items();
 	}
@@ -220,14 +223,15 @@ Mission::on_active()
 
 		/* If we just completed a takeoff which was inserted before the right waypoint,
 		   there is no need to report that we reached it because we didn't. */
+		// 如果我们刚刚完成了在正确的航点插入之前的起飞，那么就没有必要报告我们达到了，因为我们没有。
 		if (_work_item_type != WORK_ITEM_TYPE_TAKEOFF) {
 			set_mission_item_reached();
 		}
 
 		if (_mission_item.autocontinue) {
 			/* switch to next waypoint if 'autocontinue' flag set */
-			advance_mission();
-			set_mission_items();
+			advance_mission(); // 下一个任务 index
+			set_mission_items(); //
 		}
 
 	} else if (_mission_type != MISSION_TYPE_NONE && _param_altmode.get() == MISSION_ALTMODE_FOH) {
@@ -362,10 +366,11 @@ Mission::update_offboard_mission()
 
 		/* determine current index */
 		if (_offboard_mission.current_seq >= 0 && _offboard_mission.current_seq < (int)_offboard_mission.count) {
-			_current_offboard_mission_index = _offboard_mission.current_seq;
+			_current_offboard_mission_index = _offboard_mission.current_seq; // 更新索引
 
 		} else {
 			/* if less items available, reset to first item */
+			// 当前任务序号大于板上任务总数  复位成第一个航点
 			if (_current_offboard_mission_index >= (int)_offboard_mission.count) {
 				_current_offboard_mission_index = 0;
 
@@ -383,9 +388,11 @@ Mission::update_offboard_mission()
 
 		if (!failed) {
 			/* reset mission failure if we have an updated valid mission */
+			// 如果任务有效，重置任务失败的标志位
 			_navigator->get_mission_result()->mission_failure = false;
 
 			/* reset reached info as well */
+			// 同时重置已完成的信息
 			_navigator->get_mission_result()->reached = false;
 			_navigator->get_mission_result()->seq_reached = 0;
 			_navigator->get_mission_result()->seq_total = _offboard_mission.count;
@@ -411,6 +418,7 @@ void
 Mission::advance_mission()
 {
 	/* do not advance mission item if we're processing sub mission work items */
+	// 如果我们正在处理子任务工作项目，请不要推进任务项目
 	if (_work_item_type != WORK_ITEM_TYPE_DEFAULT) {
 		return;
 	}
@@ -448,20 +456,24 @@ Mission::set_mission_items()
 	updateParams();
 
 	/* reset the altitude foh (first order hold) logic, if altitude foh is enabled (param) a new foh element starts now */
+	// 高度保持
 	altitude_sp_foh_reset();
 
 	struct position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
 	/* the home dist check provides user feedback, so we initialize it to this */
-	bool user_feedback_done = false;
+	// 距home点的距离检查
+	bool user_feedback_done = false; // 就是发mavlink提示信息
 
 	/* mission item that comes after current if available */
+	// 如果可用的话，当前航点之后的任务
 	struct mission_item_s mission_item_next_position;
 	bool has_next_position_item = false;
 
 	work_item_type new_work_item_type = WORK_ITEM_TYPE_DEFAULT;
 
 	/* try setting onboard mission item */
+	// 设置板上任务项
 	if (_param_onboard_enabled.get()
 	    && prepare_mission_items(true, &_mission_item, &mission_item_next_position, &has_next_position_item)) {
 
@@ -474,7 +486,7 @@ Mission::set_mission_items()
 		_mission_type = MISSION_TYPE_ONBOARD;
 
 		/* try setting offboard mission item */
-
+		// 设置外部任务项
 	} else if (prepare_mission_items(false, &_mission_item, &mission_item_next_position, &has_next_position_item)) {
 		/* if mission type changed, notify */
 		if (_mission_type != MISSION_TYPE_OFFBOARD) {
@@ -486,6 +498,7 @@ Mission::set_mission_items()
 
 	} else {
 		/* no mission available or mission finished, switch to loiter */
+		// 没有任务可用或任务完成，切换到loiter状态
 		if (_mission_type != MISSION_TYPE_NONE) {
 
 			if (_navigator->get_land_detected()->landed) {
@@ -505,14 +518,17 @@ Mission::set_mission_items()
 		_mission_type = MISSION_TYPE_NONE;
 
 		/* set loiter mission item and ensure that there is a minimum clearance from home */
+		// 设置悬停任务项并确保距离home点的最短距离
 		set_loiter_item(&_mission_item, _param_takeoff_alt.get());
 
 		/* update position setpoint triplet  */
 		pos_sp_triplet->previous.valid = false;
-		mission_item_to_position_setpoint(&_mission_item, &pos_sp_triplet->current);
+		/* 将任务设定值转换为当前的位置设定值*/
+		mission_item_to_position_setpoint(&_mission_item, &pos_sp_triplet->current); 
 		pos_sp_triplet->next.valid = false;
 
 		/* reuse setpoint for LOITER only if it's not IDLE */
+		// LOITER的重新设定值只有在空闲时才能使用
 		_navigator->set_can_loiter_at_sp(pos_sp_triplet->current.type == position_setpoint_s::SETPOINT_TYPE_LOITER);
 
 		set_mission_finished();
@@ -534,7 +550,7 @@ Mission::set_mission_items()
 			user_feedback_done = true;
 		}
 
-		_navigator->set_position_setpoint_triplet_updated();
+		_navigator->set_position_setpoint_triplet_updated(); // 发布位置设定值
 		return;
 	}
 
@@ -1076,6 +1092,7 @@ Mission::do_abort_landing()
 	_current_offboard_mission_index -= 1;
 }
 
+// 准备好所有任务项
 bool
 Mission::prepare_mission_items(bool onboard, struct mission_item_s *mission_item,
 			       struct mission_item_s *next_position_mission_item, bool *has_next_position_item)
@@ -1083,11 +1100,12 @@ Mission::prepare_mission_items(bool onboard, struct mission_item_s *mission_item
 	bool first_res = false;
 	int offset = 1;
 
-	if (read_mission_item(onboard, 0, mission_item)) {
+	if (read_mission_item(onboard, 0, mission_item)) { // 读取第一个任务项
 
 		first_res = true;
 
 		/* trying to find next position mission item */
+		// 寻找下一个任务项
 		while (read_mission_item(onboard, offset, next_position_mission_item)) {
 
 			if (item_contains_position(next_position_mission_item)) {
@@ -1102,6 +1120,7 @@ Mission::prepare_mission_items(bool onboard, struct mission_item_s *mission_item
 	return first_res;
 }
 
+// 读取任务
 bool
 Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *mission_item)
 {
@@ -1120,21 +1139,25 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 
 	if (onboard) {
 		/* onboard mission */
+		// 板上任务
 		mission_index_ptr = (offset == 0) ? &_current_onboard_mission_index : &index_to_read;
 		dm_item = DM_KEY_WAYPOINTS_ONBOARD;
 
 	} else {
 		/* offboard mission */
+		// 外部任务
 		mission_index_ptr = (offset == 0) ? &_current_offboard_mission_index : &index_to_read;
 		dm_item = DM_KEY_WAYPOINTS_OFFBOARD(_offboard_mission.dataman_id);
 	}
 
 	/* Repeat this several times in case there are several DO JUMPS that we need to follow along, however, after
-	 * 10 iterations we have to assume that the DO JUMPS are probably cycling and give up. */
+	 * 10 iterations we have to assume that the DO JUMPS are probably cycling and give up. 
+	 */
 	for (int i = 0; i < 10; i++) {
 
 		if (*mission_index_ptr < 0 || *mission_index_ptr >= (int)mission->count) {
 			/* mission item index out of bounds - if they are equal, we just reached the end */
+			// 任务项的索引超出范围
 			if (*mission_index_ptr != (int)mission->count) {
 				mavlink_log_critical(_navigator->get_mavlink_log_pub(), "[wpm] err: index: %d, max: %d", *mission_index_ptr,
 								 (int)mission->count);
@@ -1146,9 +1169,11 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 		const ssize_t len = sizeof(struct mission_item_s);
 
 		/* read mission item to temp storage first to not overwrite current mission item if data damaged */
+		// 首先读取任务项到临时存储中，防止损坏的数据覆盖当前的任务项
 		struct mission_item_s mission_item_tmp;
 
 		/* read mission item from datamanager */
+		// 从数据管理器中读取任务项
 		if (dm_read(dm_item, *mission_index_ptr, &mission_item_tmp, len) != len) {
 			/* not supposed to happen unless the datamanager can't access the SD card, etc. */
 			mavlink_log_critical(_navigator->get_mavlink_log_pub(), "ERROR waypoint could not be read");
@@ -1156,6 +1181,7 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 		}
 
 		/* check for DO_JUMP item, and whether it hasn't not already been repeated enough times */
+		// 检查是否还没有重复足够的次数   DO_JUMP
 		if (mission_item_tmp.nav_cmd == NAV_CMD_DO_JUMP) {
 
 			/* do DO_JUMP as many times as requested */
@@ -1163,10 +1189,14 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 
 				/* only raise the repeat count if this is for the current mission item
 				 * but not for the read ahead mission item */
+				 /*
+				  * 只有当这是针对当前的任务项目而不是预读任务项目时才提高重复计数
+				  */
 				if (offset == 0) {
 					(mission_item_tmp.do_jump_current_count)++;
 
 					/* save repeat count */
+					// 保存重复数
 					if (dm_write(dm_item, *mission_index_ptr, DM_PERSIST_POWER_ON_RESET,
 						     &mission_item_tmp, len) != len) {
 						/* not supposed to happen unless the datamanager can't access the
@@ -1180,7 +1210,9 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 
 				/* set new mission item index and repeat
 				 * we don't have to validate here, if it's invalid, we should realize this later .*/
-				*mission_index_ptr = mission_item_tmp.do_jump_mission_index;
+				 // 设置新的任务项的索引并重复
+				 // 此处不用验证
+				*mission_index_ptr = mission_item_tmp.do_jump_mission_index; // 下一个jump
 
 			} else {
 				if (offset == 0) {
@@ -1188,7 +1220,7 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 				}
 
 				/* no more DO_JUMPS, therefore just try to continue with next mission item */
-				(*mission_index_ptr)++;
+				(*mission_index_ptr)++; // 下一个任务
 			}
 
 		} else {
@@ -1254,9 +1286,9 @@ void
 Mission::report_do_jump_mission_changed(int index, int do_jumps_remaining)
 {
 	/* inform about the change */
-	_navigator->get_mission_result()->item_do_jump_changed = true;
-	_navigator->get_mission_result()->item_changed_index = index;
-	_navigator->get_mission_result()->item_do_jump_remaining = do_jumps_remaining;
+	_navigator->get_mission_result()->item_do_jump_changed = true; // 如果剩余的JUMP次数发生变化，则为真
+	_navigator->get_mission_result()->item_changed_index = index;  // 指明哪个项目已更改
+	_navigator->get_mission_result()->item_do_jump_remaining = do_jumps_remaining; // 设置为该项目剩余的JUMP数
 	_navigator->set_mission_result_updated();
 }
 

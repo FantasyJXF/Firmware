@@ -254,14 +254,14 @@ private:
 
 	MissionFeasibilityChecker _missionFeasibilityChecker; /**< class that checks if a mission is feasible 检查任务是否可行的类 */
 
-	float _min_current_sp_distance_xy; /**< minimum distance which was achieved to the current waypoint  */
+	float _min_current_sp_distance_xy; /**< minimum distance which was achieved to the current waypoint 到达当前航点的最短水平距离 */
 
 	float _distance_current_previous; /**< distance from previous to current sp in pos_sp_triplet,
 					    only use if current and previous are valid */
 
 	enum work_item_type {
-		WORK_ITEM_TYPE_DEFAULT,		/**< default mission item */
-		WORK_ITEM_TYPE_TAKEOFF,		/**< takeoff before moving to waypoint */
+		WORK_ITEM_TYPE_DEFAULT,		/**< default mission item 默认任务项目 */
+		WORK_ITEM_TYPE_TAKEOFF,		/**< takeoff before moving to waypoint 在向航点移动前起飞*/
 		WORK_ITEM_TYPE_MOVE_TO_LAND,	/**< move to land waypoint before descent */
 		WORK_ITEM_TYPE_ALIGN,		/**< align for next waypoint */
 		WORK_ITEM_TYPE_CMD_BEFORE_MOVE,	/**<  */

@@ -583,6 +583,7 @@ MissionBlock::set_previous_pos_setpoint()
 	}
 }
 
+// 设置悬停任务项
 void
 MissionBlock::set_loiter_item(struct mission_item_s *item, float min_clearance)
 {
@@ -603,6 +604,7 @@ MissionBlock::set_loiter_item(struct mission_item_s *item, float min_clearance)
 
 		} else {
 			/* use current position and use return altitude as clearance */
+			// 使用当前的位置以及返回的高度作为距离
 			item->lat = _navigator->get_global_position()->lat;
 			item->lon = _navigator->get_global_position()->lon;
 			item->altitude = _navigator->get_global_position()->alt;
@@ -613,7 +615,7 @@ MissionBlock::set_loiter_item(struct mission_item_s *item, float min_clearance)
 		}
 
 		item->altitude_is_relative = false;
-		item->yaw = NAN;
+		item->yaw = NAN; // 航向不变
 		item->loiter_radius = _navigator->get_loiter_radius();
 		item->acceptance_radius = _navigator->get_acceptance_radius();
 		item->time_inside = 0.0f;

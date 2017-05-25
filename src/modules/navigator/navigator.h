@@ -271,9 +271,9 @@ private:
 
 	bool		_inside_fence;			/**< vehicle is inside fence */
 
-	bool		_can_loiter_at_sp;			/**< flags if current position SP can be used to loiter 当前*/
-	bool		_pos_sp_triplet_updated;		/**< flags if position SP triplet needs to be published */
-	bool 		_pos_sp_triplet_published_invalid_once;	/**< flags if position SP triplet has been published once to UORB */
+	bool		_can_loiter_at_sp;			/**< flags if current position SP can be used to loiter 当前设定值可用于悬停 */
+	bool		_pos_sp_triplet_updated;	/**< flags if position SP triplet needs to be published 如果任务设定值需要发布，则置位 */
+	bool 	_pos_sp_triplet_published_invalid_once;	/**< flags if position SP triplet has been published once to UORB */
 	bool		_mission_result_updated;		/**< flags if mission result has seen an update */
 
 	NavigatorMode	*_navigation_mode;		/**< abstract pointer to current navigation mode class */

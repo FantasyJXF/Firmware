@@ -56,6 +56,7 @@ PARAM_DEFINE_FLOAT(NAV_LOITER_RAD, 50.0f);
 
 /**
  * Acceptance Radius
+ * ø…Ω” ‹∞Îæ∂  10m?
  *
  * Default acceptance radius, overridden by acceptance radius of waypoint if set.
  * For fixed wing the L1 turning distance is used for horizontal acceptance.

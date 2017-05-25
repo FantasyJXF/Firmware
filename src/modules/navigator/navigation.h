@@ -66,7 +66,7 @@ enum NAV_CMD {
 	NAV_CMD_ROI = 80,
 	NAV_CMD_VTOL_TAKEOFF = 84,
 	NAV_CMD_VTOL_LAND = 85,
-	NAV_CMD_DO_JUMP = 177,
+	NAV_CMD_DO_JUMP = 177, /* 跳转到任务列表中所需的命令。仅重复此操作指定的次数 */
 	NAV_CMD_DO_CHANGE_SPEED = 178,
 	NAV_CMD_DO_SET_SERVO=183,
 	NAV_CMD_DO_LAND_START=189,
@@ -118,7 +118,7 @@ struct mission_item_s {
 			float yaw;					/**< in radians NED -PI..+PI, NAN means don't change yaw 在NED系下以弧度为单位*/
 			float ___lat_float;			/**< padding */
 			float ___lon_float;			/**< padding */
-			float altitude;				/**< altitude in meters	(AMSL) */
+			float altitude;				/**< altitude in meters	(AMSL) 平均海平面以上 */
 		};
 		float params[7];				/**< array to store mission command values for MAV_FRAME_MISSION ***/
 	};

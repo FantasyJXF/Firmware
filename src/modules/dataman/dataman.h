@@ -97,12 +97,13 @@ enum {
 #endif
 /** Data persistence levels */
 typedef enum {
-	DM_PERSIST_POWER_ON_RESET = 0,	/* Data survives all resets */
+	DM_PERSIST_POWER_ON_RESET = 0,	/* Data survives all resets 数据始终保存，复位与否 */
 	DM_PERSIST_IN_FLIGHT_RESET,     /* Data survives in-flight resets only */
 	DM_PERSIST_VOLATILE             /* Data does not survive resets */
 } dm_persitence_t;
 
 /** The reason for the last reset */
+// 最后重置的原因
 typedef enum {
 	DM_INIT_REASON_POWER_ON = 0,	/* Data survives resets */
 	DM_INIT_REASON_IN_FLIGHT,		/* Data survives in-flight resets only */
@@ -133,6 +134,7 @@ typedef union dataman_max_size_t {
 #define DM_MAX_DATA_SIZE sizeof(dataman_max_size_t)
 
 /** Retrieve from the data manager store */
+// 从数据管理器存储中检索
 __EXPORT ssize_t
 dm_read(
 	dm_item_t item,			/* The item type to retrieve */
@@ -142,6 +144,7 @@ dm_read(
 );
 
 /** write to the data manager store */
+// 写数据到数据管理器中
 __EXPORT ssize_t
 dm_write(
 	dm_item_t  item,		/* The item type to store */
