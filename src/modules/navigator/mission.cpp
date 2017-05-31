@@ -466,7 +466,7 @@ Mission::set_mission_items()
 	bool user_feedback_done = false; // 就是发mavlink提示信息
 
 	/* mission item that comes after current if available */
-	// 如果可用的话，当前航点之后的任务
+	// 如果可用的话，当前航点之后的任务项
 	struct mission_item_s mission_item_next_position;
 	bool has_next_position_item = false;
 
@@ -1214,7 +1214,7 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 				 // 此处不用验证
 				*mission_index_ptr = mission_item_tmp.do_jump_mission_index; // 下一个jump
 
-			} else {
+			} else { // DO_ JUMP次数达到
 				if (offset == 0) {
 					mavlink_log_info(_navigator->get_mavlink_log_pub(), "DO JUMP repetitions completed");
 				}
@@ -1223,9 +1223,9 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 				(*mission_index_ptr)++; // 下一个任务
 			}
 
-		} else {
+		} else { // 不进行DO_JUMP
 			/* if it's not a DO_JUMP, then we were successful */
-			memcpy(mission_item, &mission_item_tmp, sizeof(struct mission_item_s));
+			memcpy(mission_item, &mission_item_tmp, sizeof(struct mission_item_s)); //  复制暂存的任务
 			return true;
 		}
 	}
