@@ -281,6 +281,8 @@ transition_result_t arm_disarm(bool arm, orb_advert_t *mavlink_log_pub, const ch
 /**
 * @brief This function initializes the home position of the vehicle. This happens first time we get a good GPS fix and each
 *		 time the vehicle is armed with a good GPS fix.
+*		 初始化home点的位置。
+*     	 这是第一次得到一个很好的GPS定位，以及每次飞机在一个良好的GPS定位下解锁。
 **/
 static void commander_set_home_position(orb_advert_t &homePub, home_position_s &home,
 					const vehicle_local_position_s &localPosition, const vehicle_global_position_s &globalPosition,
@@ -288,6 +290,7 @@ static void commander_set_home_position(orb_advert_t &homePub, home_position_s &
 
 /**
  * Loop that runs at a lower rate and priority for calibration and parameter tasks.
+ * 对于校准以及参数任务，循环以较低的速率运行
  */
 void *commander_low_prio_loop(void *arg);
 

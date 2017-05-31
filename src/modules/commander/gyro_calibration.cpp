@@ -89,6 +89,7 @@ static calibrate_return gyro_calibration_worker(int cancel_sub, void* data)
 	memset(&worker_data->gyro_report_0, 0, sizeof(worker_data->gyro_report_0));
 
 	/* use first gyro to pace, but count correctly per-gyro for statistics */
+	// 使用第一个陀螺仪进行调速
 	while (calibration_counter[0] < calibration_count) {
 		if (calibrate_cancel_check(worker_data->mavlink_log_pub, cancel_sub)) {
 			return calibrate_return_cancelled;
@@ -262,6 +263,7 @@ int do_gyro_calibration(orb_advert_t *mavlink_log_pub)
 
 	do {
 		// Calibrate gyro and ensure user didn't move
+		// 校准陀螺仪并确保用户没有移动飞控
 		calibrate_return cal_return = gyro_calibration_worker(cancel_sub, &worker_data);
 
 		if (cal_return == calibrate_return_cancelled) {

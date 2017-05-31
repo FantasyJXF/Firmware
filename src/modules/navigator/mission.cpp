@@ -289,7 +289,7 @@ Mission::find_offboard_land_start()
 	/* find the first MAV_CMD_DO_LAND_START and return the index
 	 *  return -1 if not found
 	 *
-	 * TODO: implement full spec and find closest landing point geographically
+	 * TODO: implement full spec and find closest landing point geographically тз╣ьюМиоур╣╫вН╫Э╣двеб╫╣Ц©
 	 */
 
 	dm_item_t dm_current = DM_KEY_WAYPOINTS_OFFBOARD(_offboard_mission.dataman_id);

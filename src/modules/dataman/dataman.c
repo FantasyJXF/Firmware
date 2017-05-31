@@ -778,6 +778,7 @@ dm_write(dm_item_t item, unsigned char index, dm_persitence_t persistence, const
 }
 
 /** Retrieve from the data manager file */
+// 从数据管理器文件中检索
 __EXPORT ssize_t
 dm_read(dm_item_t item, unsigned char index, void *buf, size_t count)
 {

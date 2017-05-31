@@ -2442,7 +2442,7 @@ Sensors::init_sensor_class(const struct orb_metadata *meta, SensorData &sensor_d
 
 	for (unsigned i = 0; i < group_count; i++) {
 		if (sensor_data.subscription[i] < 0) {
-			sensor_data.subscription[i] = orb_subscribe_multi(meta, i);
+			sensor_data.subscription[i] = orb_subscribe_multi(meta, i); // 返回一个句柄
 
 			if (i > 0) {
 				/* the first always exists, but for each further sensor, add a new validator */
@@ -2454,7 +2454,7 @@ Sensors::init_sensor_class(const struct orb_metadata *meta, SensorData &sensor_d
 		}
 
 		int32_t priority;
-		orb_priority(sensor_data.subscription[i], &priority);
+		orb_priority(sensor_data.subscription[i], &priority); // 获取主题的优先级
 		sensor_data.priority[i] = (uint8_t)priority;
 	}
 
@@ -2469,7 +2469,7 @@ Sensors::task_main()
 	int ret = 0;
 
 	/* This calls a sensors_init which can have different implementations on NuttX, POSIX, QURT. */
-	ret = sensors_init();
+	ret = sensors_init(); // 传感器初始化
 
 #if !defined(__PX4_QURT) && !defined(__PX4_POSIX_RPI) && !defined(__PX4_POSIX_BEBOP)
 	// TODO: move adc_init into the sensors_init call.
