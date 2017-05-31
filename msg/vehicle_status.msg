@@ -42,7 +42,7 @@ uint8 RC_IN_MODE_GENERATED = 2
 # state machine / state of vehicle.
 # Encodes the complete system state and is set by the commander app.
 
-uint8 nav_state				# set navigation state machine to specified value
+uint8 nav_state			# set navigation state machine to specified value
 uint8 arming_state			# current arming state
 uint8 hil_state				# current hil state
 bool failsafe				# true if system is in failsafe state

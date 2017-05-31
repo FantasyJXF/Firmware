@@ -72,6 +72,7 @@ public:
 	};
 
 	/* Source, corresponding to the param GF_SOURCE */
+	// 鏉ユ簮锛屽搴斾簬鍙傛暟GF_SOURCE
 	enum {
 		GF_SOURCE_GLOBALPOS = 0,
 		GF_SOURCE_GPS = 1
@@ -83,7 +84,7 @@ public:
 	 * Calculate whether point is inside arbitrary polygon
 	 * @param craft pointer craft coordinates
 	 * @return true: system is inside fence, false: system is outside fence
-	 * 返回值:为真时，系统在围栏内；为假时，系统在围栏外
+	 * ?????:??????????围???????????????围????
 	 */
 	bool inside(const struct vehicle_global_position_s &global_position,
 		    const struct vehicle_gps_position_s &gps_position, float baro_altitude_amsl,

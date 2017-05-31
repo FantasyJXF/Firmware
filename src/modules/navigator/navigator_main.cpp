@@ -290,6 +290,7 @@ Navigator::task_main()
 	/* Try to load the geofence:
 	 * if /fs/microsd/etc/geofence.txt load from this file
 	 * else clear geofence data in datamanager */
+	 // 加载地理围栏  存放在SD卡中
 	struct stat buffer;
 
 	if (stat(GEOFENCE_FILENAME, &buffer) == 0) {
@@ -317,6 +318,7 @@ Navigator::task_main()
 	_vehicle_command_sub = orb_subscribe(ORB_ID(vehicle_command));
 
 	/* copy all topics first time */
+	// 第一次复制所有的话题
 	vehicle_status_update();
 	vehicle_land_detected_update();
 	vehicle_control_mode_update();
@@ -332,7 +334,7 @@ Navigator::task_main()
 
 	/* Setup of loop */
 	// 循环设置
-	fds[0].fd = _global_pos_sub;
+	fds[0].fd = _global_pos_sub; // 位置订阅
 	fds[0].events = POLLIN; //普通或优先级带数据可读
 
 	bool global_pos_available_once = false;
@@ -360,7 +362,7 @@ Navigator::task_main()
 			if (fds[0].revents & POLLIN) {
 				/* success, global pos is available */
 				global_position_update(); // 复制全球位置数据
-				if (_geofence.getSource() == Geofence::GF_SOURCE_GLOBALPOS) {
+				if (_geofence.getSource() == Geofence::GF_SOURCE_GLOBALPOS) { // GF源，全球位置
 					have_geofence_position_data = true;
 				}
 				global_pos_available_once = true;
@@ -375,7 +377,7 @@ Navigator::task_main()
 		orb_check(_gps_pos_sub, &updated);
 		if (updated) {
 			gps_position_update(); // 复制GPS原始数据
-			if (_geofence.getSource() == Geofence::GF_SOURCE_GPS) {
+			if (_geofence.getSource() == Geofence::GF_SOURCE_GPS) { // GF源，GPS位置
 				have_geofence_position_data = true;
 			}
 		}
@@ -422,6 +424,7 @@ Navigator::task_main()
 		if (updated) {
 			home_position_update();
 		}
+		
 ///////////////// commander 更新
 		orb_check(_vehicle_command_sub, &updated);
 		if (updated) {
@@ -429,22 +432,32 @@ Navigator::task_main()
 			orb_copy(ORB_ID(vehicle_command), _vehicle_command_sub, &cmd);
 
 			if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_REPOSITION) {
-///////////////// REPOSITION 重新定位
+				/*
+				 * MAV_CMD_DO_REPOSITION 	 将飞行器重新定位到特定的WGS84全球位置。
+				 * Mission Param #1	Ground speed, less than 0 (-1) for default
+				 * Mission Param #2	Bitmask of option flags, see the MAV_DO_REPOSITION_FLAGS enum.
+				 * Mission Param #3	Reserved
+				 * Mission Param #4	偏航航向, NaN时不变. 对于飞机表示loiter方向(0: 顺时针, 1: 逆时针)
+				 * Mission Param #5	Latitude (deg * 1E7)
+				 * Mission Param #6	Longitude (deg * 1E7)
+				 * Mission Param #7	Altitude (meters)				 
+				 */
 
 				struct position_setpoint_triplet_s *rep = get_reposition_triplet();
 
 				// store current position as previous position and goal as next
+				// 将当前的位置保存为之前的位置，并将目标位置作为下一个位置设定值
 				rep->previous.yaw = get_global_position()->yaw;
 				rep->previous.lat = get_global_position()->lat;
 				rep->previous.lon = get_global_position()->lon;
 				rep->previous.alt = get_global_position()->alt;
 
 				rep->current.loiter_radius = get_loiter_radius();
-				rep->current.loiter_direction = 1;
+				rep->current.loiter_direction = 1; // 顺时针
 				rep->current.type = position_setpoint_s::SETPOINT_TYPE_LOITER;
 
 				// Go on and check which changes had been requested
-				if (PX4_ISFINITE(cmd.param4)) {
+				if (PX4_ISFINITE(cmd.param4)) { // 偏航
 					rep->current.yaw = cmd.param4;
 				} else {
 					rep->current.yaw = NAN;
@@ -485,15 +498,15 @@ Navigator::task_main()
 				rep->current.yaw = cmd.param4; // 偏航角(if magnetometer present), ignored without magnetometer
 
 				/****
-				MAV_CMD_NAV_TAKEOFF	Takeoff from ground / hand
-				Mission Param #1	Minimum pitch (if airspeed sensor present), desired pitch without sensor
-				Mission Param #2	Empty
-				Mission Param #3	Empty
-				Mission Param #4	Yaw angle (if magnetometer present), ignored without magnetometer
-				Mission Param #5	Latitude
-				Mission Param #6	Longitude
-				Mission Param #7	Altitude
-				*****/
+				 * MAV_CMD_NAV_TAKEOFF	Takeoff from ground / hand
+				 * Mission Param #1	Minimum pitch (if airspeed sensor present), desired pitch without sensor
+				 * Mission Param #2	Empty
+				 * Mission Param #3	Empty
+				 * Mission Param #4	Yaw angle (if magnetometer present), ignored without magnetometer
+ 				 * Mission Param #5	Latitude
+				 * Mission Param #6	Longitude
+				 * Mission Param #7	Altitude
+				 *****/
 				
 				if (PX4_ISFINITE(cmd.param5) && PX4_ISFINITE(cmd.param6)) {
 					rep->current.lat = (cmd.param5 < 1000) ? cmd.param5 : cmd.param5 / (double)1e7;
@@ -516,8 +529,14 @@ Navigator::task_main()
 				/* find NAV_CMD_DO_LAND_START in the mission and
 				 * use MAV_CMD_MISSION_START to start the mission there
 				 */
-				unsigned land_start = _mission.find_offboard_land_start();
-				if (land_start != -1) {
+				 
+				 /*
+				  * MAV_CMD_MISSION_START	开始运行任务
+				  * Mission Param #1	first_item: 第一个任务
+				  * Mission Param #2	last_item: 最后一个任务 
+				  */
+				unsigned land_start = _mission.find_offboard_land_start(); // 返回-1时表示没有找到着陆任务　
+				if (land_start != -1) { // 接收到着陆任务
 					vehicle_command_s vcmd = {};
 					vcmd.target_system = get_vstatus()->system_id;
 					vcmd.target_component = get_vstatus()->component_id;
@@ -525,7 +544,7 @@ Navigator::task_main()
 					vcmd.param1 = land_start;
 					vcmd.param2 = 0;
 
-					orb_advert_t pub = orb_advertise_queue(ORB_ID(vehicle_command), &vcmd, vehicle_command_s::ORB_QUEUE_LENGTH);
+					orb_advert_t pub = orb_advertise_queue(ORB_ID(vehicle_command), &vcmd, vehicle_command_s::ORB_QUEUE_LENGTH); // 队列长度为3
 					(void)orb_unadvertise(pub);
 				}
 
@@ -537,7 +556,7 @@ Navigator::task_main()
 					_mission.set_current_offboard_mission_index(cmd.param1);
 				}
 
-			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_PAUSE_CONTINUE) {
+			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_PAUSE_CONTINUE) { // 如果在GPS位置控制模式下，保持当前位置或继续。
 				PX4_INFO("got pause/continue command");
 			}
 		}
