@@ -68,7 +68,7 @@ enum NAV_CMD {
 	NAV_CMD_VTOL_LAND = 85,
 	NAV_CMD_DO_JUMP = 177, /* 跳转到任务列表中所需的命令。仅重复此操作指定的次数 */
 	NAV_CMD_DO_CHANGE_SPEED = 178,
-	NAV_CMD_DO_SET_SERVO=183,
+	NAV_CMD_DO_SET_SERVO=183, /* 将伺服电机设置为所需的PWM值。 */
 	NAV_CMD_DO_LAND_START=189,
 	NAV_CMD_DO_SET_ROI=201,
 	NAV_CMD_DO_DIGICAM_CONTROL=203,
@@ -123,9 +123,9 @@ struct mission_item_s {
 		float params[7];				/**< array to store mission command values for MAV_FRAME_MISSION ***/
 	};
 	uint16_t nav_cmd;					/**< navigation command */
-	int16_t do_jump_mission_index;		/**< index where the do jump will go to */
-	uint16_t do_jump_repeat_count;		/**< how many times do jump needs to be done            */
-	uint16_t do_jump_current_count;		/**< count how many times the jump has been done	*/
+	int16_t do_jump_mission_index;		/**< index where the do jump will go to 要jump到的任务索引点*/
+	uint16_t do_jump_repeat_count;		/**< how many times do jump needs to be done 所需jump次数 */
+	uint16_t do_jump_current_count;		/**< count how many times the jump has been done 已经jump的次数 */
 	struct {
 		uint16_t frame : 4,				/**< mission frame ***/
 		origin : 3,						/**< how the mission item was generated */

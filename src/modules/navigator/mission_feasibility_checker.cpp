@@ -79,18 +79,19 @@ bool MissionFeasibilityChecker::checkMissionFeasible(orb_advert_t *mavlink_log_p
 
 	// first check if we have a valid position
 	// 首先检测位置是否有效
-	if (!home_valid /* can later use global / local pos for finer granularity */) {
+	if (!home_valid /* can later use global / local pos for finer granularity 以后可以使用全球/本地位置来获得finer granularity */) {
 		failed = true;
 		warned = true;
 		mavlink_log_info(_mavlink_log_pub, "Not yet ready for mission, no position lock.");
-	} else {
+	} else { // 检查距下一个航点的距离是否超过max_waypoint_distance
 		failed = failed || !check_dist_1wp(dm_current, nMissionItems, curr_lat, curr_lon, max_waypoint_distance, warning_issued);
 	}
 
 	// check if all mission item commands are supported
-	failed = failed || !checkMissionItemValidity(dm_current, nMissionItems, condition_landed);
-	failed = failed || !checkGeofence(dm_current, nMissionItems, geofence, home_alt);
-	failed = failed || !checkHomePositionAltitude(dm_current, nMissionItems, home_alt, home_valid, warned);
+	// 检查是否支持所有任务项目命令
+	failed = failed || !checkMissionItemValidity(dm_current, nMissionItems, condition_landed); // 任务类型
+	failed = failed || !checkGeofence(dm_current, nMissionItems, geofence, home_alt); // 地理围栏内
+	failed = failed || !checkHomePositionAltitude(dm_current, nMissionItems, home_alt, home_valid, warned); // 航点在home点高度以上
 
 	if (isRotarywing) {
 		failed = failed || !checkMissionFeasibleRotarywing(dm_current, nMissionItems, geofence, home_alt, home_valid, default_acceptance_rad);
@@ -115,13 +116,17 @@ bool MissionFeasibilityChecker::checkMissionFeasibleRotarywing(dm_item_t dm_curr
 		}
 
 		// look for a takeoff waypoint
+		// 寻找起飞航点
 		if (missionitem.nav_cmd == NAV_CMD_TAKEOFF) {
 			// make sure that the altitude of the waypoint is at least one meter larger than the acceptance radius
+			// 确保航点的高度至少比可接受半径大一米
 			// this makes sure that the takeoff waypoint is not reached before we are at least one meter in the air
+			// 这确保在空中至少上升一米之前没有达到起飞航点
 			float takeoff_alt = missionitem.altitude_is_relative
 				      ? missionitem.altitude
 			              : missionitem.altitude - home_alt;
 			// check if we should use default acceptance radius
+			// 检查我们是否应该使用默认的可接受半径
 			float acceptance_radius = default_acceptance_rad;
 
 			if (missionitem.acceptance_radius > NAV_EPSILON_POSITION) {
@@ -185,6 +190,8 @@ bool MissionFeasibilityChecker::checkHomePositionAltitude(dm_item_t dm_current, 
 	float home_alt, bool home_valid, bool &warning_issued, bool throw_error)
 {
 	/* Check if all waypoints are above the home altitude, only return false if bool throw_error = true */
+	// 检查所有航点是否都高于本地高度
+	// 仅当throw_error = true时返回false
 	for (size_t i = 0; i < nMissionItems; i++) {
 		struct mission_item_s missionitem;
 		const ssize_t len = sizeof(struct mission_item_s);
@@ -196,6 +203,7 @@ bool MissionFeasibilityChecker::checkHomePositionAltitude(dm_item_t dm_current, 
 		}
 
 		/* reject relative alt without home set */
+		// 拒绝在home点未设置时的相对高度
 		if (missionitem.altitude_is_relative && !home_valid && isPositionCommand(missionitem.nav_cmd)) {
 
 			warning_issued = true;
@@ -210,6 +218,7 @@ bool MissionFeasibilityChecker::checkHomePositionAltitude(dm_item_t dm_current, 
 		}
 
 		/* calculate the global waypoint altitude */
+		// 计算全球航点高度
 		float wp_alt = (missionitem.altitude_is_relative) ? missionitem.altitude + home_alt : missionitem.altitude;
 
 		if (home_alt > wp_alt && isPositionCommand(missionitem.nav_cmd)) {
@@ -231,6 +240,7 @@ bool MissionFeasibilityChecker::checkHomePositionAltitude(dm_item_t dm_current, 
 
 bool MissionFeasibilityChecker::checkMissionItemValidity(dm_item_t dm_current, size_t nMissionItems, bool condition_landed) {
 	// do not allow mission if we find unsupported item
+	// 如果我们发现不支持的项目，请不要使用任务模式
 	for (size_t i = 0; i < nMissionItems; i++) {
 		struct mission_item_s missionitem;
 		const ssize_t len = sizeof(struct mission_item_s);
@@ -357,23 +367,27 @@ MissionFeasibilityChecker::check_dist_1wp(dm_item_t dm_current, size_t nMissionI
 {
 
 	/* check if first waypoint is not too far from home */
+	// 检查第一个航点是否离home点不远
 	if (dist_first_wp > 0.0f) {
 		struct mission_item_s mission_item;
 
 		/* find first waypoint (with lat/lon) item in datamanager */
+		// 在datamanager中找到第一个航点（lat/ lon）
 		for (unsigned i = 0; i < nMissionItems; i++) {
 			if (dm_read(dm_current, i,
 					&mission_item, sizeof(mission_item_s)) == sizeof(mission_item_s)) {
 				/* Check non navigation item */
-				if (mission_item.nav_cmd == NAV_CMD_DO_SET_SERVO){
+				if (mission_item.nav_cmd == NAV_CMD_DO_SET_SERVO){ // 将伺服电机设置为所需的PWM值。
 
 					/* check actuator number */
+					// 检查电机号
 					if (mission_item.params[0] < 0 || mission_item.params[0] > 5) {
 						mavlink_log_critical(_mavlink_log_pub, "Actuator number %d is out of bounds 0..5", (int)mission_item.params[0]);
 						warning_issued = true;
 						return false;
 					}
 					/* check actuator value */
+					// 检查电机的值
 					if (mission_item.params[1] < -2000 || mission_item.params[1] > 2000) {
 						mavlink_log_critical(_mavlink_log_pub, "Actuator value %d is out of bounds -2000..2000", (int)mission_item.params[1]);
 						warning_issued = true;
@@ -384,6 +398,7 @@ MissionFeasibilityChecker::check_dist_1wp(dm_item_t dm_current, size_t nMissionI
 				else if (isPositionCommand(mission_item.nav_cmd)) {
 
 					/* check distance from current position to item */
+					// 检查从当前位置到项目的距离
 					float dist_to_1wp = get_distance_to_next_waypoint(
 							mission_item.lat, mission_item.lon, curr_lat, curr_lon);
 
@@ -413,6 +428,7 @@ MissionFeasibilityChecker::check_dist_1wp(dm_item_t dm_current, size_t nMissionI
 		}
 
 		/* no waypoints found in mission, then we will not fly far away */
+		// 在任务中找不到航点，那么我们不会飞走很远
 		_dist_1wp_ok = true;
 		return true;
 
@@ -424,9 +440,9 @@ MissionFeasibilityChecker::check_dist_1wp(dm_item_t dm_current, size_t nMissionI
 bool
 MissionFeasibilityChecker::isPositionCommand(unsigned cmd){
 	if (cmd == NAV_CMD_WAYPOINT ||
-		cmd == NAV_CMD_LOITER_UNLIMITED ||
-		cmd == NAV_CMD_LOITER_TIME_LIMIT ||
-		cmd == NAV_CMD_LAND ||
+	    cmd == NAV_CMD_LOITER_UNLIMITED ||
+	    cmd == NAV_CMD_LOITER_TIME_LIMIT ||
+	    cmd == NAV_CMD_LAND ||
 		cmd == NAV_CMD_TAKEOFF ||
 		cmd == NAV_CMD_LOITER_TO_ALT ||
 		cmd == NAV_CMD_VTOL_TAKEOFF ||

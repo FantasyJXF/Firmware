@@ -473,6 +473,7 @@ bool
 MissionBlock::item_contains_position(const struct mission_item_s *item)
 {
 	// XXX: maybe extend that check onto item properties
+	// 项目属性检查
 	if (item->nav_cmd == NAV_CMD_DO_JUMP ||
 		item->nav_cmd == NAV_CMD_DO_CHANGE_SPEED ||
 		item->nav_cmd == NAV_CMD_DO_SET_SERVO ||
@@ -539,6 +540,7 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 
 	case NAV_CMD_TAKEOFF:
 		// set pitch and ensure that the hold time is zero
+		// 设置俯仰角以确保hold时间为0
 		sp->pitch_min = item->pitch_min;
 	case NAV_CMD_VTOL_TAKEOFF:
 		sp->type = position_setpoint_s::SETPOINT_TYPE_TAKEOFF;
@@ -598,6 +600,7 @@ MissionBlock::set_loiter_item(struct mission_item_s *item, float min_clearance)
 
 		if (_navigator->get_can_loiter_at_sp() && pos_sp_triplet->current.valid) {
 			/* use current position setpoint */
+			// 使用当前位置设定值
 			item->lat = pos_sp_triplet->current.lat;
 			item->lon = pos_sp_triplet->current.lon;
 			item->altitude = pos_sp_triplet->current.alt;
@@ -618,9 +621,9 @@ MissionBlock::set_loiter_item(struct mission_item_s *item, float min_clearance)
 		item->yaw = NAN; // 航向不变
 		item->loiter_radius = _navigator->get_loiter_radius();
 		item->acceptance_radius = _navigator->get_acceptance_radius();
-		item->time_inside = 0.0f;
-		item->autocontinue = false;
-		item->origin = ORIGIN_ONBOARD;
+		item->time_inside = 0.0f; // 在航点半径内停留时间
+		item->autocontinue = false; // 继续下一个航点则为1/true
+		item->origin = ORIGIN_ONBOARD;  // 航点数据源 来自板载
 	}
 }
 

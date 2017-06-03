@@ -232,8 +232,8 @@ private:
 	int		_land_detected_sub;		/**< vehicle land detected subscription */
 	int		_fw_pos_ctrl_status_sub;		/**< notification of vehicle capabilities updates */
 	int		_control_mode_sub;		/**< vehicle control mode subscription */
-	int		_onboard_mission_sub;		/**< onboard mission subscription */
-	int		_offboard_mission_sub;		/**< offboard mission subscription */
+	int		_onboard_mission_sub;		/**< onboard mission subscription 订阅板上的任务 */
+	int		_offboard_mission_sub;		/**< offboard mission subscription 订阅外部任务 */
 	int		_param_update_sub;		/**< param update subscription */
 	int		_vehicle_command_sub;		/**< vehicle commands (onboard and offboard) */
 
@@ -262,7 +262,7 @@ private:
 	vehicle_attitude_setpoint_s			_att_sp;
 
 	bool 		_mission_item_valid;		/**< flags if the current mission item is valid */
-	int		_mission_instance_count;	/**< instance count for the current mission */
+	int		_mission_instance_count;	/**< instance count for the current mission 当前任务的实例数 */
 
 	perf_counter_t	_loop_perf;			/**< loop performance counter */
 
@@ -274,7 +274,7 @@ private:
 	bool		_can_loiter_at_sp;			/**< flags if current position SP can be used to loiter 当前设定值可用于悬停 */
 	bool		_pos_sp_triplet_updated;	/**< flags if position SP triplet needs to be published 如果任务设定值需要发布，则置位 */
 	bool 	_pos_sp_triplet_published_invalid_once;	/**< flags if position SP triplet has been published once to UORB */
-	bool		_mission_result_updated;		/**< flags if mission result has seen an update */
+	bool		_mission_result_updated;		/**< flags if mission result has seen an update 如果任务结果已经更新，则置位 */
 
 	NavigatorMode	*_navigation_mode;		/**< abstract pointer to current navigation mode class */
 	Mission		_mission;			/**< class that handles the missions */

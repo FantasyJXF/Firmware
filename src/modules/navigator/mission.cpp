@@ -98,7 +98,7 @@ Mission::~Mission()
 }
 
 void
-Mission::on_inactive()
+Mission::on_inactive() // 禁用mission模式
 {
 	/* We need to reset the mission cruising speed, otherwise the
 	 * mission velocity which might have been set using mission items
@@ -110,6 +110,7 @@ Mission::on_inactive()
 	_navigator->set_cruising_speed();
 
 	/* Without home a mission can't be valid yet anyway, let's wait. */
+	// 反正没有home点，任务无法有效，我们等等。
 	// 等待home点坐标才能进入misssion 
 	if (!_navigator->home_position_valid()) {
 		return;
@@ -122,7 +123,7 @@ Mission::on_inactive()
 		orb_check(_navigator->get_onboard_mission_sub(), &onboard_updated); // 板上任务
 
 		if (onboard_updated) {
-			update_onboard_mission();
+			update_onboard_mission(); // 更新任务项的索引号
 		}
 
 		bool offboard_updated = false;
@@ -133,9 +134,9 @@ Mission::on_inactive()
 		}
 
 		/* reset the current offboard mission if needed */
-		// 必要时复位当前外部任务
+		// 必要时重新设置当前外部任务
 		if (need_to_reset_mission(false)) {
-			reset_offboard_mission(_offboard_mission);
+			reset_offboard_mission(_offboard_mission);  // 重设外部任务
 			update_offboard_mission();
 		}
 
@@ -148,29 +149,34 @@ Mission::on_inactive()
 		dm_lock(DM_KEY_MISSION_STATE);
 
 		/* read current state */
-		int read_res = dm_read(DM_KEY_MISSION_STATE, 0, &mission_state, sizeof(mission_s));
+		int read_res = dm_read(DM_KEY_MISSION_STATE, 0, &mission_state, sizeof(mission_s)); // 读第一个任务点
 
 		dm_unlock(DM_KEY_MISSION_STATE);
 
-		if (read_res == sizeof(mission_s)) {
+		if (read_res == sizeof(mission_s)) { // 确定任务点信息
 			_offboard_mission.dataman_id = mission_state.dataman_id;
 			_offboard_mission.count = mission_state.count;
 			_current_offboard_mission_index = mission_state.current_seq;
 		}
 
 		/* On init let's check the mission, maybe there is already one available. */
-		// 初始化时检查任务，可能已经有一个可用
+		// 初始化时检查任务是否有效，可能已经有一个可用
 		check_mission_valid(false);
 
 		_inited = true;
 	}
 
 	/* require takeoff after non-loiter or landing */
+	// 当前位置设定值不能用于悬停或者已经着陆，则需要起飞
 	if (!_navigator->get_can_loiter_at_sp() || _navigator->get_land_detected()->landed) {
 		_need_takeoff = true;
 
 		/* Reset work item type to default if auto take-off has been paused or aborted,
 		   and we landed in manual mode. */
+		/*
+		 * 如果自动起飞已被暂停或中止，则将工作项类型重设为默认值
+		 * 在手动模式下着陆
+		 */
 		if (_work_item_type == WORK_ITEM_TYPE_TAKEOFF) {
 			_work_item_type = WORK_ITEM_TYPE_DEFAULT;
 		}
@@ -315,6 +321,7 @@ Mission::update_onboard_mission()
 {
 	if (orb_copy(ORB_ID(onboard_mission), _navigator->get_onboard_mission_sub(), &_onboard_mission) == OK) {
 		/* accept the current index set by the onboard mission if it is within bounds */
+		// 如果当前索引在范围内，则接受板上任务设置的current index
 		if (_onboard_mission.current_seq >= 0
 		    && _onboard_mission.current_seq < (int)_onboard_mission.count) {
 
@@ -322,7 +329,7 @@ Mission::update_onboard_mission()
 
 		} else {
 			/* if less WPs available, reset to first WP */
-			// 当前任务序号大于板上任务总数  复位成第一个航点
+			// 当前任务序号大于板上任务总数，将当前航点设置成第一个航点
 			if (_current_onboard_mission_index >= (int)_onboard_mission.count) {
 				_current_onboard_mission_index = 0;
 				/* if not initialized, set it to 0 */
@@ -337,6 +344,7 @@ Mission::update_onboard_mission()
 		// XXX check validity here as well
 		_navigator->get_mission_result()->valid = true;
 		/* reset mission failure if we have an updated valid mission */
+		// 如果我们有更新的有效任务  取消任务失败   任务继续
 		_navigator->get_mission_result()->mission_failure = false;
 
 		/* reset reached info as well */
@@ -345,10 +353,10 @@ Mission::update_onboard_mission()
 		_navigator->get_mission_result()->seq_reached = 0;
 		_navigator->get_mission_result()->seq_total = _onboard_mission.count;
 
-		_navigator->increment_mission_instance_count();
+		_navigator->increment_mission_instance_count(); // 任务实例数 + 1
 		_navigator->set_mission_result_updated();
 
-	} else {
+	} else { // 更新板载任务失败
 		_onboard_mission.count = 0;
 		_onboard_mission.current_seq = 0;
 		_current_onboard_mission_index = 0;
@@ -456,7 +464,7 @@ Mission::set_mission_items()
 	updateParams();
 
 	/* reset the altitude foh (first order hold) logic, if altitude foh is enabled (param) a new foh element starts now */
-	// 高度保持
+	// 重设高度的一阶采样保持
 	altitude_sp_foh_reset();
 
 	struct position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
@@ -478,8 +486,9 @@ Mission::set_mission_items()
 	    && prepare_mission_items(true, &_mission_item, &mission_item_next_position, &has_next_position_item)) {
 
 		/* if mission type changed, notify */
-		if (_mission_type != MISSION_TYPE_ONBOARD) {
-			mavlink_log_info(_navigator->get_mavlink_log_pub(), "Executing internal mission");
+		// 如果任务类型改变，需要发出通知
+		if (_mission_type != MISSION_TYPE_ONBOARD) { // 初始类型为MISSION_TYPE_NONE
+			mavlink_log_info(_navigator->get_mavlink_log_pub(), "Executing internal mission"); // 执行内部任务
 			user_feedback_done = true;
 		}
 
@@ -509,19 +518,21 @@ Mission::set_mission_items()
 				mavlink_log_info(_navigator->get_mavlink_log_pub(), "mission finished, loitering");
 
 				/* use last setpoint for loiter */
+				// 在最后一个位置设定值处悬停
 				_navigator->set_can_loiter_at_sp(true);
 			}
 
 			user_feedback_done = true;
 		}
 
-		_mission_type = MISSION_TYPE_NONE;
+		_mission_type = MISSION_TYPE_NONE; // 没有任务了
 
 		/* set loiter mission item and ensure that there is a minimum clearance from home */
 		// 设置悬停任务项并确保距离home点的最短距离
 		set_loiter_item(&_mission_item, _param_takeoff_alt.get());
 
-		/* update position setpoint triplet  */
+		/* update position setpoint triplet */
+		// 更新位置设定值
 		pos_sp_triplet->previous.valid = false;
 		/* 将任务设定值转换为当前的位置设定值*/
 		mission_item_to_position_setpoint(&_mission_item, &pos_sp_triplet->current); 
@@ -531,7 +542,7 @@ Mission::set_mission_items()
 		// LOITER的重新设定值只有在空闲时才能使用
 		_navigator->set_can_loiter_at_sp(pos_sp_triplet->current.type == position_setpoint_s::SETPOINT_TYPE_LOITER);
 
-		set_mission_finished();
+		set_mission_finished(); // 任务完成
 
 		if (!user_feedback_done) {
 			/* only tell users that we got no mission if there has not been any
@@ -555,6 +566,7 @@ Mission::set_mission_items()
 	}
 
 	/*********************************** handle mission item *********************************************/
+	/*************************************** 处理任务项 **************************************************/
 
 	/* handle position mission items */
 	if (item_contains_position(&_mission_item)) {
@@ -1092,7 +1104,7 @@ Mission::do_abort_landing()
 	_current_offboard_mission_index -= 1;
 }
 
-// 准备好所有任务项
+// 准备好当前以及下一个任务项
 bool
 Mission::prepare_mission_items(bool onboard, struct mission_item_s *mission_item,
 			       struct mission_item_s *next_position_mission_item, bool *has_next_position_item)
@@ -1106,11 +1118,11 @@ Mission::prepare_mission_items(bool onboard, struct mission_item_s *mission_item
 
 		/* trying to find next position mission item */
 		// 寻找下一个任务项
-		while (read_mission_item(onboard, offset, next_position_mission_item)) {
+		while (read_mission_item(onboard, offset, next_position_mission_item)) { // 读取下一个任务
 
-			if (item_contains_position(next_position_mission_item)) {
+			if (item_contains_position(next_position_mission_item)) { // 下一个任务项的属性检查
 				*has_next_position_item = true;
-				break;
+				break; // 有下一个任务项，跳出循环，不执行 offset++ ，这里读取航点只会往下读一个
 			}
 
 			offset++;
@@ -1152,6 +1164,7 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 
 	/* Repeat this several times in case there are several DO JUMPS that we need to follow along, however, after
 	 * 10 iterations we have to assume that the DO JUMPS are probably cycling and give up. 
+	 * 重复数次以jump一些航点
 	 */
 	for (int i = 0; i < 10; i++) {
 
@@ -1189,9 +1202,9 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 
 				/* only raise the repeat count if this is for the current mission item
 				 * but not for the read ahead mission item */
-				 /*
-				  * 只有当这是针对当前的任务项目而不是预读任务项目时才提高重复计数
-				  */
+			      /*
+			     * 只有当这是针对当前的任务项目而不是预读任务项目时才提高重复计数
+				 */
 				if (offset == 0) {
 					(mission_item_tmp.do_jump_current_count)++;
 
@@ -1205,14 +1218,15 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 						return false;
 					}
 
-					report_do_jump_mission_changed(*mission_index_ptr, mission_item_tmp.do_jump_repeat_count);
+					report_do_jump_mission_changed(*mission_index_ptr, mission_item_tmp.do_jump_repeat_count); // 指明跳过的任务项
 				}
 
 				/* set new mission item index and repeat
-				 * we don't have to validate here, if it's invalid, we should realize this later .*/
+				 * we don't have to validate here, if it's invalid, we should realize this later .
+				 */
 				 // 设置新的任务项的索引并重复
 				 // 此处不用验证
-				*mission_index_ptr = mission_item_tmp.do_jump_mission_index; // 下一个jump
+				*mission_index_ptr = mission_item_tmp.do_jump_mission_index; // 要jump到的任务索引点
 
 			} else { // DO_ JUMP次数达到
 				if (offset == 0) {
@@ -1327,7 +1341,7 @@ Mission::check_mission_valid(bool force)
 		dm_item_t dm_current = DM_KEY_WAYPOINTS_OFFBOARD(_offboard_mission.dataman_id);
 
 		_navigator->get_mission_result()->valid =
-			_missionFeasibilityChecker.checkMissionFeasible(
+			_missionFeasibilityChecker.checkMissionFeasible( // 检查任务类型/地理围栏/航点高度...
 				_navigator->get_mavlink_log_pub(), /* MAVLink消息 */
 				(_navigator->get_vstatus()->is_rotary_wing || _navigator->get_vstatus()->is_vtol), /* 机型 */
 				dm_current, (size_t) _offboard_mission.count, _navigator->get_geofence(), 
@@ -1341,9 +1355,9 @@ Mission::check_mission_valid(bool force)
 				_navigator->get_land_detected()->landed);  /* 着陆检测 */
 
 		_navigator->get_mission_result()->seq_total = _offboard_mission.count;
-		_navigator->increment_mission_instance_count(); /* 任务数增加 */
-		_navigator->set_mission_result_updated(); /* 任务结果更新置位 */
-		_home_inited = _navigator->home_position_valid();  /* 起点GPS数据更新 */
+		_navigator->increment_mission_instance_count(); /* 当前任务的实例数增加 */
+		_navigator->set_mission_result_updated(); /* 任务结果更新标志位 */
+		_home_inited = _navigator->home_position_valid();  /* home点GPS数据更新 */
 	}
 }
 
@@ -1385,6 +1399,7 @@ Mission::reset_offboard_mission(struct mission_s &mission)
 			mavlink_log_critical(_navigator->get_mavlink_log_pub(), "ERROR: could not read mission");
 
 			/* initialize mission state in dataman */
+			// 在dataman中初始化任务状态
 			mission.dataman_id = 0;
 			mission.count = 0;
 			mission.current_seq = 0;
