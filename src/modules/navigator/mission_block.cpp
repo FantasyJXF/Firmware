@@ -430,7 +430,7 @@ void
 MissionBlock::issue_command(const struct mission_item_s *item)
 {
 	if (item_contains_position(item)) {
-		return;
+		return; //退出函数
 	}
 
 	// NAV_CMD_DO_LAND_START is only a marker
@@ -441,14 +441,17 @@ MissionBlock::issue_command(const struct mission_item_s *item)
 	if (item->nav_cmd == NAV_CMD_DO_SET_SERVO) {
 		PX4_INFO("do_set_servo command");
 		// XXX: we should issue a vehicle command and handle this somewhere else
+		// 发布一个飞行器的命令并处理
 		memset(&actuators, 0, sizeof(actuators));
 		// params[0] actuator number to be set 0..5 (corresponds to AUX outputs 1..6)
+		// param[0]表示电机号0-5对应辅助通道输出1-6
 		// params[1] new value for selected actuator in ms 900...2000
+		// param[1]表示选定电机的控制量:高电平时间 900ms-2000ms
 		actuators.control[(int)item->params[0]] = 1.0f / 2000 * -item->params[1];
 		actuators.timestamp = hrt_absolute_time();
 
 		if (_actuator_pub != nullptr) {
-			orb_publish(ORB_ID(actuator_controls_2), _actuator_pub, &actuators);
+			orb_publish(ORB_ID(actuator_controls_2), _actuator_pub, &actuators); // 发布执行器控制组2输出，云台控制
 
 		} else {
 			_actuator_pub = orb_advertise(ORB_ID(actuator_controls_2), &actuators);
@@ -500,7 +503,7 @@ void
 MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *item, struct position_setpoint_s *sp)
 {
 	/* set the correct setpoint for vtol transition */
-
+	// 为VTOL转换设置正确的设定值
 	if (item->nav_cmd == NAV_CMD_DO_VTOL_TRANSITION && PX4_ISFINITE(item->yaw)
 			&& item->params[0] >= vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW - 0.5f) {
 
@@ -525,7 +528,7 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 	sp->alt = item->altitude_is_relative ? item->altitude + _navigator->get_home_position()->alt : item->altitude;
 	sp->yaw = item->yaw;
 	sp->loiter_radius = (fabsf(item->loiter_radius) > NAV_EPSILON_POSITION) ? fabsf(item->loiter_radius) :
-				_navigator->get_loiter_radius();
+				_navigator->get_loiter_radius(); // 悬停半径由任务点设置
 	sp->loiter_direction = (item->loiter_radius > 0) ? 1 : -1;
 	sp->acceptance_radius = item->acceptance_radius;
 	sp->disable_mc_yaw_control = item->disable_mc_yaw;
@@ -556,6 +559,7 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 
 	case NAV_CMD_LOITER_TO_ALT:
 		// initially use current altitude, and switch to mission item altitude once in loiter position
+		// 高度至少达到最小悬停高度
 		sp->alt = math::max(_navigator->get_global_position()->alt, _navigator->get_home_position()->alt + _param_loiter_min_alt.get());
 
 		// no break
@@ -575,6 +579,8 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 	sp->valid = true;
 }
 
+
+// 保存已完成的航点信息
 void
 MissionBlock::set_previous_pos_setpoint()
 {

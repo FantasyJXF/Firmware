@@ -51,11 +51,12 @@ uint8 system_type			# system type, contains mavlink MAV_TYPE
 uint32 system_id			# system id, contains MAVLink's system ID field
 uint32 component_id			# subsystem / component id, contains MAVLink's component ID field
 
-bool is_rotary_wing			# True if system is in rotary wing configuration, so for a VTOL this is only true while flying as a multicopter
-bool is_vtol				# True if the system is VTOL capable
-bool vtol_fw_permanent_stab		# True if vtol should stabilize attitude for fw in manual mode
-bool in_transition_mode			# True if VTOL is doing a transition
-bool in_transition_to_fw		# True if VTOL is doing a transition from MC to FW
+bool is_rotary_wing		# True if system is in rotary wing configuration, so for a VTOL this is only true while flying as a multicopter
+                                      # 如果系统处于旋转翼配置，则为真，因此对于垂直起落架来说，这只有在作为多机器飞行时才为真
+bool is_vtol				# True if the system is VTOL capable 如果系统具有VTOL功能，则为真
+bool vtol_fw_permanent_stab		# True if vtol should stabilize attitude for fw in manual mode 如果vtol应该在手动模式下稳定fw的姿态，则为真
+bool in_transition_mode			# True if VTOL is doing a transition 如果VTOL正在进行转换，则为真
+bool in_transition_to_fw		# True if VTOL is doing a transition from MC to FW 如果VTOL正在从MC转换到FW，则为真
 
 bool rc_signal_lost				# true if RC reception lost
 uint8 rc_input_mode				# set to 1 to disable the RC input, 2 to enable manual control to RC in mapping.

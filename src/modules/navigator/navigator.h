@@ -276,7 +276,7 @@ private:
 	bool 	_pos_sp_triplet_published_invalid_once;	/**< flags if position SP triplet has been published once to UORB */
 	bool		_mission_result_updated;		/**< flags if mission result has seen an update 如果任务结果已经更新，则置位 */
 
-	NavigatorMode	*_navigation_mode;		/**< abstract pointer to current navigation mode class */
+	NavigatorMode	*_navigation_mode;		/**< abstract pointer to current navigation mode class 抽象指针 */
 	Mission		_mission;			/**< class that handles the missions */
 	Loiter		_loiter;			/**< class that handles loiter */
 	Takeoff		_takeoff;			/**< class for handling takeoff commands */
