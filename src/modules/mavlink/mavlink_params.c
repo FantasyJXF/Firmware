@@ -101,11 +101,13 @@ PARAM_DEFINE_INT32(MAV_FWDEXTSP, 1);
 
 /**
  * Broadcast heartbeats on local network
+ * 在本地网络广播心跳
  *
  * This allows a ground control station to automatically find the drone
  * on the local network.
+ * 这使得地面控制站能够在本地网络上自动找到无人机。
  *
- * @value 0 Never broadcast
+ * @value 0 Never broadcast 不广播
  * @value 1 Always broadcast
  * @group MAVLink
  */

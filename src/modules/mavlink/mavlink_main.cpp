@@ -92,7 +92,7 @@
 #error MAVLINK_CRC_EXTRA has to be defined on PX4 systems
 #endif
 
-#define DEFAULT_REMOTE_PORT_UDP			14550 ///< GCS port per MAVLink spec
+#define DEFAULT_REMOTE_PORT_UDP		14550 ///< GCS port per MAVLink spec 每个MAVLink指定的地面站端口
 #define DEFAULT_DEVICE_NAME			"/dev/ttyS1"
 #define MAX_DATA_RATE				10000000	///< max data rate in bytes/s
 #define MAIN_LOOP_DELAY 			10000	///< 100 Hz @ 1000 bytes/s data rate
@@ -107,7 +107,7 @@ static Mavlink *_mavlink_instances = nullptr;
  */
 extern "C" __EXPORT int mavlink_main(int argc, char *argv[]);
 
-extern mavlink_system_t mavlink_system;
+extern mavlink_system_t mavlink_system; // sysid  compid
 
 void mavlink_send_uart_bytes(mavlink_channel_t chan, const uint8_t *ch, int length)
 {
@@ -714,21 +714,25 @@ int Mavlink::mavlink_open_uart(int baud, const char *uart_name)
 	}
 
 	/* back off 1800 ms to avoid running into the USB setup timing */
+	// 后退1800毫秒，以避免进入USB设置时间
 	while (_mode == MAVLINK_MODE_CONFIG &&
 	       hrt_absolute_time() < 1800U * 1000U) {
 		usleep(50000);
 	}
 
 	/* open uart */
+///// 打开串口
 	_uart_fd = ::open(uart_name, O_RDWR | O_NOCTTY);
 
 	/* if this is a config link, stay here and wait for it to open */
+	// 如果这是一个配置链接，呆在这里等待它打开
 	if (_uart_fd < 0 && _mode == MAVLINK_MODE_CONFIG) {
 
 		int armed_fd = orb_subscribe(ORB_ID(actuator_armed));
 		struct actuator_armed_s armed;
 
 		/* get the system arming state and abort on arming */
+		// 得到系统的锁定状态并中止解锁
 		while (_uart_fd < 0) {
 
 			/* abort if an arming topic is published and system is armed */
@@ -739,11 +743,14 @@ int Mavlink::mavlink_open_uart(int baud, const char *uart_name)
 				/* the system is now providing arming status feedback.
 				 * instead of timing out, we resort to abort bringing
 				 * up the terminal.
+				 * 该系统正在提供锁定状态反馈。
+				 * 我们诉诸于中止提升终端而不是超时。
 				 */
 				orb_copy(ORB_ID(actuator_armed), armed_fd, &armed);
 
 				if (armed.armed) {
 					/* this is not an error, but we are done */
+					// 这虽然不算是错误，但是我们在此退出
 					return -1;
 				}
 			}
@@ -760,11 +767,13 @@ int Mavlink::mavlink_open_uart(int baud, const char *uart_name)
 	}
 
 	/* Try to set baud rate */
+	// 设置波特率
 	struct termios uart_config;
 	int termios_state;
-	_is_usb_uart = false;
+	_is_usb_uart = false; // 是USB端口
 
 	/* Initialize the uart config */
+	// 初始化串口配置
 	if ((termios_state = tcgetattr(_uart_fd, &uart_config)) < 0) {
 		warnx("ERR GET CONF %s: %d\n", uart_name, termios_state);
 		::close(_uart_fd);
@@ -772,21 +781,25 @@ int Mavlink::mavlink_open_uart(int baud, const char *uart_name)
 	}
 
 	/* Clear ONLCR flag (which appends a CR for every LF) */
+	// 清除ONLCR标志， 将输出中的新行符映射为回车-换行,在每个回车后附加一个换行
 	uart_config.c_oflag &= ~ONLCR;
 
 	/* USB serial is indicated by /dev/ttyACM0*/
+	// USB串口为 /dev/ttyACM0
 	if (strcmp(uart_name, "/dev/ttyACM0") != OK && strcmp(uart_name, "/dev/ttyACM1") != OK) {
 
 		/* Set baud rate */
+		// 设置波特率
 		if (cfsetispeed(&uart_config, speed) < 0 || cfsetospeed(&uart_config, speed) < 0) {
 			warnx("ERR SET BAUD %s: %d\n", uart_name, termios_state);
 			::close(_uart_fd);
 			return -1;
 		}
 
-	} else {
+	} else { // 使用数传
 		_is_usb_uart = true;
 		/* USB has no baudrate, but use a magic number for 'fast' */
+		// USB没有波特率，而是使用魔数
 		_baudrate = 2000000;
 		_rstatus.type = telemetry_status_s::TELEMETRY_STATUS_RADIO_TYPE_USB;
 	}
@@ -807,13 +820,17 @@ int Mavlink::mavlink_open_uart(int baud, const char *uart_name)
 		 * Setup hardware flow control. If the port has no RTS pin this call will fail,
 		 * which is not an issue, but requires a separate call so we can fail silently.
 		 */
+		 /*
+		  * 设置硬件流控制。如果端口没有RTS引脚，那么这种调用将会失败。
+		  * 这不是一个问题，但需要一个单独的调用，所以我们可以默默地失败。
+		  */
 		(void)tcgetattr(_uart_fd, &uart_config);
 #ifdef CRTS_IFLOW
 		uart_config.c_cflag |= CRTS_IFLOW;
 #else
 		uart_config.c_cflag |= CRTSCTS;
 #endif
-		(void)tcsetattr(_uart_fd, TCSANOW, &uart_config);
+		(void)tcsetattr(_uart_fd, TCSANOW, &uart_config); // 改变立刻生效
 
 		/* setup output flow control */
 		if (enable_flow_control(true)) {
@@ -1851,6 +1868,7 @@ Mavlink::task_main(int argc, char *argv[])
 
 	if (_datarate == 0) {
 		/* convert bits to bytes and use 1/2 of bandwidth by default */
+		// 将位转换为字节，默认使用1/2的带宽
 		_datarate = _baudrate / 20;
 	}
 
@@ -1871,6 +1889,7 @@ Mavlink::task_main(int argc, char *argv[])
 		fflush(stdout);
 
 		/* default values for arguments */
+		// 参数默认值
 		_uart_fd = mavlink_open_uart(_baudrate, _device_name);
 
 		if (_uart_fd < 0 && _mode != MAVLINK_MODE_CONFIG) {
@@ -1879,6 +1898,7 @@ Mavlink::task_main(int argc, char *argv[])
 
 		} else if (_uart_fd < 0 && _mode == MAVLINK_MODE_CONFIG) {
 			/* the config link is optional */
+			 // 配置链接是可选的
 			return OK;
 		}
 
@@ -1893,13 +1913,18 @@ Mavlink::task_main(int argc, char *argv[])
 	}
 
 	/* initialize send mutex */
+	// 初始化发送互斥体
 	pthread_mutex_init(&_send_mutex, NULL);
 
 	/* if we are passing on mavlink messages, we need to prepare a buffer for this instance */
+	// 如果我们传递mavlink消息，我们需要为此实例准备一个缓冲区
 	if (_forwarding_on || _ftp_on) {
-		/* initialize message buffer if multiplexing is on or its needed for FTP.
+		/* 
+		 * initialize message buffer if multiplexing is on or its needed for FTP.
+		 * 初始化消息缓冲区，如果复用或FTP需要。
 		 * make space for two messages plus off-by-one space as we use the empty element
 		 * marker ring buffer approach.
+		 * 为两个消息加off-by-one创建空间，因为我们使用空元素标记环缓冲的方法。
 		 */
 		if (OK != message_buffer_init(2 * sizeof(mavlink_message_t) + 1)) {
 			warnx("msg buf:");
@@ -1911,6 +1936,7 @@ Mavlink::task_main(int argc, char *argv[])
 	}
 
 	/* Initialize system properties */
+	// 初始化系统属性
 	mavlink_update_system();
 
 	/* start the MAVLink receiver */
@@ -2395,6 +2421,7 @@ Mavlink::task_main(int argc, char *argv[])
 int Mavlink::start_helper(int argc, char *argv[])
 {
 	/* create the instance in task context */
+	// 在任务上下文中创建实例
 	Mavlink *instance = new Mavlink();
 
 	int res;
@@ -2407,6 +2434,7 @@ int Mavlink::start_helper(int argc, char *argv[])
 
 	} else {
 		/* this will actually only return once MAVLink exits */
+		// 仅当MAVLink退出后才能返回
 		res = instance->task_main(argc, argv);
 		instance->_task_running = false;
 
@@ -2422,6 +2450,7 @@ Mavlink::start(int argc, char *argv[])
 
 	// Wait for the instance count to go up one
 	// before returning to the shell
+	// 等待实例计数上升一次返回到shell
 	int ic = Mavlink::instance_count();
 
 	if (ic == Mavlink::MAVLINK_MAX_INSTANCES) {
@@ -2431,6 +2460,7 @@ Mavlink::start(int argc, char *argv[])
 	}
 
 	// Instantiate thread
+	// 实例化线程
 	char buf[24];
 	sprintf(buf, "mavlink_if%d", ic);
 
@@ -2438,6 +2468,7 @@ Mavlink::start(int argc, char *argv[])
 	// between the starting task and the spawned
 	// task - start_helper() only returns
 	// when the started task exits.
+	// 这是控制流在起始任务和产生的任务之间分裂的地方 - start_helper（）仅在启动任务退出时返回。
 	px4_task_spawn_cmd(buf,
 			   SCHED_DEFAULT,
 			   SCHED_PRIORITY_DEFAULT,
@@ -2451,11 +2482,15 @@ Mavlink::start(int argc, char *argv[])
 	// the only path to create a new instance,
 	// this is effectively a lock on concurrent
 	// instance starting. XXX do a real lock.
+	// 在实例完全初始化之前，请确保此shell命令不返回。 
+	// 由于这也是创建新实例的唯一路径，这实际上是并发实例启动时的锁定。 
+	// XXX do a real lock.
 
 	// Sleep 500 us between each attempt
 	const unsigned sleeptime = 500;
 
 	// Wait 100 ms max for the startup.
+	// 200毫秒?
 	const unsigned limit = 100 * 1000 / sleeptime;
 
 	unsigned count = 0;

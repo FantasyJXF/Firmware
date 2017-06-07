@@ -54,6 +54,8 @@
 /**
  * @class MavlinkULog
  * ULog streaming class. At most one instance (stream) can exist, assigned to a specific mavlink channel.
+ * 
+ * Ulog流类。至多存在一个实例，分配给一个特定的mavlink通道
  */
 class MavlinkULog
 {
