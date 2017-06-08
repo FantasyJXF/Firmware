@@ -90,9 +90,11 @@ PARAM_DEFINE_INT32(MAV_USEHILGPS, 0);
 
 /**
  * Forward external setpoint messages
+ * 转发外部设定值消息
  *
  * If set to 1 incoming external setpoint messages will be directly forwarded
  * to the controllers if in offboard control mode
+ * 如果设置为1个进入的外部设定值消息将直接转发到控制器，如果在外部控制模式
  *
  * @boolean
  * @group MAVLink

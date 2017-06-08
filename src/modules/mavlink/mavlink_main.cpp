@@ -584,6 +584,7 @@ void Mavlink::mavlink_update_system(void)
 
 	/* only allow system ID and component ID updates
 	 * after reboot - not during operation */
+	 // 系统ID以及组件ID仅在重启后更新，操作中不变
 	if (!_param_initialized) {
 		if (system_id > 0 && system_id < 255) {
 			mavlink_system.sysid = system_id;
@@ -608,7 +609,7 @@ void Mavlink::mavlink_update_system(void)
 	}
 
 	int32_t system_type;
-	param_get(_param_system_type, &system_type);
+	param_get(_param_system_type, &system_type);  // 机型
 
 	if (system_type >= 0 && system_type < MAV_TYPE_ENUM_END) {
 		_system_type = system_type;
@@ -1718,6 +1719,10 @@ Mavlink::task_main(int argc, char *argv[])
 	 * does, nor does it deal with non-flag
 	 * verbs well. So we remove the application
 	 * name and the verb.
+	 *
+	 * Nuttx的可选参数句柄不会像POSIX句柄一样忽略参数0(第一个参数)
+	 * 也不回处理非标志位的verbs。
+	 * 所以这里移除了应用名以及verb
 	 */
 	argc -= 2;
 	argv += 2;
@@ -1791,7 +1796,7 @@ Mavlink::task_main(int argc, char *argv[])
 			break;
 
 		case 't':
-			_src_addr.sin_family = AF_INET;
+			_src_addr.sin_family = AF_INET; // IPV4
 
 			if (inet_aton(myoptarg, &_src_addr.sin_addr)) {
 				_src_addr_initialized = true;
@@ -1869,15 +1874,15 @@ Mavlink::task_main(int argc, char *argv[])
 	if (_datarate == 0) {
 		/* convert bits to bytes and use 1/2 of bandwidth by default */
 		// 将位转换为字节，默认使用1/2的带宽
-		_datarate = _baudrate / 20;
+		_datarate = _baudrate / 20; // 串口发送一个字节数据实际上是 8bit数据 + 2bit起始/终止位
 	}
 
 	if (_datarate > MAX_DATA_RATE) {
 		_datarate = MAX_DATA_RATE;
 	}
 
-	if (get_protocol() == SERIAL) {
-		if (Mavlink::instance_exists(_device_name, this)) {
+	if (get_protocol() == SERIAL) { // 串口协议
+		if (Mavlink::instance_exists(_device_name, this)) { // 实例化时设置设备为/dev/ttyS1
 			warnx("%s already running", _device_name);
 			return PX4_ERROR;
 		}
@@ -1890,7 +1895,7 @@ Mavlink::task_main(int argc, char *argv[])
 
 		/* default values for arguments */
 		// 参数默认值
-		_uart_fd = mavlink_open_uart(_baudrate, _device_name);
+		_uart_fd = mavlink_open_uart(_baudrate, _device_name); // 打开串口文件描述符
 
 		if (_uart_fd < 0 && _mode != MAVLINK_MODE_CONFIG) {
 			warn("could not open %s", _device_name);
@@ -1902,8 +1907,8 @@ Mavlink::task_main(int argc, char *argv[])
 			return OK;
 		}
 
-	} else if (get_protocol() == UDP) {
-		if (Mavlink::get_instance_for_network_port(_network_port) != nullptr) {
+	} else if (get_protocol() == UDP) {  // UDP协议
+		if (Mavlink::get_instance_for_network_port(_network_port) != nullptr) { // 网口为14556
 			warnx("port %d already occupied", _network_port);
 			return PX4_ERROR;
 		}
@@ -2451,7 +2456,7 @@ Mavlink::start(int argc, char *argv[])
 	// Wait for the instance count to go up one
 	// before returning to the shell
 	// 等待实例计数上升一次返回到shell
-	int ic = Mavlink::instance_count();
+	int ic = Mavlink::instance_count(); // 实例数
 
 	if (ic == Mavlink::MAVLINK_MAX_INSTANCES) {
 		warnx("Maximum MAVLink instance count of %d reached.",
