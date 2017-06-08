@@ -24,7 +24,7 @@
 	url = https://github.com/FantasyJXF/sitl_gazebo.git
 [submodule "unittests/googletest"]
 	path = unittests/googletest
-	url = https://github.com/google/googletest.git
+	url = https://github.com/FantasyJXF/googletest.git
 	ignore = untracked
 [submodule "src/lib/matrix"]
 	path = src/lib/matrix
