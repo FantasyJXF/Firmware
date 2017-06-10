@@ -452,6 +452,7 @@ Mavlink::destroy_all_instances()
 	}
 
 	//we know all threads have exited, so it's safe to manipulate the linked list and delete objects.
+	// 我们知道所有的线程已经退出，所以操作链表和删除对象是安全的
 	while (_mavlink_instances) {
 		inst_to_del = _mavlink_instances;
 		LL_DELETE(_mavlink_instances, inst_to_del);
@@ -1248,9 +1249,11 @@ Mavlink::handle_message(const mavlink_message_t *msg)
 	}
 
 	/* handle packet with mission manager */
+	// 与任务管理器处理数据包
 	_mission_manager->handle_message(msg);
 
 	/* handle packet with parameter component */
+	// 处理具有参数组件的数据包
 	_parameters_manager->handle_message(msg);
 
 	/* handle packet with ftp component */
@@ -1329,6 +1332,7 @@ void Mavlink::send_autopilot_capabilites()
 MavlinkOrbSubscription *Mavlink::add_orb_subscription(const orb_id_t topic, int instance)
 {
 	/* check if already subscribed to this topic */
+	// 检查是否已经订阅了这个主题
 	MavlinkOrbSubscription *sub;
 
 	LL_FOREACH(_subscriptions, sub) {
@@ -1356,6 +1360,7 @@ int
 Mavlink::configure_stream(const char *stream_name, const float rate)
 {
 	/* calculate interval in us, 0 means disabled stream */
+	// 以us为时间单位计算间隔，0表示禁用流
 	unsigned int interval = interval_from_rate(rate);
 
 	/* search if stream exists */
@@ -1882,7 +1887,7 @@ Mavlink::task_main(int argc, char *argv[])
 	}
 
 	if (get_protocol() == SERIAL) { // 串口协议
-		if (Mavlink::instance_exists(_device_name, this)) { // 实例化时设置设备为/dev/ttyS1
+		if (Mavlink::instance_exists(_device_name, this)) { // device_name通过传参获得
 			warnx("%s already running", _device_name);
 			return PX4_ERROR;
 		}
@@ -1942,12 +1947,13 @@ Mavlink::task_main(int argc, char *argv[])
 
 	/* Initialize system properties */
 	// 初始化系统属性
-	mavlink_update_system();
+	mavlink_update_system(); // 确定系统ID,组件ID
 
 	/* start the MAVLink receiver */
+/////// 开始MAVLink接收
 	MavlinkReceiver::receive_start(&_receive_thread, this);
 
-	MavlinkOrbSubscription *param_sub = add_orb_subscription(ORB_ID(parameter_update));
+	MavlinkOrbSubscription *param_sub = add_orb_subscription(ORB_ID(parameter_update)); //若无此主题，添加之
 	uint64_t param_time = 0;
 	MavlinkOrbSubscription *status_sub = add_orb_subscription(ORB_ID(vehicle_status));
 	uint64_t status_time = 0;
@@ -1959,20 +1965,23 @@ Mavlink::task_main(int argc, char *argv[])
 	uint64_t ack_time = 0;
 	MavlinkOrbSubscription *mavlink_log_sub = add_orb_subscription(ORB_ID(mavlink_log));
 
-	struct vehicle_status_s status;
+	struct vehicle_status_s status; // 飞机现在的状态
 	status_sub->update(&status_time, &status);
 	struct vehicle_command_ack_s command_ack;
 	ack_sub->update(&ack_time, &command_ack);
 
 	/* add default streams depending on mode */
+	// 根据模式添加默认流
 
 	/* HEARTBEAT is constant rate stream, rate never adjusted */
 	configure_stream("HEARTBEAT", 1.0f);
 
 	/* STATUSTEXT stream is like normal stream but gets messages from logbuffer instead of uORB */
+	// 来自日志缓存的流而不是uORB
 	configure_stream("STATUSTEXT", 20.0f);
 
 	/* COMMAND_LONG stream: use high rate to avoid commands skipping */
+	// 使用高速率避免命令跳过
 	configure_stream("COMMAND_LONG", 100.0f);
 
 	/* PARAM_VALUE stream */

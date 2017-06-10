@@ -158,7 +158,7 @@ MavlinkReceiver::~MavlinkReceiver()
 }
 
 void
-MavlinkReceiver::handle_message(mavlink_message_t *msg)
+MavlinkReceiver::handle_message(mavlink_message_t *msg) // 将MAVLink包解包后传给uORB结构体，并发布
 {
 	if (!_mavlink->get_config_link_on()) {
 		if (_mavlink->get_mode() == Mavlink::MAVLINK_MODE_CONFIG) {
@@ -1049,7 +1049,7 @@ void
 MavlinkReceiver::handle_message_set_attitude_target(mavlink_message_t *msg)
 {
 	mavlink_set_attitude_target_t set_attitude_target;
-	mavlink_msg_set_attitude_target_decode(msg, &set_attitude_target);
+	mavlink_msg_set_attitude_target_decode(msg, &set_attitude_target); // 将MAVLink消息解包成结构体
 
 	bool values_finite =
 		PX4_ISFINITE(set_attitude_target.q[0]) &&
@@ -1062,6 +1062,7 @@ MavlinkReceiver::handle_message_set_attitude_target(mavlink_message_t *msg)
 		PX4_ISFINITE(set_attitude_target.body_yaw_rate);
 
 	/* Only accept messages which are intended for this system */
+	// 只接受用于此系统的消息
 	if ((mavlink_system.sysid == set_attitude_target.target_system ||
 	     set_attitude_target.target_system == 0) &&
 	    (mavlink_system.compid == set_attitude_target.target_component ||
@@ -1076,6 +1077,7 @@ MavlinkReceiver::handle_message_set_attitude_target(mavlink_message_t *msg)
 		 * using different messages. Eg.: First send set_attitude_target containing the attitude and ignore
 		 * bits set for everything else and then send set_attitude_target containing the thrust and ignore bits
 		 * set for everything else.
+		 * 用不同的消息分别发送姿态和推力并忽略别的位
 		 */
 
 		/*
@@ -1111,6 +1113,7 @@ MavlinkReceiver::handle_message_set_attitude_target(mavlink_message_t *msg)
 
 		/* If we are in offboard control mode and offboard control loop through is enabled
 		 * also publish the setpoint topic which is read by the controller */
+		 // 在外部模式下，将外部设定值消息转发给控制器
 		if (_mavlink->get_forward_externalsp()) {
 			bool updated;
 			orb_check(_control_mode_sub, &updated);
@@ -1122,6 +1125,7 @@ MavlinkReceiver::handle_message_set_attitude_target(mavlink_message_t *msg)
 			if (_control_mode.flag_control_offboard_enabled) {
 
 				/* Publish attitude setpoint if attitude and thrust ignore bits are not set */
+				// 发布姿态设定值
 				if (!(_offboard_control_mode.ignore_attitude)) {
 					_att_sp.timestamp = hrt_absolute_time();
 
@@ -1147,6 +1151,7 @@ MavlinkReceiver::handle_message_set_attitude_target(mavlink_message_t *msg)
 
 				/* Publish attitude rate setpoint if bodyrate and thrust ignore bits are not set */
 				///XXX add support for ignoring individual axes
+				// 发布姿态角速率设定值
 				if (!(_offboard_control_mode.ignore_bodyrate)) {
 					_rates_sp.timestamp = hrt_absolute_time();
 
@@ -2221,12 +2226,14 @@ MavlinkReceiver::handle_message_hil_state_quaternion(mavlink_message_t *msg)
 
 /**
  * Receive data from UART.
+ * 从串口接收数据
  */
 void *
 MavlinkReceiver::receive_thread(void *arg)
 {
 
 	/* set thread name */
+	// 设置线程名称
 	{
 		char thread_name[24];
 		sprintf(thread_name, "mavlink_rcv_if%d", _mavlink->get_instance_id());
@@ -2246,7 +2253,7 @@ MavlinkReceiver::receive_thread(void *arg)
 	struct pollfd fds[1] = {};
 
 	if (_mavlink->get_protocol() == SERIAL) {
-		fds[0].fd = _mavlink->get_uart_fd();
+		fds[0].fd = _mavlink->get_uart_fd(); // 文件描述符为串口号
 		fds[0].events = POLLIN;
 	}
 
@@ -2274,10 +2281,14 @@ MavlinkReceiver::receive_thread(void *arg)
 				/*
 				 * to avoid reading very small chunks wait for data before reading
 				 * this is designed to target one message, so >20 bytes at a time
+				 *
+				 * 为了避免读取非常小的块，在读取之前等待数据被设计为目标一个消息，
+				 * 因此一次读取大于20个字节的数据
 				 */
 				const unsigned character_count = 20;
 
 				/* non-blocking read. read may return negative values */
+				// 非阻塞读取。 读取可能返回负值
 				if ((nread = ::read(fds[0].fd, buf, sizeof(buf))) < (ssize_t)character_count) {
 					unsigned sleeptime = (1.0f / (_mavlink->get_baudrate() / 10)) * character_count * 1000000;
 					usleep(sleeptime);
@@ -2317,22 +2328,24 @@ MavlinkReceiver::receive_thread(void *arg)
 
 #endif
 			// only start accepting messages once we're sure who we talk to
-
-			if (_mavlink->get_client_source_initialized()) {
+			// 一旦我们确定我们的通讯对象，才开始接受消息
+			if (_mavlink->get_client_source_initialized()) { // 客户端初始化
 				/* if read failed, this loop won't execute */
 				for (ssize_t i = 0; i < nread; i++) {
-					if (mavlink_parse_char(_mavlink->get_channel(), buf[i], &msg, &status)) {
+					if (mavlink_parse_char(_mavlink->get_channel(), buf[i], &msg, &status)) { // 打包MAVLink消息
 
 						/* check if we received version 2 and request a switch. */
-						if (!(_mavlink->get_status()->flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1)) {
+						if (!(_mavlink->get_status()->flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1)) { // 为MAVLink2消息
 							/* this will only switch to proto version 2 if allowed in settings */
-							_mavlink->set_proto_version(2);
+							_mavlink->set_proto_version(2); // 设置成MAVLink2 协议
 						}
 
 						/* handle generic messages and commands */
-						handle_message(&msg);
+						// 处理通用消息和命令
+						handle_message(&msg); // 将MAVLink消息帧解包后传给uORB并发布
 
 						/* handle packet with parent object */
+						// 处理具有父对象的数据包
 						_mavlink->handle_message(&msg);
 					}
 				}
@@ -2396,7 +2409,7 @@ MavlinkReceiver::receive_start(pthread_t *thread, Mavlink *parent)
 
 	struct sched_param param;
 	(void)pthread_attr_getschedparam(&receiveloop_attr, &param);
-	param.sched_priority = SCHED_PRIORITY_MAX - 80;
+	param.sched_priority = SCHED_PRIORITY_MAX - 80; // 确定优先级
 	(void)pthread_attr_setschedparam(&receiveloop_attr, &param);
 
 	pthread_attr_setstacksize(&receiveloop_attr, PX4_STACK_ADJUSTED(2100));
