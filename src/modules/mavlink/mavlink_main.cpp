@@ -1548,6 +1548,7 @@ int
 Mavlink::message_buffer_get_ptr(void **ptr, bool *is_part)
 {
 	// bytes available to read
+	// 可读的字节
 	int available = _message_buffer.write_ptr - _message_buffer.read_ptr;
 
 	if (available == 0) {
@@ -1558,11 +1559,13 @@ Mavlink::message_buffer_get_ptr(void **ptr, bool *is_part)
 
 	if (available > 0) {
 		// read pointer is before write pointer, all available bytes can be read
+		// 读指针在写指针之前，所有可用字节都可以读取
 		n = available;
 		*is_part = false;
 
 	} else {
 		// read pointer is after write pointer, read bytes from read_ptr to end of the buffer
+		// 读指针在写指针后，从read_ptr读取字节到缓冲区的结尾
 		n = _message_buffer.size - _message_buffer.read_ptr;
 		*is_part = _message_buffer.write_ptr > 0;
 	}
@@ -1634,6 +1637,7 @@ Mavlink::update_rate_mult()
 	float rate = 0.0f;
 
 	/* scale down rates if their theoretical bandwidth is exceeding the link bandwidth */
+	// 如果理论带宽超过链路带宽，则缩小速率
 	MavlinkStream *stream;
 	LL_FOREACH(_streams, stream) {
 		if (stream->const_rate()) {
@@ -1650,14 +1654,17 @@ Mavlink::update_rate_mult()
 	}
 
 	/* scale up and down as the link permits */
+	// 允许上下缩放
 	float bandwidth_mult = (float)(_datarate * mavlink_ulog_streaming_rate_inv - const_rate) / rate;
 
 	/* if we do not have flow control, limit to the set data rate */
+	// 限制带宽
 	if (!get_flow_control_enabled()) {
 		bandwidth_mult = fminf(1.0f, bandwidth_mult);
 	}
 
 	/* check if we have radio feedback */
+	// 检测是否存在电台反馈
 	struct telemetry_status_s &tstatus = get_rx_status();
 
 	bool radio_critical = false;
@@ -1676,6 +1683,7 @@ Mavlink::update_rate_mult()
 	float hardware_mult = _rate_mult;
 
 	/* scale down if we have a TX err rate suggesting link congestion */
+	// 如果我们有TX错误率提示链路拥塞，那么可以缩小
 	if (_rate_txerr > 0.0f && !radio_critical) {
 		hardware_mult = (_rate_tx) / (_rate_tx + _rate_txerr);
 
@@ -1683,14 +1691,17 @@ Mavlink::update_rate_mult()
 
 		if (tstatus.txbuf < RADIO_BUFFER_CRITICAL_LOW_PERCENTAGE) {
 			/* this indicates link congestion, reduce rate by 20% */
+			// 这表示链路拥塞，降低20％
 			hardware_mult *= 0.80f;
 
 		} else if (tstatus.txbuf < RADIO_BUFFER_LOW_PERCENTAGE) {
 			/* this indicates link congestion, reduce rate by 2.5% */
+			// 这表明链路拥塞，减少2.5％
 			hardware_mult *= 0.975f;
 
 		} else if (tstatus.txbuf > RADIO_BUFFER_HALF_PERCENTAGE) {
 			/* this indicates spare bandwidth, increase by 2.5% */
+			// 这表示备用带宽，增加2.5％
 			hardware_mult *= 1.025f;
 			/* limit to a max multiplier of 1 */
 			hardware_mult = fminf(1.0f, hardware_mult);
@@ -1698,7 +1709,7 @@ Mavlink::update_rate_mult()
 
 	} else if (!radio_found) {
 		/* no limitation, set hardware to 1 */
-		hardware_mult = 1.0f;
+		hardware_mult = 1.0f; // USB连接，全速运行
 	}
 
 	_last_hw_rate_timestamp = tstatus.telem_time;
@@ -1984,7 +1995,7 @@ Mavlink::task_main(int argc, char *argv[])
 	// 使用高速率避免命令跳过
 	configure_stream("COMMAND_LONG", 100.0f);
 
-	/* PARAM_VALUE stream */
+	/* PARAM_VALUE stream */ // 遥控器输出 以及 UAVCAN
 	_parameters_manager = (MavlinkParametersManager *) MavlinkParametersManager::new_instance(this);
 	_parameters_manager->set_interval(interval_from_rate(120.0f));
 	LL_APPEND(_streams, _parameters_manager);
@@ -1994,7 +2005,7 @@ Mavlink::task_main(int argc, char *argv[])
 	_mavlink_ftp->set_interval(interval_from_rate(80.0f));
 	LL_APPEND(_streams, _mavlink_ftp);
 
-	/* MAVLINK_Log_Handler */
+	/* MAVLINK_Log_Handler */ // LOG消息处理
 	_mavlink_log_handler = (MavlinkLogHandler *) MavlinkLogHandler::new_instance(this);
 	_mavlink_log_handler->set_interval(interval_from_rate(80.0f));
 	LL_APPEND(_streams, _mavlink_log_handler);
@@ -2002,6 +2013,7 @@ Mavlink::task_main(int argc, char *argv[])
 	/* MISSION_STREAM stream, actually sends all MISSION_XXX messages at some rate depending on
 	 * remote requests rate. Rate specified here controls how much bandwidth we will reserve for
 	 * mission messages. */
+	 // MISSION_STREAM流，根据远程的需求以一定速度发送所有的MISSION_XXX消息
 	_mission_manager = (MavlinkMissionManager *) MavlinkMissionManager::new_instance(this);
 	_mission_manager->set_interval(interval_from_rate(10.0f));
 	_mission_manager->set_verbose(_verbose);
@@ -2090,6 +2102,7 @@ Mavlink::task_main(int argc, char *argv[])
 
 	case MAVLINK_MODE_CONFIG:
 		// Enable a number of interesting streams we want via USB
+		// 通过USB启用许多感兴趣的流
 		configure_stream("SYS_STATUS", 1.0f);
 		configure_stream("EXTENDED_SYS_STATE", 2.0f);
 		configure_stream("HIGHRES_IMU", 50.0f);
@@ -2146,9 +2159,10 @@ Mavlink::task_main(int argc, char *argv[])
 
 	/* if the protocol is serial, we send the system version blindly */
 	if (get_protocol() == SERIAL) {
-		send_autopilot_capabilites();
+		send_autopilot_capabilites(); // 发送飞控使用的软件版本
 	}
 
+////////////////////////////////  主循环 ///////////////////
 	while (!_task_should_exit) {
 		/* main loop */
 		usleep(_main_loop_delay);
@@ -2157,9 +2171,9 @@ Mavlink::task_main(int argc, char *argv[])
 
 		hrt_abstime t = hrt_absolute_time();
 
-		update_rate_mult();
+		update_rate_mult(); // 设置带宽
 
-		_mission_manager->check_active_mission();
+		_mission_manager->check_active_mission(); // 通过MAVLink发送的任务数
 
 		if (param_sub->update(&param_time, nullptr)) {
 			/* parameters updated */
@@ -2220,6 +2234,7 @@ Mavlink::task_main(int argc, char *argv[])
 		}
 
 		/* send command ACK */
+		// 发送命令应答位
 		uint16_t current_command_ack = 0;
 		if (ack_sub->update(&ack_time, &command_ack)) {
 			mavlink_command_ack_t msg;
@@ -2269,6 +2284,7 @@ Mavlink::task_main(int argc, char *argv[])
 		}
 
 		/* check for requested subscriptions */
+		// 检查所请求的订阅
 		if (_subscribe_to_stream != nullptr) {
 			if (OK == configure_stream(_subscribe_to_stream, _subscribe_to_stream_rate)) {
 				if (_subscribe_to_stream_rate > 0.0f) {
@@ -2303,6 +2319,7 @@ Mavlink::task_main(int argc, char *argv[])
 		}
 
 		/* update streams */
+////////// 更新流
 		MavlinkStream *stream;
 		LL_FOREACH(_streams, stream) {
 			stream->update(t);
@@ -2316,12 +2333,12 @@ Mavlink::task_main(int argc, char *argv[])
 			uint8_t *write_ptr;
 
 			pthread_mutex_lock(&_message_buffer_mutex);
-			int available = message_buffer_get_ptr((void **)&read_ptr, &is_part);
+			int available = message_buffer_get_ptr((void **)&read_ptr, &is_part); // 可读的数目
 			pthread_mutex_unlock(&_message_buffer_mutex);
 
 			if (available > 0) {
 				// Reconstruct message from buffer
-
+				// 从缓存析构消息
 				mavlink_message_t msg;
 				write_ptr = (uint8_t *)&msg;
 
