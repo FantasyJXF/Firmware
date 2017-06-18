@@ -36,6 +36,8 @@
  *
  * If this is set to 1, all GPS communication data will be published via uORB,
  * and written to the log file as gps_dump message.
+ * 
+ * 如果此值设置为1，所有的GPS通讯数据将通过uorb发布并被写到log日志中作为gps_dump消息
  * @min 0
  * @max 1
  * @value 0 Disable

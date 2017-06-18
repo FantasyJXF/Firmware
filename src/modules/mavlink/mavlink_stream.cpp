@@ -66,6 +66,7 @@ MavlinkStream::set_interval(const unsigned int interval)
 
 /**
  * Update subscriptions and send message if necessary
+ * 更新订阅并在必要时发送消息
  */
 int
 MavlinkStream::update(const hrt_abstime t)
@@ -79,6 +80,7 @@ MavlinkStream::update(const hrt_abstime t)
 
 	if (dt > 0 && dt >= interval) {
 		/* interval expired, send message */
+		// 间隔过期，发送消息
 #ifndef __PX4_QURT
 		send(t);
 #endif
