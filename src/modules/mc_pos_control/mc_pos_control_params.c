@@ -40,8 +40,10 @@
 
 /**
  * Minimum thrust in auto thrust control
+ * 自动推力控制下的最小推力
  *
  * It's recommended to set it > 0 to avoid free fall with zero thrust.
+ * 建议将其设置成一个大于0的数以避免在推力为0时自由落体
  *
  * @unit norm
  * @min 0.05
@@ -131,8 +133,10 @@ PARAM_DEFINE_FLOAT(MPC_THR_MAX, 0.9f);
 
 /**
  * Minimum manual thrust
+ * 最小手动油门
  *
  * Minimum vertical thrust. It's recommended to set it > 0 to avoid free fall with zero thrust.
+ * 最小垂直推力。建议设置成一个大于0的数以防止在推力为0时自由落体
  *
  * @unit norm
  * @min 0.0
@@ -477,6 +481,7 @@ PARAM_DEFINE_FLOAT(MPC_VELD_LP, 5.0f);
 
 /**
  * Maximum horizonal acceleration in velocity controlled modes
+ * 速度控制模式下的最大水平加速度
  *
  * @unit m/s/s
  * @min 2.0

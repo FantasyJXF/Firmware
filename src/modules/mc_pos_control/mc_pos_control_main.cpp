@@ -648,7 +648,7 @@ MulticopterPositionControl::parameters_update(bool force)
 
 		/* takeoff and land velocities should not exceed maximum */
 		// 起飞与着陆速度 不应该超过最大值
-		_params.tko_speed = fminf(_params.tko_speed, _params.vel_max_up);
+		_params.tko_speed = fminf(_params.tko_speed, _params.vel_max_up); // 2.5 - 3 m/s
 		_params.land_speed = fminf(_params.land_speed, _params.vel_max_down);
 	}
 
@@ -824,14 +824,14 @@ MulticopterPositionControl::update_ref()
 			/* calculate current position setpoint in global frame */
 			// 计算全球坐标系中的当前位置设定值
 			// 将 X Y轴的长度换算为经纬度值
-			map_projection_reproject(&_ref_pos, _pos_sp(0), _pos_sp(1), &lat_sp, &lon_sp); // 设定值由poll更新而来
+			map_projection_reproject(&_ref_pos, _pos_sp(0), _pos_sp(1), &lat_sp, &lon_sp); // 设定值由poll更新而来_
 			alt_sp = _ref_alt - _pos_sp(2); // 由于z轴向下，这样用z方向的设定值减去高度参考值正好得到飞机的高度设定值
 		}
-		// 在前一次的_ref_pos参考位置点基础上加上位置增量，得到目标设定值的经纬度、高度
+		// 在前一次的_ref_pos参考位置点基础上加上位置增量，得到目标设定值的经纬度、高度变化量
 
 		/* update local projection reference */
 		// 更新本地投影参考
-		map_projection_init(&_ref_pos, _local_pos.ref_lat, _local_pos.ref_lon); // 初始化参考点_ref_pos的经纬度信息
+		map_projection_init(&_ref_pos, _local_pos.ref_lat, _local_pos.ref_lon); // 得到当_前ref_pos的经纬度
 		_ref_alt = _local_pos.ref_alt;
 		// 更新当前的参考点投影
 
@@ -839,7 +839,7 @@ MulticopterPositionControl::update_ref()
 			/* reproject position setpoint to new reference */
 			// 将位置设定值设置成下一刻的参考值(参考点更新)
 			// 将经纬度值换算成x y方向上的长度
-			map_projection_project(&_ref_pos, lat_sp, lon_sp, &_pos_sp.data[0], &_pos_sp.data[1]);
+			map_projection_project(&_ref_pos, lat_sp, lon_sp, &_pos_sp.data[0], &_pos_sp.data[1]); // 在当前参考点的基础上加上目标设定值的经纬度变化量，得到更新的经纬度设定值
 			_pos_sp(2) = -(alt_sp - _ref_alt);
 		}
 		// 以当前参考点为基准，结合目标点计算所要走的位移
@@ -857,6 +857,9 @@ MulticopterPositionControl::reset_pos_sp()
 		// we have logic in the main function which chooses the velocity setpoint such that the attitude setpoint is
 		// continuous when switching into velocity controlled mode, therefore, we don't need to bother about resetting
 		// position in a special way. In position control mode the position will be reset anyway until the vehicle has reduced speed.
+		// 主函数中选择速度设定值，因此当切换到速度控制模式时姿态设定值就是连续的。
+		// 因此，我们不必使用一个特别的方式来重置位置。
+		// 在位置控制模式下，无论如何位置将会重置，直到飞行器减速
 		_pos_sp(0) = _pos(0);
 		_pos_sp(1) = _pos(1);
 	}
@@ -935,13 +938,13 @@ MulticopterPositionControl::control_manual(float dt)
 
 	if (_control_mode.flag_control_altitude_enabled) {  // 定高模式
 		/* reset alt setpoint to current altitude if needed */
-		// 如果需要，将高度设定值重设为当前高度
+		// 将高度设定值重设为当前高度
 		reset_alt_sp();  // _pos_sp(2) = _pos(2);
 	}
 
 	if (_control_mode.flag_control_position_enabled) {  // 定点模式
 		/* reset position setpoint to current position if needed */
-		// 如果需要，将位置设定值重设为当前位置
+		// 将位置设定值重设为当前位置
 		reset_pos_sp();
 	}
 
@@ -1494,7 +1497,7 @@ MulticopterPositionControl::task_main()
 				_pos(0) = _local_pos.x;
 				_pos(1) = _local_pos.y;
 
-				if (_params.alt_mode == 1 && _local_pos.dist_bottom_valid) { // mode - 1 仅用于LPE 地形跟随
+				if (_params.alt_mode == 1 && _local_pos.dist_bottom_valid) { // mode = 1 仅用于LPE 地形跟随
 					_pos(2) = -_local_pos.dist_bottom;
 
 				} else {

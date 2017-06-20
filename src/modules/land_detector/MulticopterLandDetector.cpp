@@ -69,13 +69,13 @@ MulticopterLandDetector::MulticopterLandDetector() : LandDetector(),
 	_min_trust_start(0),
 	_arming_time(0)
 {
-	_paramHandle.maxRotation = param_find("LNDMC_ROT_MAX");
-	_paramHandle.maxVelocity = param_find("LNDMC_XY_VEL_MAX");
-	_paramHandle.maxClimbRate = param_find("LNDMC_Z_VEL_MAX");
-	_paramHandle.maxThrottle = param_find("MPC_THR_MIN");
-	_paramHandle.minManThrottle = param_find("MPC_MANTHR_MIN");
-	_paramHandle.acc_threshold_m_s2 = param_find("LNDMC_FFALL_THR");
-	_paramHandle.ff_trigger_time = param_find("LNDMC_FFALL_TTRI");
+	_paramHandle.maxRotation = param_find("LNDMC_ROT_MAX");  // 20deg/s
+	_paramHandle.maxVelocity = param_find("LNDMC_XY_VEL_MAX");  // 1.5 m/s
+	_paramHandle.maxClimbRate = param_find("LNDMC_Z_VEL_MAX"); // 0.7m/s
+	_paramHandle.maxThrottle = param_find("MPC_THR_MIN"); // 0.12
+	_paramHandle.minManThrottle = param_find("MPC_MANTHR_MIN"); // 0.08
+	_paramHandle.acc_threshold_m_s2 = param_find("LNDMC_FFALL_THR"); // 2.0
+	_paramHandle.ff_trigger_time = param_find("LNDMC_FFALL_TTRI"); // 0.3
 }
 
 void MulticopterLandDetector::_initialize_topics()
@@ -131,9 +131,9 @@ bool MulticopterLandDetector::_get_freefall_state()
 	float acc_norm = _ctrl_state.x_acc * _ctrl_state.x_acc
 			 + _ctrl_state.y_acc * _ctrl_state.y_acc
 			 + _ctrl_state.z_acc * _ctrl_state.z_acc;
-	acc_norm = sqrtf(acc_norm);	//norm of specific force. Should be close to 9.8 m/s^2 when landed.
+	acc_norm = sqrtf(acc_norm);	//norm of specific force. Should be close to 9.8 m/s^2 when landed. 着陆后加速度应该近似等于9.8m/s^2
 
-	return (acc_norm < _params.acc_threshold_m_s2);	//true if we are currently falling
+	return (acc_norm < _params.acc_threshold_m_s2);	//true if we are currently falling 处于自由落体状态时为真
 }
 
 bool MulticopterLandDetector::_get_landed_state()
@@ -141,15 +141,17 @@ bool MulticopterLandDetector::_get_landed_state()
 	// Time base for this function
 	const uint64_t now = hrt_absolute_time();
 
-	float sys_min_throttle = (_params.maxThrottle + 0.01f);
+	float sys_min_throttle = (_params.maxThrottle + 0.01f); // 0.13
 
 	// Determine the system min throttle based on flight mode
+	// 基于飞行模式确定系统的最小油门
 	if (!_ctrl_mode.flag_control_altitude_enabled) {
-		sys_min_throttle = (_params.minManThrottle + 0.01f);
+		sys_min_throttle = (_params.minManThrottle + 0.01f); // 0.09
 	}
 
 	// Check if thrust output is less than the minimum auto throttle param.
-	bool minimalThrust = (_actuators.control[3] <= sys_min_throttle);
+	// 检查推力输出是否小于最小自动油门参数
+	bool minimalThrust = (_actuators.control[3] <= sys_min_throttle); // 遥控器通道3对应油门
 
 	if (minimalThrust && _min_trust_start == 0) {
 		_min_trust_start = now;
@@ -172,11 +174,13 @@ bool MulticopterLandDetector::_get_landed_state()
 	// Check if user commands throttle and if so, report not landed based on
 	// the user intent to take off (even if the system might physically still have
 	// ground contact at this point).
+	// 手动模式下，如果用户油门杆量大于idle油门，则不会报告landed
 	if (_manual.timestamp > 0 && _manual.z > 0.15f && _ctrl_mode.flag_control_manual_enabled) {
 		return false;
 	}
 
 	// Return status based on armed state and throttle if no position lock is available.
+	// 如果没有位置锁定，则基于解锁状态和油门返回状态
 	if (_vehicleLocalPosition.timestamp == 0 ||
 	    hrt_elapsed_time(&_vehicleLocalPosition.timestamp) > 500000 ||
 	    !_vehicleLocalPosition.xy_valid ||
@@ -207,13 +211,16 @@ bool MulticopterLandDetector::_get_landed_state()
 	// Check if we are moving vertically - this might see a spike after arming due to
 	// throttle-up vibration. If accelerating fast the throttle thresholds will still give
 	// an accurate in-air indication.
+	// 检查飞机是否在垂直运动
 	bool verticalMovement = fabsf(_vehicleLocalPosition.vz) > _params.maxClimbRate * armThresholdFactor;
 
 	// Check if we are moving horizontally.
+	// 检查是否存在水平方向上的运动
 	bool horizontalMovement = sqrtf(_vehicleLocalPosition.vx * _vehicleLocalPosition.vx
 					+ _vehicleLocalPosition.vy * _vehicleLocalPosition.vy) > _params.maxVelocity;
 
 	// Next look if all rotation angles are not moving.
+	// 检查是否所有的角都没有运动
 	float maxRotationScaled = _params.maxRotation_rad_s * armThresholdFactor;
 
 	bool rotating = (fabsf(_vehicleAttitude.rollspeed)  > maxRotationScaled) ||
@@ -223,6 +230,7 @@ bool MulticopterLandDetector::_get_landed_state()
 
 	if (verticalMovement || rotating || !minimalThrust || horizontalMovement) {
 		// Sensed movement or thottle high, so reset the land detector.
+		// 感受到运动或者油门太高，重置着陆检测器
 		return false;
 	}
 

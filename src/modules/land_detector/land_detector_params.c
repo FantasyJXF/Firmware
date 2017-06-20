@@ -40,8 +40,10 @@
 
 /**
  * Multicopter max climb rate
+ * 多旋翼最大爬升速度
  *
  * Maximum vertical velocity allowed in the landed state (m/s up and down)
+ * 在着陆状态下允许的最大垂直速度
  *
  * @unit m/s
  * @decimal 1
@@ -52,8 +54,10 @@ PARAM_DEFINE_FLOAT(LNDMC_Z_VEL_MAX, 0.70f);
 
 /**
  * Multicopter max horizontal velocity
+ * 多旋翼最大水平速度
  *
  * Maximum horizontal velocity allowed in the landed state (m/s)
+ * 在着陆状态下允许的最大水平速度
  *
  * @unit m/s
  * @decimal 1
@@ -64,8 +68,10 @@ PARAM_DEFINE_FLOAT(LNDMC_XY_VEL_MAX, 1.50f);
 
 /**
  * Multicopter max rotation
+ * 多旋翼最大旋转速度
  *
  * Maximum allowed angular velocity around each axis allowed in the landed state.
+ * 在着陆状态允许的每个轴的最大允许角速度。
  *
  * @unit deg/s
  * @decimal 1
@@ -76,8 +82,10 @@ PARAM_DEFINE_FLOAT(LNDMC_ROT_MAX, 20.0f);
 
 /**
  * Multicopter specific force threshold
+ * 多旋翼特定的推力阈值
  *
  * Multicopter threshold on the specific force measured by accelerometers in m/s^2 for free-fall detection
+ * 当加速度计检测到自由落体状态下的特定力时多旋翼的阈值
  *
  * @unit m/s^2
  * @min 0.1
@@ -90,9 +98,12 @@ PARAM_DEFINE_FLOAT(LNDMC_FFALL_THR, 2.0f);
 
 /**
  * Multicopter free-fall trigger time
+ * 多旋翼自由落体的触发时间
  *
  * Seconds (decimal) that freefall conditions have to met before triggering a freefall.
  * Minimal value is limited by LAND_DETECTOR_UPDATE_RATE=50Hz in landDetector.h
+ * 自由落体条件在触发自由落体之前必须达到的秒数（十进制）。
+ * landDetector.h中的最小值受LAND_DETECTOR_UPDATE_RATE = 50Hz的限制
  *
  * @unit s
  * @min 0.02
