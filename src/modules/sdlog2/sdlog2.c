@@ -111,6 +111,7 @@
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/commander_state.h>
 #include <uORB/topics/cpuload.h>
+#include <uORB/topics/infrared_tof.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -1222,6 +1223,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct vehicle_land_detected_s land_detected;
 		struct cpuload_s cpuload;
 		struct vehicle_gps_position_s dual_gps_pos;
+		struct infrared_tof_s infrared_tof;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1284,6 +1286,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_RPL6_s log_RPL6;
 			struct log_LOAD_s log_LOAD;
 			struct log_DPRS_s log_DPRS;
+			struct log_TOF_s log_TOF;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1334,6 +1337,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int commander_state_sub;
 		int cpuload_sub;
 		int diff_pres_sub;
+		int infrared_tof_sub;
 	} subs;
 
 	subs.cmd_sub = -1;
@@ -1377,7 +1381,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	subs.commander_state_sub = -1;
 	subs.cpuload_sub = -1;
 	subs.diff_pres_sub = -1;
-
+	subs.infrared_tof_sub = -1;
 	/* add new topics HERE */
 
 
@@ -1397,7 +1401,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	hrt_abstime magnetometer_timestamp = 0;
 	hrt_abstime barometer_timestamp = 0;
 
-	/* initialize calculated mean SNR 信噪比 */
+	/* initialize calculated mean SNR */
 	float snr_mean = 0.0f;
 
 	/* enable logging on start if needed */
@@ -1409,7 +1413,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			}
 		}
 
-		sdlog2_start_log(); // 开始记录
+		sdlog2_start_log();
 	}
 
 	/* running, report */
@@ -2322,6 +2326,17 @@ int sdlog2_thread_main(int argc, char *argv[])
 
 		}
 
+		/* --- TOF --- */
+		if (copy_if_updated(ORB_ID(infrared_tof), &subs.infrared_tof_sub, &buf.infrared_tof)) {
+			log_msg.msg_type = LOG_TOF_MSG;
+			log_msg.body.log_TOF.distance = buf.infrared_tof.distance;
+			log_msg.body.log_TOF.precision = buf.infrared_tof.precision;
+			log_msg.body.log_TOF.magnitude = buf.infrared_tof.magnitude;
+			log_msg.body.log_TOF.magnitude_exp = buf.infrared_tof.magnitude_exp;
+			log_msg.body.log_TOF.ambient_adc = buf.infrared_tof.ambient_adc;
+			LOGBUFFER_WRITE_AND_COUNT(LOAD);
+
+		}
 		pthread_mutex_lock(&logbuffer_mutex);
 
 		/* signal the other thread new data, but not yet unlock */

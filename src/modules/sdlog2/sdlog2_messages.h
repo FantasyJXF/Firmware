@@ -655,6 +655,15 @@ struct log_PARM_s {
 	char name[16];
 	float value;
 };
+
+#define LOG_TOF_MSG 166
+struct log_TOF_s {
+	uint16_t distance;
+	uint16_t precision;
+	uint16_t magnitude;
+	uint8_t magnitude_exp;
+	uint8_t ambient_adc;
+};
 #pragma pack(pop)
 
 // the lower type of initialisation is not supported in C++
@@ -728,7 +737,8 @@ static const struct log_format_s log_formats[] = {
 	/* FMT: don't write format of format message, it's useless */
 	LOG_FORMAT(TIME, "Q", "StartTime"),
 	LOG_FORMAT(VER, "NZ", "Arch,FwGit"),
-	LOG_FORMAT(PARM, "Nf", "Name,Value")
+	LOG_FORMAT(PARM, "Nf", "Name,Value"),
+	LOG_FORMAT(TOF, "hhhBB", "Dist,prec,magn,scale,adc")
 };
 
 static const unsigned log_formats_num = sizeof(log_formats) / sizeof(log_formats[0]);
