@@ -2224,6 +2224,9 @@ MavlinkReceiver::handle_message_hil_state_quaternion(mavlink_message_t *msg)
 	}
 }
 
+
+
+/*********************************** 分割线 *******************************************/
 /**
  * Receive data from UART.
  * 从串口接收数据
@@ -2246,6 +2249,7 @@ MavlinkReceiver::receive_thread(void *arg)
 	uint8_t buf[1600 * 5];
 #else
 	/* the serial port buffers internally as well, we just need to fit a small chunk */
+      // 串行端口也在内部缓存中，我们只需要适应一小块
 	uint8_t buf[64];
 #endif
 	mavlink_message_t msg;
@@ -2253,7 +2257,7 @@ MavlinkReceiver::receive_thread(void *arg)
 	struct pollfd fds[1] = {};
 
 	if (_mavlink->get_protocol() == SERIAL) {
-		fds[0].fd = _mavlink->get_uart_fd(); // 文件描述符为串口号
+		fds[0].fd = _mavlink->get_uart_fd(); // 文件描述符为串口号 ttyACM0
 		fds[0].events = POLLIN;
 	}
 
@@ -2263,6 +2267,7 @@ MavlinkReceiver::receive_thread(void *arg)
 
 	if (_mavlink->get_protocol() == UDP || _mavlink->get_protocol() == TCP) {
 		// make sure mavlink app has booted before we start using the socket
+		// 确保mavlink应用在我们开始使用套接字前已经启动
 		while (!_mavlink->boot_complete()) {
 			usleep(100000);
 		}
@@ -2289,7 +2294,7 @@ MavlinkReceiver::receive_thread(void *arg)
 
 				/* non-blocking read. read may return negative values */
 				// 非阻塞读取。 读取可能返回负值
-				if ((nread = ::read(fds[0].fd, buf, sizeof(buf))) < (ssize_t)character_count) {
+				if ((nread = ::read(fds[0].fd, buf, sizeof(buf))) < (ssize_t)character_count) { // 从串口读到buf中
 					unsigned sleeptime = (1.0f / (_mavlink->get_baudrate() / 10)) * character_count * 1000000;
 					usleep(sleeptime);
 				}
@@ -2329,10 +2334,11 @@ MavlinkReceiver::receive_thread(void *arg)
 #endif
 			// only start accepting messages once we're sure who we talk to
 			// 一旦我们确定我们的通讯对象，才开始接受消息
-			if (_mavlink->get_client_source_initialized()) { // 客户端初始化
+			if (_mavlink->get_client_source_initialized()) { // 客户端初始化  默认为真
 				/* if read failed, this loop won't execute */
+				//如果读取失败，那么这个循环不会执行
 				for (ssize_t i = 0; i < nread; i++) {
-					if (mavlink_parse_char(_mavlink->get_channel(), buf[i], &msg, &status)) { // 打包MAVLink消息
+					if (mavlink_parse_char(_mavlink->get_channel(), buf[i], &msg, &status)) { // 解析并打包MAVLink消息 MAVLINK_COMM_0
 
 						/* check if we received version 2 and request a switch. */
 						if (!(_mavlink->get_status()->flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1)) { // 为MAVLink2消息
@@ -2413,7 +2419,7 @@ MavlinkReceiver::receive_start(pthread_t *thread, Mavlink *parent)
 	(void)pthread_attr_setschedparam(&receiveloop_attr, &param);
 
 	pthread_attr_setstacksize(&receiveloop_attr, PX4_STACK_ADJUSTED(2100));
-	pthread_create(thread, &receiveloop_attr, MavlinkReceiver::start_helper, (void *)parent);
+	pthread_create(thread, &receiveloop_attr, MavlinkReceiver::start_helper, (void *)parent); // 创建线程
 
 	pthread_attr_destroy(&receiveloop_attr);
 }

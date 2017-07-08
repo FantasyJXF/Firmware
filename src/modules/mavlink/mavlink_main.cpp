@@ -904,6 +904,8 @@ Mavlink::get_free_tx_buf()
 	/*
 	 * Check if the OS buffer is full and disable HW
 	 * flow control if it continues to be full
+	 * 检查系统的缓存是否已满
+	 * 如果一直是满的则禁用硬件流控制
 	 */
 	int buf_free = 0;
 
@@ -921,7 +923,7 @@ Mavlink::get_free_tx_buf()
 #endif
 
 		if (get_flow_control_enabled() && buf_free < FLOW_CONTROL_DISABLE_THRESHOLD) {
-			/* Disable hardware flow control:
+			/* Disable hardware flow control: 禁用硬件流控制
 			 * if no successful write since a defined time
 			 * and if the last try was not the last successful write
 			 */
@@ -967,6 +969,7 @@ Mavlink::send_packet()
 		struct telemetry_status_s &tstatus = get_rx_status();
 
 		/* resend message via broadcast if no valid connection exists */
+		// 如果没有有效的连接，则重新通广播发送消息
 		if ((_mode != MAVLINK_MODE_ONBOARD) && broadcast_enabled() &&
 		    (!get_client_source_initialized()
 		     || (hrt_elapsed_time(&tstatus.heartbeat_time) > 3 * 1000 * 1000))) {
@@ -1009,6 +1012,7 @@ Mavlink::send_bytes(const uint8_t *buf, unsigned packet_len)
 {
 	/* If the wait until transmit flag is on, only transmit after we've received messages.
 	   Otherwise, transmit all the time. */
+	// 如果等待直到发送标志为on，则只有在收到消息后才发送。 否则，一直传送。
 	if (!should_transmit()) {
 		return;
 	}
@@ -1021,12 +1025,14 @@ Mavlink::send_bytes(const uint8_t *buf, unsigned packet_len)
 
 	if (get_protocol() == SERIAL) {
 		/* check if there is space in the buffer, let it overflow else */
+		// 检查缓冲区中是否有空间，否则溢出
 		unsigned buf_free = get_free_tx_buf();
 
 		if (buf_free < packet_len) {
 			/* not enough space in buffer to send */
-			count_txerr();
-			count_txerrbytes(packet_len);
+			// 缓冲区空间不够
+			count_txerr(); // 发送区错误计数
+			count_txerrbytes(packet_len); // 错误字节数加packet_len
 			return;
 		}
 	}
@@ -1034,6 +1040,7 @@ Mavlink::send_bytes(const uint8_t *buf, unsigned packet_len)
 	size_t ret = -1;
 
 	/* send message to UART */
+	// 将消息发送到串口
 	if (get_protocol() == SERIAL) {
 		ret = ::write(_uart_fd, buf, packet_len);
 	}
