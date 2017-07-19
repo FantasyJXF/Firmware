@@ -585,7 +585,7 @@ void Mavlink::mavlink_update_system(void)
 
 	/* only allow system ID and component ID updates
 	 * after reboot - not during operation */
-	 // 系统ID以及组件ID仅在重启后更新，操作中不变
+	 // 系统ID以及组件ID仅在重启后更新，在操作中不变
 	if (!_param_initialized) {
 		if (system_id > 0 && system_id < 255) {
 			mavlink_system.sysid = system_id;
@@ -1371,8 +1371,9 @@ Mavlink::configure_stream(const char *stream_name, const float rate)
 	unsigned int interval = interval_from_rate(rate);
 
 	/* search if stream exists */
+	// 如果流存在则进行搜索
 	MavlinkStream *stream;
-	LL_FOREACH(_streams, stream) {
+	LL_FOREACH(_streams, stream) { // foreach循环访问
 		if (strcmp(stream_name, stream->get_name()) == 0) {
 			if (interval > 0) {
 				/* set new interval */
@@ -1394,6 +1395,7 @@ Mavlink::configure_stream(const char *stream_name, const float rate)
 	}
 
 	/* search for stream with specified name in supported streams list */
+	// 在支持的流列表中按特定的名字寻找流
 	for (unsigned int i = 0; streams_list[i] != nullptr; i++) {
 
 		if (strcmp(stream_name, streams_list[i]->get_name()) == 0) {
@@ -1443,6 +1445,11 @@ Mavlink::configure_stream_threadsafe(const char *stream_name, const float rate)
 	/* orb subscription must be done from the main thread,
 	 * set _subscribe_to_stream and _subscribe_to_stream_rate fields
 	 * which polled in mavlink main loop */
+	 /*
+	  * orb订阅必须从主线程完成
+	  * 设置_subscribe_to_stream以及_subscribe_to_stream_rate字段
+	  * 其都是在mavlink主循环里面轮循的
+	  */
 	if (!_task_should_exit) {
 		/* wait for previous subscription completion */
 		while (_subscribe_to_stream != nullptr) {
@@ -1969,7 +1976,7 @@ Mavlink::task_main(int argc, char *argv[])
 
 	/* start the MAVLink receiver */
 /////// 开始MAVLink接收
-	MavlinkReceiver::receive_start(&_receive_thread, this);
+	MavlinkReceiver::receive_start(&_receive_thread, this);   // handle_message  将MAVLink数据转换成uORB结构体
 
 	MavlinkOrbSubscription *param_sub = add_orb_subscription(ORB_ID(parameter_update)); //若无此主题，添加之
 	uint64_t param_time = 0;
@@ -2184,10 +2191,12 @@ Mavlink::task_main(int argc, char *argv[])
 
 		if (param_sub->update(&param_time, nullptr)) {
 			/* parameters updated */
+			// 系统赋初值 sysid compid
 			mavlink_update_system();
 		}
 
 		/* radio config check */
+		// 检查是否通过电台连接
 		if (_uart_fd >= 0 && _radio_id != 0 && _rstatus.type == telemetry_status_s::TELEMETRY_STATUS_RADIO_TYPE_3DR_RADIO) {
 			/* request to configure radio and radio is present */
 			FILE *fs = fdopen(_uart_fd, "w");

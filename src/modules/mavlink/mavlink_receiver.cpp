@@ -334,11 +334,12 @@ bool
 MavlinkReceiver::evaluate_target_ok(int command, int target_system, int target_component)
 {
 	/* evaluate if this system should accept this command */
+	// 评估这个系统是否应该接收此指令
 	bool target_ok = false;
 
 	switch (command) {
 
-	case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES:
+	case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: // 请求飞控的性能参数
 		/* broadcast and ignore component */
 		target_ok = (target_system == 0) || (target_system == mavlink_system.sysid);
 		break;
@@ -356,7 +357,7 @@ void
 MavlinkReceiver::handle_message_command_long(mavlink_message_t *msg)
 {
 	/* command */
-	mavlink_command_long_t cmd_mavlink;
+	mavlink_command_long_t cmd_mavlink; // Send a command with up to seven parameters to the MAV
 	mavlink_msg_command_long_decode(msg, &cmd_mavlink);
 
 	bool target_ok = evaluate_target_ok(cmd_mavlink.command, cmd_mavlink.target_system, cmd_mavlink.target_component);
@@ -379,7 +380,7 @@ MavlinkReceiver::handle_message_command_long(mavlink_message_t *msg)
 		} else if (cmd_mavlink.command == MAV_CMD_GET_HOME_POSITION) {
 			_mavlink->configure_stream_threadsafe("HOME_POSITION", 0.5f);
 
-		} else if (cmd_mavlink.command == MAV_CMD_SET_MESSAGE_INTERVAL) {
+		} else if (cmd_mavlink.command == MAV_CMD_SET_MESSAGE_INTERVAL) {//请求特定MAVLink消息ID的消息间隔
 			int ret = set_message_interval((int)(cmd_mavlink.param1 + 0.5f),
 						       cmd_mavlink.param2, cmd_mavlink.param3);
 

@@ -79,6 +79,7 @@ public:
 
 	/**
 	 * @return true if steam rate shouldn't be adjusted
+	 *         如果流的速率不改被调节时返回真
 	 */
 	virtual bool const_rate() { return false; }
 
