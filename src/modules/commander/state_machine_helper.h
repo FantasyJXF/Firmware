@@ -63,8 +63,8 @@ typedef enum {
 struct status_flags_s {
 	bool condition_calibration_enabled;
 	bool condition_system_sensors_initialized;
-	bool condition_system_prearm_error_reported;	// true if errors have already been reported
-	bool condition_system_hotplug_timeout;		// true if the hotplug sensor search is over
+	bool condition_system_prearm_error_reported;	// true if errors have already been reported 错误已报告
+	bool condition_system_hotplug_timeout;		// true if the hotplug sensor search is over 热拔插传感器搜索超时
 	bool condition_system_returned_to_home;
 	bool condition_auto_mission_available;
 	bool condition_global_position_valid;		// set to true by the commander app if the quality of the position estimate is good enough to use it for navigation
@@ -73,7 +73,7 @@ struct status_flags_s {
 	bool condition_local_altitude_valid;
 	bool condition_airspeed_valid;			// set to true by the commander app if there is a valid airspeed measurement available
 	bool condition_power_input_valid;		// set if input power is valid
-	bool usb_connected;				// status of the USB power supply
+	bool usb_connected;				// status of the USB power supply USB供电状态
 	bool circuit_breaker_engaged_power_check;
 	bool circuit_breaker_engaged_airspd_check;
 	bool circuit_breaker_engaged_enginefailure_check;
@@ -83,8 +83,8 @@ struct status_flags_s {
 	bool offboard_control_signal_found_once;
 	bool offboard_control_signal_lost;
 	bool offboard_control_signal_weak;
-	bool offboard_control_set_by_command;		// true if the offboard mode was set by a mavlink command and should not be overridden by RC
-	bool offboard_control_loss_timeout;		// true if offboard is lost for a certain amount of time
+	bool offboard_control_set_by_command;		// true if the offboard mode was set by a mavlink command and should not be overridden by RC 如果使用mavlink指令设置了外部控制模式则为真，此值不会被遥控器覆盖
+	bool offboard_control_loss_timeout;		// true if offboard is lost for a certain amount of time  如果外部控制已经丢失了这么长时间，则为真
 	bool rc_signal_found_once;
 	bool rc_signal_lost_cmd;			// true if RC lost mode is commanded
 	bool rc_input_blocked;				// set if RC input should be ignored temporarily

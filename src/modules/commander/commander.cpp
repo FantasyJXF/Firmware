@@ -141,8 +141,8 @@ static constexpr uint8_t COMMANDER_MAX_GPS_NOISE = 60;		/**< Maximum percentage 
 
 #define STICK_ON_OFF_LIMIT 0.9f
 
-#define POSITION_TIMEOUT		(1 * 1000 * 1000)	/**< consider the local or global position estimate invalid after 1000ms */
-#define FAILSAFE_DEFAULT_TIMEOUT	(3 * 1000 * 1000)	/**< hysteresis time - the failsafe will trigger after 3 seconds in this state */
+#define POSITION_TIMEOUT		(1 * 1000 * 1000)	/**< consider the local or global position estimate invalid after 1000ms   local或者global位置失效*/
+#define FAILSAFE_DEFAULT_TIMEOUT	(3 * 1000 * 1000)	/**< hysteresis time - the failsafe will trigger after 3 seconds in this state 3秒后触发故障保护*/
 #define OFFBOARD_TIMEOUT		500000
 #define DIFFPRESS_TIMEOUT		2000000
 
@@ -207,8 +207,8 @@ struct mission_result_s _mission_result;
 
 static uint8_t main_state_before_rtl = commander_state_s::MAIN_STATE_MAX;
 static unsigned _last_mission_instance = 0;
-struct manual_control_setpoint_s sp_man = {};		///< the current manual control setpoint
-static manual_control_setpoint_s _last_sp_man = {};	///< the manual control setpoint valid at the last mode switch
+struct manual_control_setpoint_s sp_man = {};		///< the current manual control setpoint 当前手动控制的设定值
+static manual_control_setpoint_s _last_sp_man = {};	///< the manual control setpoint valid at the last mode switch 上一次模式切换时有效的手动控制设定值
 
 static struct vtol_vehicle_status_s vtol_status = {};
 static struct cpuload_s cpuload = {};
@@ -219,7 +219,7 @@ static bool warning_action_on = false;
 
 static struct status_flags_s status_flags = {};
 
-static uint64_t rc_signal_lost_timestamp;		// Time at which the RC reception was lost
+static uint64_t rc_signal_lost_timestamp;		// Time at which the RC reception was lost 遥控器丢失的时间
 
 static float avionics_power_rail_voltage;		// voltage of the avionics power rail
 

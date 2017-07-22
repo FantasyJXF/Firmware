@@ -92,15 +92,17 @@ const char *reason_no_datalink = "no datalink";
 // will be true for a valid transition or false for a invalid transition. In some cases even
 // though the transition is marked as true additional checks must be made. See arming_state_transition
 // code for those checks.
+// 每行表示的是新的状态，每列表示的是当前的状态
+// 有时即便新状态为true也需要进行附加的检查
 static const bool arming_transitions[vehicle_status_s::ARMING_STATE_MAX][vehicle_status_s::ARMING_STATE_MAX] = {
-	//                                                    INIT,  STANDBY, ARMED, ARMED_ERROR, STANDBY_ERROR, REBOOT, IN_AIR_RESTORE
-	{ /* vehicle_status_s::ARMING_STATE_INIT */           true,  true,    false, false,       true,          false,  false },
-	{ /* vehicle_status_s::ARMING_STATE_STANDBY */        true,  true,    true,  true,        false,         false,  false },
-	{ /* vehicle_status_s::ARMING_STATE_ARMED */          false, true,    true,  false,       false,         false,  true },
-	{ /* vehicle_status_s::ARMING_STATE_ARMED_ERROR */    false, false,   true,  true,        false,         false,  false },
-	{ /* vehicle_status_s::ARMING_STATE_STANDBY_ERROR */  true,  true,    true,  true,        true,          false,  false },
-	{ /* vehicle_status_s::ARMING_STATE_REBOOT */         true,  true,    false, false,       true,          true,   true },
-	{ /* vehicle_status_s::ARMING_STATE_IN_AIR_RESTORE */ false, false,   false, false,       false,         false,  false }, // NYI
+	//                                                 INIT,  STANDBY, ARMED, ARMED_ERROR, STANDBY_ERROR, REBOOT, IN_AIR_RESTORE
+	{ /* vehicle_status_s::ARMING_STATE_INIT */              true,   true,    false,     false,            true,            false,     false },
+	{ /* vehicle_status_s::ARMING_STATE_STANDBY */          true,   true,    true,      true,            false,            false,     false },
+	{ /* vehicle_status_s::ARMING_STATE_ARMED */            false,   true,    true,      false,           false,            false,     true },
+	{ /* vehicle_status_s::ARMING_STATE_ARMED_ERROR */    false,  false,    true,      true,       	   false,            false,     false },
+	{ /* vehicle_status_s::ARMING_STATE_STANDBY_ERROR */  true,   true,    true,      true,            true,            false,     false },
+	{ /* vehicle_status_s::ARMING_STATE_REBOOT */            true,   true,    false,     false,            true,            true,      true },
+	{ /* vehicle_status_s::ARMING_STATE_IN_AIR_RESTORE */false,  false,    false,     false,           false,            false,     false }, // NYI
 };
 
 // You can index into the array with an arming_state_t in order to get its textual representation
@@ -115,7 +117,7 @@ static const char *const state_names[vehicle_status_s::ARMING_STATE_MAX] = {
 };
 
 static hrt_abstime last_preflight_check = 0;	///< initialize so it gets checked immediately
-static int last_prearm_ret = 1;			///< initialize to fail
+static int last_prearm_ret = 1;			///< initialize to fail 初始化为失败
 
 transition_result_t arming_state_transition(struct vehicle_status_s *status,
 		struct battery_status_s *battery,
@@ -138,6 +140,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status,
 	bool feedback_provided = false;
 
 	/* only check transition if the new state is actually different from the current one */
+	// 仅当新的状态实际上不同于当前状态时检查转换
 	if (new_arming_state == current_arming_state) {
 		ret = TRANSITION_NOT_CHANGED;
 
@@ -150,7 +153,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status,
 
 		/* only perform the pre-arm check if we have to */
 		if (fRunPreArmChecks && new_arming_state == vehicle_status_s::ARMING_STATE_ARMED
-		    && status->hil_state == vehicle_status_s::HIL_STATE_OFF) {
+		    && status->hil_state == vehicle_status_s::HIL_STATE_OFF) {// 非HIL模式
 
 			prearm_ret = preflight_check(status, mavlink_log_pub, true /* pre-arm */, false /* force_report */,
 						     status_flags, battery, can_arm_without_gps, time_since_boot);
@@ -182,6 +185,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status,
 #endif
 
 		/* enforce lockdown in HIL */
+		// 在HIL模式下强制锁定
 		if (status->hil_state == vehicle_status_s::HIL_STATE_ON) {
 			armed->lockdown = true;
 			prearm_ret = OK;
@@ -197,26 +201,29 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status,
 		}
 
 		// Check that we have a valid state transition
+		// 检查状态转换是否有效
 		bool valid_transition = arming_transitions[new_arming_state][status->arming_state];
 
 		if (valid_transition) {
 			// We have a good transition. Now perform any secondary validation.
-			if (new_arming_state == vehicle_status_s::ARMING_STATE_ARMED) {
+			if (new_arming_state == vehicle_status_s::ARMING_STATE_ARMED) { // 新状态为解锁
 
 				//      Do not perform pre-arm checks if coming from in air restore
 				//      Allow if vehicle_status_s::HIL_STATE_ON
 				if (status->arming_state != vehicle_status_s::ARMING_STATE_IN_AIR_RESTORE &&
-				    status->hil_state == vehicle_status_s::HIL_STATE_OFF) {
+				    status->hil_state == vehicle_status_s::HIL_STATE_OFF) { // 当前不在空中 && 不处于HIL状态
 
 					// Fail transition if pre-arm check fails
+					// 若飞行前检查失败，则转换失败
 					if (prearm_ret) {
 						/* the prearm check already prints the reject reason */
+						// 飞行前检查已经打印了拒绝原因
 						feedback_provided = true;
 						valid_transition = false;
 
 						// Fail transition if we need safety switch press
-
-					} else if (safety->safety_switch_available && !safety->safety_off) {
+						// 如果需要按下安全开关，转换也失败
+					} else if (safety->safety_switch_available && !safety->safety_off) { // 有安全开关 并且没按下
 
 						mavlink_log_critical(mavlink_log_pub, "NOT ARMING: Press safety switch first!");
 						feedback_provided = true;
@@ -1112,6 +1119,7 @@ int preflight_check(struct vehicle_status_s *status, orb_advert_t *mavlink_log_p
 
 	/* Perform airspeed check only if circuit breaker is not
 	 * engaged and it's not a rotary wing */
+	 // 非旋翼则执行空速检测
 	if (!status_flags->circuit_breaker_engaged_airspd_check && (!status->is_rotary_wing || status->is_vtol)) {
 		checkAirspeed = true;
 	}
