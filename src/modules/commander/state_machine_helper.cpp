@@ -119,17 +119,17 @@ static const char *const state_names[vehicle_status_s::ARMING_STATE_MAX] = {
 static hrt_abstime last_preflight_check = 0;	///< initialize so it gets checked immediately
 static int last_prearm_ret = 1;			///< initialize to fail 初始化为失败
 
-transition_result_t arming_state_transition(struct vehicle_status_s *status,
-		struct battery_status_s *battery,
-		const struct safety_s *safety,
-		arming_state_t new_arming_state,
-		struct actuator_armed_s *armed,
-		bool fRunPreArmChecks,
-		orb_advert_t *mavlink_log_pub,	///< uORB handle for mavlink log
-		status_flags_s *status_flags,
-		float avionics_power_rail_voltage,
-		bool can_arm_without_gps,
-		hrt_abstime time_since_boot)
+transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 飞机状态 */
+		struct battery_status_s *battery, /* 电池状态 */
+		const struct safety_s *safety,  /* 安全开关 */
+		arming_state_t new_arming_state, /* 新的锁定状态 */
+		struct actuator_armed_s *armed, /* 执行器的锁定状态 */
+		bool fRunPreArmChecks, /* 运行解锁前检查 */
+		orb_advert_t *mavlink_log_pub,	///< uORB handle for mavlink log 用于MAVLink日志的uORB句柄
+		status_flags_s *status_flags,  /* 系统状态标志 */
+		float avionics_power_rail_voltage, /* 航电电压 */
+		bool can_arm_without_gps, /* 无GPS解锁 */
+		hrt_abstime time_since_boot) /* 系统运行时间 */
 {
 	// Double check that our static arrays are still valid
 	ASSERT(vehicle_status_s::ARMING_STATE_INIT == 0);
@@ -232,9 +232,11 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status,
 
 					// Perform power checks only if circuit breaker is not
 					// engaged for these checks
-					if (!status_flags->circuit_breaker_engaged_power_check) {
+					// 仅当断路器未忙于这些检查时执行电源检查
+					if (!status_flags->circuit_breaker_engaged_power_check) { // 不忙于电源检测
 						// Fail transition if power is not good
-						if (!status_flags->condition_power_input_valid) {
+						// 如果电源不好，则转换失败
+						if (!status_flags->condition_power_input_valid) { // 电源输入无效
 
 							mavlink_log_critical(mavlink_log_pub, "NOT ARMING: Connect power module.");
 							feedback_provided = true;
@@ -243,6 +245,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status,
 
 						// Fail transition if power levels on the avionics rail
 						// are measured but are insufficient
+						// 如果航电的电源被测量但不足，则失效转换
 						if (status_flags->condition_power_input_valid && (avionics_power_rail_voltage > 0.0f)) {
 							// Check avionics rail voltages
 							if (avionics_power_rail_voltage < 4.5f) {
@@ -278,6 +281,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status,
 		}
 
 		// Check if we are trying to arm, checks look good but we are in STANDBY_ERROR
+		// 检查我们是否尝试去解锁，
 		if (status->arming_state == vehicle_status_s::ARMING_STATE_STANDBY_ERROR) {
 
 			if (new_arming_state == vehicle_status_s::ARMING_STATE_ARMED) {
@@ -302,7 +306,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status,
 			}
 
 			// Sensors need to be initialized for STANDBY state, except for HIL
-
+			// 为了进入STANDBY状态，需要进行传感器的初始化，除非是在HIL状态下
 		} else if ((status->hil_state != vehicle_status_s::HIL_STATE_ON) &&
 			   (new_arming_state == vehicle_status_s::ARMING_STATE_STANDBY) &&
 			   (status->arming_state != vehicle_status_s::ARMING_STATE_STANDBY_ERROR)) {
@@ -333,6 +337,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status,
 		}
 
 		/* reset feedback state */
+		// 重置反馈状态
 		if (status->arming_state != vehicle_status_s::ARMING_STATE_STANDBY_ERROR &&
 		    status->arming_state != vehicle_status_s::ARMING_STATE_INIT &&
 		    valid_transition) {
@@ -347,9 +352,10 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status,
 
 	if (ret == TRANSITION_DENIED) {
 		/* print to MAVLink and console if we didn't provide any feedback yet */
+		// 如果我们还没有提供任何反馈则打印到MAVLink以及控制台
 		if (!feedback_provided) {
 			mavlink_log_critical(mavlink_log_pub, "TRANSITION_DENIED: %s - %s", state_names[status->arming_state],
-							 state_names[new_arming_state]);
+							 state_names[new_arming_state]);// 打印信息:从当前xx模式转换到xx模式失败
 		}
 	}
 

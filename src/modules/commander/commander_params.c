@@ -35,6 +35,7 @@
  * @file commander_params.c
  *
  * Parameters defined by the sensors task.
+ * 由传感器任务定义的参数
  *
  * @author Lorenz Meier <lorenz@px4.io>
  * @author Thomas Gubler <thomas@px4.io>
@@ -94,8 +95,10 @@ PARAM_DEFINE_FLOAT(TRIM_YAW, 0.0f);
 
 /**
  * Datalink loss time threshold
+ * 数据链丢失时间阈值
  *
  * After this amount of seconds without datalink the data link lost mode triggers
+ * 在这么长时间没有数据链以后，会触发数据链丢失模式
  *
  * @group Commander
  * @unit s
@@ -108,9 +111,11 @@ PARAM_DEFINE_INT32(COM_DL_LOSS_T, 10);
 
 /**
  * Datalink regain time threshold
+ * 数据链重新获得的时间阈值
  *
  * After a data link loss: after this this amount of seconds with a healthy datalink the 'datalink loss'
  * flag is set back to false
+ * 数据链丢失后: 在这么长时间获得健康的数据链后，'数据链丢失'标志位置为false
  *
  * @group Commander
  * @unit s
@@ -123,8 +128,10 @@ PARAM_DEFINE_INT32(COM_DL_REG_T, 0);
 
 /**
  * Engine Failure Throttle Threshold
+ * 电机故障油门阈值
  *
  * Engine failure triggers only above this throttle value
+ * 仅当高于此值时才触发电机故障模式
  *
  * @group Commander
  * @unit norm
@@ -137,13 +144,14 @@ PARAM_DEFINE_FLOAT(COM_EF_THROT, 0.5f);
 
 /**
  * Engine Failure Current/Throttle Threshold
+ * 电机故障 电流/油门 商值阈值
  *
  * Engine failure triggers only below this current value
  *
  * @group Commander
  * @min 0.0
  * @max 50.0
- * @unit A/%
+ * @unit A/%   单位A/%
  * @decimal 2
  * @increment 1
  */
@@ -151,6 +159,7 @@ PARAM_DEFINE_FLOAT(COM_EF_C2T, 5.0f);
 
 /**
  * Engine Failure Time Threshold
+ * 电机故障时间阈值
  *
  * Engine failure triggers only if the throttle threshold and the
  * current to throttle threshold are violated for this time
@@ -194,8 +203,10 @@ PARAM_DEFINE_FLOAT(COM_HOME_H_T, 5.0f);
 
 /**
  * Home set vertical threshold
+ * HOME点设置垂直阈值
  *
  * The home position will be set if the estimated positioning accuracy is below the threshold.
+ * Home点的位置将被置位，如果估计的位置精度低于此阈值
  *
  * @group Commander
  * @unit m
@@ -208,10 +219,13 @@ PARAM_DEFINE_FLOAT(COM_HOME_V_T, 10.0f);
 
 /**
  * Autosaving of params
+ * 自动保存参数
  *
  * If not equal to zero the commander will automatically save parameters to persistent storage once changed.
  * Default is on, as the interoperability with currently deployed GCS solutions depends on parameters
  * being sticky. Developers can default it to off.
+ * 如果此值不等于0，一旦参数发生改变，commander将自动保存参数到永久存储器中。
+ * 此值默认为1。
  *
  * @group Commander
  * @boolean
@@ -220,25 +234,29 @@ PARAM_DEFINE_INT32(COM_AUTOS_PAR, 1);
 
 /**
  * RC control input mode
+ * 遥控器控制输入模式
  *
  * The default value of 0 requires a valid RC transmitter setup.
  * Setting this to 1 allows joystick control and disables RC input handling and the associated checks. A value of
  * 2 will generate RC control data from manual input received via MAVLink instead
  * of directly forwarding the manual input data.
+ * 默认为0，遥控器控制。
  *
  * @group Commander
  * @min 0
  * @max 2
- * @value 0 RC Transmitter
- * @value 1 Joystick/No RC Checks
- * @value 2 Virtual RC by Joystick
+ * @value 0 RC Transmitter  遥控器发射机
+ * @value 1 Joystick/No RC Checks   虚拟摇杆
+ * @value 2 Virtual RC by MavLink   由MAVLink输入产生虚拟控制量
  */
 PARAM_DEFINE_INT32(COM_RC_IN_MODE, 0);
 
 /**
  * RC input arm/disarm command duration
+ * 遥控器输入解锁/上锁控制时间
  *
  * The default value of 1000 requires the stick to be held in the arm or disarm position for 1 second.
+ * 默认值为1000，需要保持摇杆位置1s来进行上锁或者解锁
  *
  * @group Commander
  * @min 100
@@ -248,14 +266,18 @@ PARAM_DEFINE_INT32(COM_RC_ARM_HYST, 1000);
 
 /**
  * Time-out for auto disarm after landing
+ * 着陆后自动上锁的超时时间
  *
  * A non-zero, positive value specifies the time-out period in seconds after which the vehicle will be
  * automatically disarmed in case a landing situation has been detected during this period.
+ * 非零正值表示在该时间段内检测到着陆情况的情况下，飞行器将自动上锁的超时周期（以秒为单位）。
  *
  * The vehicle will also auto-disarm right after arming if it has not even flown, however the time
  * will be longer by a factor of 5.
+ * 如果飞机没有飞行，其也将在解锁后立即自动上锁，但时间将会更长一些。
  *
  * A value of zero means that automatic disarming is disabled.
+ * 值为零意味着禁用自动上锁。
  *
  * @group Commander
  * @min 0
@@ -268,6 +290,7 @@ PARAM_DEFINE_INT32(COM_DISARM_LAND, 0);
 
 /**
  * Allow arming without GPS
+ * 运行无GPS解锁
  *
  * The default allows to arm the vehicle without GPS signal.
  *
@@ -281,8 +304,10 @@ PARAM_DEFINE_INT32(COM_ARM_WO_GPS, 1);
 
 /**
  * Battery failsafe mode
+ * 电池失效保护模式
  *
  * Action the system takes on low battery. Defaults to off
+ * 电池电量低时系统将采取的措施。默认为0，发出警告
  *
  * @group Commander
  * @value 0 Warning
@@ -295,6 +320,8 @@ PARAM_DEFINE_INT32(COM_LOW_BAT_ACT, 0);
 
 /**
  * Time-out to wait when offboard connection is lost before triggering offboard lost action.
+ * 外部连接丢失之前超时等待，然后触发失控的动作。
+ *
  * See COM_OBL_ACT and COM_OBL_RC_ACT to configure action.
  *
  * @group Commander
@@ -307,9 +334,11 @@ PARAM_DEFINE_FLOAT(COM_OF_LOSS_T, 0.0f);
 
 /**
  * Set offboard loss failsafe mode
+ * 设置外部控制丢失的失效保护模式
  *
  * The offboard loss failsafe will only be entered after a timeout,
  * set by COM_OF_LOSS_T in seconds.
+ * 默认为0，在当前位置着陆
  *
  * @value 0 Land at current position
  * @value 1 Loiter
@@ -321,9 +350,11 @@ PARAM_DEFINE_INT32(COM_OBL_ACT, 0);
 
 /**
  * Set offboard loss failsafe mode when RC is available
+ * 当遥控器有效时，设置外部控制丢失的失效保护模式
  *
  * The offboard loss failsafe will only be entered after a timeout,
  * set by COM_OF_LOSS_T in seconds.
+ * 默认为0，进行位置控制
  *
  * @value 0 Position control
  * @value 1 Altitude control
