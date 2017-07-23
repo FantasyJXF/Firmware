@@ -39,6 +39,7 @@
 
 /**
  * Auto-start script index.
+ * 自动启动脚本索引
  *
  * CHANGING THIS VALUE REQUIRES A RESTART. Defines the auto-start script used to bootstrap the system.
  *
@@ -51,14 +52,16 @@ PARAM_DEFINE_INT32(SYS_AUTOSTART, 0);
 
 /**
  * Automatically configure default values.
+ * 自动配置系统默认值
  *
  * Set to 1 to reset parameters on next system startup (setting defaults).
  * Platform-specific values are used if available.
  * RC* parameters are preserved.
+ * 将此值设置为1将在系统下一次启动时重置所有参数
  *
  * @min 0
  * @max 1
- * @value 0 Keep parameters
+ * @value 0 Keep parameters 保持参数
  * @value 1 Reset parameters
  * @group System
  */
@@ -66,8 +69,11 @@ PARAM_DEFINE_INT32(SYS_AUTOCONFIG, 0);
 
 /**
  * Set usage of IO board
+ * 设置IO板的使用
  *
  * Can be used to use a standard startup script but with a FMU only set-up. Set to 0 to force the FMU only set-up.
+ * 可以被用来使用标准的启动脚本进行仅含FMU的启动
+ * 将此值设置为0以强制进行仅FMU的启动
  *
  * @boolean
  * @min 0
@@ -92,6 +98,7 @@ PARAM_DEFINE_INT32(SYS_RESTART_TYPE, 2);
 
 /**
  * Set multicopter estimator group
+ * 设置多旋翼的估计算法
  *
  * Set the group of estimators used for multicopters and vtols
  *
@@ -107,6 +114,7 @@ PARAM_DEFINE_INT32(SYS_MC_EST_GROUP, 2);
 
 /**
  * TELEM2 as companion computer link
+ * 数传2作为协同计算机的链接
  *
  * CHANGING THIS VALUE REQUIRES A RESTART. Configures the baud rate of the TELEM2 connector as
  * companion computer interface.

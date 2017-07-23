@@ -1378,6 +1378,7 @@ int commander_thread_main(int argc, char *argv[])
 	memset(&status, 0, sizeof(status));
 
 	// We want to accept RC inputs as default
+	// 默认接收遥控器输入
 	status_flags.rc_input_blocked = false;
 	status.rc_input_mode = vehicle_status_s::RC_IN_MODE_DEFAULT;
 	internal_state.main_state = commander_state_s::MAIN_STATE_MANUAL;
@@ -1394,14 +1395,17 @@ int commander_thread_main(int argc, char *argv[])
 	status.failsafe = false;
 
 	/* neither manual nor offboard control commands have been received */
+	// 既没收到手动也没收到外部控制命令
 	status_flags.offboard_control_signal_found_once = false;
 	status_flags.rc_signal_found_once = false;
 
 	/* assume we don't have a valid baro on startup */
+	// 假定启动时气压计无效
 	status_flags.barometer_failure = true;
 	status_flags.ever_had_barometer_data = false;
 
 	/* mark all signals lost as long as they haven't been found */
+	// 只要还没有找到，就标记所有的信号丢失
 	status.rc_signal_lost = true;
 	status_flags.offboard_control_signal_lost = true;
 	status.data_link_lost = true;
@@ -1416,7 +1420,7 @@ int commander_thread_main(int argc, char *argv[])
 	avionics_power_rail_voltage = -1.0f;
 	status_flags.usb_connected = false;
 
-	// CIRCUIT BREAKERS
+	// CIRCUIT BREAKERS 断路器
 	status_flags.circuit_breaker_engaged_power_check = false;
 	status_flags.circuit_breaker_engaged_airspd_check = false;
 	status_flags.circuit_breaker_engaged_enginefailure_check = false;
@@ -1424,6 +1428,7 @@ int commander_thread_main(int argc, char *argv[])
 	get_circuit_breaker_params();
 
 	// initialize gps failure to false if circuit breaker enabled
+	// 如果断路器使能，初始化GPS失效为false
 	if (status_flags.circuit_breaker_engaged_gpsfailure_check) {
 		status_flags.gps_failure = false;
 	} else {
@@ -1431,6 +1436,7 @@ int commander_thread_main(int argc, char *argv[])
 	}
 
 	/* publish initial state */
+	// 发布初始状态
 	status_pub = orb_advertise(ORB_ID(vehicle_status), &status);
 
 	if (status_pub == nullptr) {

@@ -72,7 +72,7 @@ struct status_flags_s {
 	bool condition_local_position_valid;
 	bool condition_local_altitude_valid;
 	bool condition_airspeed_valid;			// set to true by the commander app if there is a valid airspeed measurement available
-	bool condition_power_input_valid;		// set if input power is valid
+	bool condition_power_input_valid;		// set if input power is valid 如果电源输入有效，则置位
 	bool usb_connected;				// status of the USB power supply USB供电状态
 	bool circuit_breaker_engaged_power_check;
 	bool circuit_breaker_engaged_airspd_check;
@@ -87,7 +87,7 @@ struct status_flags_s {
 	bool offboard_control_loss_timeout;		// true if offboard is lost for a certain amount of time  如果外部控制已经丢失了这么长时间，则为真
 	bool rc_signal_found_once;
 	bool rc_signal_lost_cmd;			// true if RC lost mode is commanded
-	bool rc_input_blocked;				// set if RC input should be ignored temporarily
+	bool rc_input_blocked;				// set if RC input should be ignored temporarily 如果遥控器输入应该暂时被忽略，则置位
 	bool data_link_lost_cmd;			// datalink to GCS lost mode commanded
 	bool vtol_transition_failure;			// Set to true if vtol transition failed
 	bool vtol_transition_failure_cmd;		// Set to true if vtol transition failure mode is commanded
