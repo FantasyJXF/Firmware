@@ -410,6 +410,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	case commander_state_s::MAIN_STATE_POSCTL:
 
 		/* need at minimum local position estimate */
+		// 定高模式至少需要local位置估计
 		if (status_flags->condition_local_position_valid ||
 		    status_flags->condition_global_position_valid) {
 			ret = TRANSITION_CHANGED;
@@ -420,6 +421,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	case commander_state_s::MAIN_STATE_AUTO_LOITER:
 
 		/* need global position estimate */
+		// 定点模式需要global位置估计
 		if (status_flags->condition_global_position_valid) {
 			ret = TRANSITION_CHANGED;
 		}
@@ -433,6 +435,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	case commander_state_s::MAIN_STATE_AUTO_LAND:
 
 		/* need global position and home position */
+		// 需要global位置以及Home点位置
 		if (status_flags->condition_global_position_valid && status_flags->condition_home_position_valid) {
 			ret = TRANSITION_CHANGED;
 		}
@@ -454,7 +457,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	}
 
 	if (ret == TRANSITION_CHANGED) {
-		if (internal_state->main_state != new_main_state) {
+		if (internal_state->main_state != new_main_state) { // 中间状态跟期望的新状态不同
 			main_state_prev = internal_state->main_state;
 			internal_state->main_state = new_main_state;
 			internal_state->timestamp = hrt_absolute_time();
@@ -661,6 +664,7 @@ void enable_failsafe(struct vehicle_status_s *status,
 
 /**
  * Check failsafe and main status and set navigation status for navigator accordingly
+ * 检查故障安全和主状态，并相应地设置导航器的导航状态
  */
 bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *internal_state,
 		   orb_advert_t *mavlink_log_pub,
@@ -684,6 +688,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 	case commander_state_s::MAIN_STATE_ALTCTL:
 
 		/* require RC for all manual modes */
+		// 所有的手动模式都需要遥控器
 		if (rc_loss_enabled && (status->rc_signal_lost || status_flags->rc_signal_lost_cmd) && armed) {
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_rc);
 
@@ -981,7 +986,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 	case commander_state_s::MAIN_STATE_AUTO_TAKEOFF:
 
 		/* require global position and home */
-
+		// 需要global位置以及home点位置
 		if (status->engine_failure) {
 			status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LANDENGFAIL;
 
