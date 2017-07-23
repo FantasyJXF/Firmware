@@ -135,7 +135,7 @@ static constexpr uint8_t COMMANDER_MAX_GPS_NOISE = 60;		/**< Maximum percentage 
 
 /* Decouple update interval and hysteresis counters, all depends on intervals */
 #define COMMANDER_MONITORING_INTERVAL 10000
-#define COMMANDER_MONITORING_LOOPSPERMSEC (1/(COMMANDER_MONITORING_INTERVAL/1000.0f))
+#define COMMANDER_MONITORING_LOOPSPERMSEC (1/(COMMANDER_MONITORING_INTERVAL/1000.0f)) // 0.1
 
 #define MAVLINK_OPEN_INTERVAL 50000
 
@@ -1455,6 +1455,7 @@ int commander_thread_main(int argc, char *argv[])
 	orb_advert_t control_mode_pub = orb_advertise(ORB_ID(vehicle_control_mode), &control_mode);
 
 	/* home position */
+	// home点的位置
 	orb_advert_t home_pub = nullptr;
 	memset(&_home, 0, sizeof(_home));
 
@@ -1468,6 +1469,7 @@ int commander_thread_main(int argc, char *argv[])
 	memset(&command_ack, 0, sizeof(command_ack));
 
 	/* init mission state, do it here to allow navigator to use stored mission even if mavlink failed to start */
+	// 初始化任务状态
 	orb_advert_t mission_pub = nullptr;
 	mission_s mission;
 
@@ -1499,6 +1501,7 @@ int commander_thread_main(int argc, char *argv[])
 	int ret;
 
 	/* Start monitoring loop */
+/////////////////// 开始监控  //////////////////////////
 	unsigned counter = 0;
 	unsigned stick_off_counter = 0;
 	unsigned stick_on_counter = 0;
@@ -1534,6 +1537,7 @@ int commander_thread_main(int argc, char *argv[])
 	memset(&offboard_control_mode, 0, sizeof(offboard_control_mode));
 
 	/* Subscribe to telemetry status topics */
+	// 订阅数传的状态主题
 	int telemetry_subs[ORB_MULTI_MAX_INSTANCES];
 	uint64_t telemetry_last_heartbeat[ORB_MULTI_MAX_INSTANCES];
 	uint64_t telemetry_last_dl_loss[ORB_MULTI_MAX_INSTANCES];
@@ -1573,6 +1577,8 @@ int commander_thread_main(int argc, char *argv[])
 	 * The home position is set based on GPS only, to prevent a dependency between
 	 * position estimator and commander. RAW GPS is more than good enough for a
 	 * non-flying vehicle.
+	 * home点的位置仅基于GPS设置，为了防止位置估计器和commander之间的依赖。
+	 * 原始的GPS信息可以用于非飞行状态的飞行器
 	 */
 
 	/* Subscribe to GPS topic */
@@ -1636,6 +1642,7 @@ int commander_thread_main(int argc, char *argv[])
 	control_status_leds(&status, &armed, true, &battery, &cpuload);
 
 	/* now initialized */
+	// 已经初始化完成
 	commander_initialized = true;
 	thread_running = true;
 
@@ -1663,6 +1670,7 @@ int commander_thread_main(int argc, char *argv[])
 	status.rc_input_mode = rc_in_off;
 	if (is_hil_setup(autostart_id)) {
 		// HIL configuration selected: real sensors will be disabled
+		// 选中HIL配置: 禁用真是传感器
 		status_flags.condition_system_sensors_initialized = false;
 		set_tune_override(TONE_STARTUP_TUNE); //normal boot tune
 	} else {
@@ -1674,6 +1682,7 @@ int commander_thread_main(int argc, char *argv[])
 	}
 
 	// user adjustable duration required to assert arm/disarm via throttle/rudder stick
+	// 要通过油门/方向舵摇杆进行上锁/解锁用户可调整的时间
 	int32_t rc_arm_hyst = 100;
 	param_get(_param_rc_arm_hyst, &rc_arm_hyst);
 	rc_arm_hyst *= COMMANDER_MONITORING_LOOPSPERMSEC;
@@ -1694,6 +1703,7 @@ int commander_thread_main(int argc, char *argv[])
 	int32_t geofence_action = 0;
 
 	/* Thresholds for engine failure detection */
+	// 电机故障检测的阈值
 	int32_t ef_throttle_thres = 1.0f;
 	int32_t ef_current2throttle_thres = 0.0f;
 	int32_t ef_time_thres = 1000.0f;
@@ -1712,6 +1722,7 @@ int commander_thread_main(int argc, char *argv[])
 	bool have_taken_off_since_arming = false;
 
 	/* initialize low priority thread */
+	// 初始化低优先级的进程
 	pthread_attr_t commander_low_prio_attr;
 	pthread_attr_init(&commander_low_prio_attr);
 	pthread_attr_setstacksize(&commander_low_prio_attr, PX4_STACK_ADJUSTED(3000));
@@ -1726,6 +1737,7 @@ int commander_thread_main(int argc, char *argv[])
 	(void)pthread_attr_setschedparam(&commander_low_prio_attr, &param);
 #endif
 
+	// 创建低优先级的进程
 	pthread_create(&commander_low_prio_thread, &commander_low_prio_attr, commander_low_prio_loop, NULL);
 	pthread_attr_destroy(&commander_low_prio_attr);
 
@@ -1744,12 +1756,13 @@ int commander_thread_main(int argc, char *argv[])
 			orb_copy(ORB_ID(parameter_update), param_changed_sub, &param_changed);
 
 			/* update parameters */
-			if (!armed.armed) {
+			if (!armed.armed) { // 未解锁
 				if (param_get(_param_sys_type, &(status.system_type)) != OK) {
 					warnx("failed getting new system type");
 				}
 
 				/* disable manual override for all systems that rely on electronic stabilization */
+				// 对于所有依赖电子增稳的系统禁用手动覆盖
 				if (is_rotary_wing(&status) || (is_vtol(&status) && vtol_status.vtol_in_rw_mode)) {
 					status.is_rotary_wing = true;
 
@@ -1770,6 +1783,7 @@ int commander_thread_main(int argc, char *argv[])
 			}
 
 			/* Safety parameters */
+			// 安全参数
 			param_get(_param_enable_datalink_loss, &datalink_loss_enabled);
 			param_get(_param_enable_rc_loss, &rc_loss_enabled);
 			param_get(_param_datalink_loss_timeout, &datalink_loss_timeout);
@@ -1789,6 +1803,7 @@ int commander_thread_main(int argc, char *argv[])
 			// make sure the hysteresis time gets set.
 			// After that it will be set in the main state
 			// machine based on the arming state.
+			// 确保设置好延迟时间
 			if (param_init_forced) {
 				auto_disarm_hysteresis.set_hysteresis_time_from(false,
 									(hrt_abstime)disarm_when_landed * 1000000);
@@ -1840,6 +1855,7 @@ int commander_thread_main(int argc, char *argv[])
 			}
 		}
 
+		// 检查手动控制更新
 		orb_check(sp_man_sub, &updated);
 
 		if (updated) {
@@ -1870,6 +1886,7 @@ int commander_thread_main(int argc, char *argv[])
 			if (!status_flags.offboard_control_loss_timeout && offboard_control_mode.timestamp != 0) {
 				if (offboard_loss_timeout < FLT_EPSILON) {
 					/* execute loss action immediately */
+					// 立即执行丢失操作
 					status_flags.offboard_control_loss_timeout = true;
 
 				} else {
@@ -1890,7 +1907,7 @@ int commander_thread_main(int argc, char *argv[])
 				telemetry_subs[i] = orb_subscribe_multi(ORB_ID(telemetry_status), i);
 			}
 
-			orb_check(telemetry_subs[i], &updated);
+			orb_check(telemetry_subs[i], &updated); // 检查数传信息更新
 
 			if (updated) {
 				struct telemetry_status_s telemetry;
@@ -1899,21 +1916,28 @@ int commander_thread_main(int argc, char *argv[])
 				orb_copy(ORB_ID(telemetry_status), telemetry_subs[i], &telemetry);
 
 				/* perform system checks when new telemetry link connected */
+				// 当新的数传连上时进行系统检查
 				if (/* we first connect a link or re-connect a link after loosing it or haven't yet reported anything */
+					// 我们第一次连接一个链接，或在丢失后重新连接的链接，或者现在还没有收到任何数据
 				    (telemetry_last_heartbeat[i] == 0 || (hrt_elapsed_time(&telemetry_last_heartbeat[i]) > 3 * 1000 * 1000)
 				        || !telemetry_preflight_checks_reported[i]) &&
 				    /* and this link has a communication partner */
+ 				    // 并且此连接有一个协同计算机
 				    (telemetry.heartbeat_time > 0) &&
 				    /* and it is still connected */
+				   // 并且仍然链接着
 				    (hrt_elapsed_time(&telemetry.heartbeat_time) < 2 * 1000 * 1000) &&
 				    /* and the system is not already armed (and potentially flying) */
+				   // 并且系统还没有解锁(待飞行状态)
 				    !armed.armed) {
 
 					hotplug_timeout = hrt_elapsed_time(&commander_boot_timestamp) > HOTPLUG_SENS_TIMEOUT;
 					/* flag the checks as reported for this link when we actually report them */
+					// 记录标志
 					telemetry_preflight_checks_reported[i] = hotplug_timeout;
 
 					/* provide RC and sensor status feedback to the user */
+					// 向用户提供遥控器以及传感器的状态反馈
 					if (is_hil_setup(autostart_id)) {
 						/* HIL configuration: check only RC input */
 						(void)Commander::preflightCheck(&mavlink_log_pub, false, false, false, false, false,
@@ -1921,6 +1945,7 @@ int commander_thread_main(int argc, char *argv[])
 								 /* checkDynamic */ true, is_vtol(&status), /* reportFailures */ false, /* prearm */ false, hrt_elapsed_time(&commander_boot_timestamp));
 					} else {
 						/* check sensors also */
+						// 同时检查GPS传感器
 						(void)Commander::preflightCheck(&mavlink_log_pub, true, true, true, true, checkAirspeed,
 								(status.rc_input_mode == vehicle_status_s::RC_IN_MODE_DEFAULT), !status_flags.circuit_breaker_engaged_gpsfailure_check,
 								 /* checkDynamic */ true, is_vtol(&status), /* reportFailures */ hotplug_timeout, /* prearm */ false, hrt_elapsed_time(&commander_boot_timestamp));
@@ -1928,6 +1953,7 @@ int commander_thread_main(int argc, char *argv[])
 				}
 
 				/* set (and don't reset) telemetry via USB as active once a MAVLink connection is up */
+				// 一旦连上一个MAVLink,通过USB置位数传为激活状态
 				if (telemetry.type == telemetry_status_s::TELEMETRY_STATUS_RADIO_TYPE_USB) {
 					_usb_telemetry_active = true;
 				}
@@ -1938,7 +1964,7 @@ int commander_thread_main(int argc, char *argv[])
 			}
 		}
 
-		orb_check(sensor_sub, &updated);
+		orb_check(sensor_sub, &updated); // 检查传感器更新
 
 		if (updated) {
 			orb_copy(ORB_ID(sensor_combined), sensor_sub, &sensors);
@@ -1948,10 +1974,12 @@ int commander_thread_main(int argc, char *argv[])
 			 * vertical separation from other airtraffic the operator has to know when the
 			 * barometer is inoperational.
 			 * */
+			 // 检查气压计的健康状态
+			 // 气压计用于计算AMSL，用于确保垂直方向的高度
 			hrt_abstime baro_timestamp = sensors.timestamp + sensors.baro_timestamp_relative;
 			if (hrt_elapsed_time(&baro_timestamp) < FAILSAFE_DEFAULT_TIMEOUT) {
 				/* handle the case where baro was regained */
-				if (status_flags.barometer_failure) {
+				if (status_flags.barometer_failure) { // 初始化时默认气压计是无效的，因此开始会进入此循环
 					status_flags.barometer_failure = false;
 					status_changed = true;
 					if (status_flags.ever_had_barometer_data) {
