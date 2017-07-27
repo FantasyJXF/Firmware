@@ -168,9 +168,12 @@ PARAM_DEFINE_INT32(CBRK_BUZZER, 0);
 
 /**
  * Circuit breaker for USB link check
+ * 用于USB连接检测的断路器
  *
  * Setting this parameter to 197848 will disable the USB connected
  * checks in the commander.
+ * 将此值设置成197848将禁用USB连接
+ *
  * WARNING: ENABLING THIS CIRCUIT BREAKER IS AT OWN RISK
  *
  * @reboot_required true

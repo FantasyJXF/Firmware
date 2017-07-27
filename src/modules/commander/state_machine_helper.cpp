@@ -132,6 +132,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 		hrt_abstime time_since_boot) /* 系统运行时间 */
 {
 	// Double check that our static arrays are still valid
+	// 重复检查静态数组是否依然有效
 	ASSERT(vehicle_status_s::ARMING_STATE_INIT == 0);
 	ASSERT(vehicle_status_s::ARMING_STATE_IN_AIR_RESTORE == vehicle_status_s::ARMING_STATE_MAX - 1);
 
@@ -152,20 +153,22 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 		int prearm_ret = OK;
 
 		/* only perform the pre-arm check if we have to */
+		// 只在必要时执行解锁前检测
 		if (fRunPreArmChecks && new_arming_state == vehicle_status_s::ARMING_STATE_ARMED
-		    && status->hil_state == vehicle_status_s::HIL_STATE_OFF) {// 非HIL模式
+		    && status->hil_state == vehicle_status_s::HIL_STATE_OFF) {// 目标状态为解锁 && 非HIL模式
 
 			prearm_ret = preflight_check(status, mavlink_log_pub, true /* pre-arm */, false /* force_report */,
 						     status_flags, battery, can_arm_without_gps, time_since_boot);
 		}
 
 		/* re-run the pre-flight check as long as sensors are failing */
+		// 只要传感器依然失败就重新进行飞行前检查
 		if (!status_flags->condition_system_sensors_initialized
 		    && (new_arming_state == vehicle_status_s::ARMING_STATE_ARMED
 			|| new_arming_state == vehicle_status_s::ARMING_STATE_STANDBY)
 		    && status->hil_state == vehicle_status_s::HIL_STATE_OFF) {
 
-			if (last_preflight_check == 0 || hrt_absolute_time() - last_preflight_check > 1000 * 1000) {
+			if (last_preflight_check == 0 || hrt_absolute_time() - last_preflight_check > 1000 * 1000/* 1秒 */) {
 				prearm_ret = preflight_check(status, mavlink_log_pub, false /* pre-flight */, false /* force_report */,
 							     status_flags, battery, can_arm_without_gps, time_since_boot);
 				status_flags->condition_system_sensors_initialized = !prearm_ret;
@@ -368,6 +371,9 @@ bool is_safe(const struct vehicle_status_s *status, const struct safety_s *safet
 	// 1) Not armed
 	// 2) Armed, but in software lockdown (HIL)
 	// 3) Safety switch is present AND engaged -> actuators locked
+	/*
+	 * 如果满足以下几点则系统是安全的
+	 */
 	if (!armed->armed || (armed->armed && armed->lockdown) || (safety->safety_switch_available && !safety->safety_off)) {
 		return true;
 

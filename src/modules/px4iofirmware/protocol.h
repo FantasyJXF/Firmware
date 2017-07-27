@@ -96,6 +96,7 @@
 #define PX4IO_PROTOCOL_MAX_CONTROL_COUNT	8	/**< The protocol does not support more than set here, individual units might support less - see PX4IO_P_CONFIG_CONTROL_COUNT */
 
 /* static configuration page */
+// 静态配置页
 #define PX4IO_PAGE_CONFIG		0
 #define PX4IO_P_CONFIG_PROTOCOL_VERSION		0	/* PX4IO_PROTOCOL_VERSION */
 #define PX4IO_P_CONFIG_HARDWARE_VERSION		1	/* magic numbers TBD */
@@ -108,6 +109,7 @@
 #define PX4IO_P_CONFIG_RELAY_COUNT		8	/* hardcoded # of relay outputs */
 
 /* dynamic status page */
+// 动态状态页
 #define PX4IO_PAGE_STATUS		1
 #define PX4IO_P_STATUS_FREEMEM			0
 #define PX4IO_P_STATUS_CPULOAD			1
@@ -241,7 +243,7 @@ enum {							/* DSM bind states */
 #define PX4IO_P_SETUP_FORCE_SAFETY_OFF		12	/* force safety switch into
                                                            'armed' (PWM enabled) state - this is a non-data write and
                                                            hence index 12 can safely be used. */
-				                                                        // 强制安全开关进入解锁状态，确保索引12能够被安全使用
+				                                                        // 强制安全开关进入解锁状态(允许PWM输出)，确保索引12能够被安全使用
 #define PX4IO_P_SETUP_RC_THR_FAILSAFE_US	13	/**< the throttle failsafe pulse length in microseconds */
 
 #define PX4IO_P_SETUP_FORCE_SAFETY_ON		14	/* force safety switch into 'disarmed' (PWM disabled state)强制安全开关进入锁定状态 */ 

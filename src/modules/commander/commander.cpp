@@ -127,7 +127,7 @@ typedef enum VEHICLE_MODE_FLAG
 	VEHICLE_MODE_FLAG_STABILIZE_ENABLED=16, /* 0b00010000 system stabilizes electronically its attitude (and optionally position). It needs however further control inputs to move around. | */
 	VEHICLE_MODE_FLAG_HIL_ENABLED=32, /* 0b00100000 hardware in the loop simulation. All motors / actuators are blocked, but internal software is full operational. | */
 	VEHICLE_MODE_FLAG_MANUAL_INPUT_ENABLED=64, /* 0b01000000 remote control input is enabled. | */
-	VEHICLE_MODE_FLAG_SAFETY_ARMED=128, /* 0b10000000 MAV safety set to armed. Motors are enabled / running / can start. Ready to fly. | */
+	VEHICLE_MODE_FLAG_SAFETY_ARMED=128, /* 0b10000000 MAV safety set to armed.飞行器可以安全的解锁了 Motors are enabled / running / can start. Ready to fly. | */
 	VEHICLE_MODE_FLAG_ENUM_END=129, /*  | */
 } VEHICLE_MODE_FLAG;
 
@@ -2058,8 +2058,8 @@ int commander_thread_main(int argc, char *argv[])
 		orb_check(safety_sub, &updated);
 
 		if (updated) {
-			bool previous_safety_off = safety.safety_off;
-			orb_copy(ORB_ID(safety), safety_sub, &safety);
+			bool previous_safety_off = safety.safety_off; // 将更新前的安全保护是否关闭的情况赋给previous_safety_off
+			orb_copy(ORB_ID(safety), safety_sub, &safety); // 更新安全开关的状态
 
 			/* disarm if safety is now on and still armed */
 			// 如果存在安全开关并且依然处于解锁状态，则上锁
@@ -3063,11 +3063,14 @@ int commander_thread_main(int argc, char *argv[])
 			if (safety.safety_switch_available) {
 
 				/* safety is off, go into prearmed */
+				// 已经关闭了安全保护，则进入预解锁状态
 				armed.prearmed = safety.safety_off;
 			} else {
 				/* safety is not present, go into prearmed
+				 * 如果不存在安全开关，直接进入预解锁状态
 				 * (all output drivers should be started / unlocked last in the boot process
 				 * when the rest of the system is fully initialized)
+				 * (所有的输出驱动都应该在启动程序的最后打开/锁定，此时剩余的系统部分已经初始化完毕)
 				 */
 				armed.prearmed = (hrt_elapsed_time(&commander_boot_timestamp) > 5 * 1000 * 1000);
 			}
@@ -3075,9 +3078,11 @@ int commander_thread_main(int argc, char *argv[])
 		}
 
 		/* play arming and battery warning tunes */
+		// 播放解锁以及电池报警声
 		if (!arm_tune_played && armed.armed && (!safety.safety_switch_available || (safety.safety_switch_available
 							&& safety.safety_off))) {
 			/* play tune when armed */
+			// 解锁时播放声音，这里已经关闭了安全保护
 			set_tune(TONE_ARMING_WARNING_TUNE);
 			arm_tune_played = true;
 
@@ -3097,6 +3102,7 @@ int commander_thread_main(int argc, char *argv[])
 		}
 
 		/* reset arm_tune_played when disarmed */
+		// 上锁后复位arm_tune_played
 		if (!armed.armed || (safety.safety_switch_available && !safety.safety_off)) {
 
 			//Notify the user that it is safe to approach the vehicle
@@ -3276,12 +3282,14 @@ control_status_leds(vehicle_status_s *status_local, const actuator_armed_s *actu
 
 	} else if (actuator_armed->ready_to_arm) {
 		/* ready to arm, blink at 1Hz */
+		// 准备解锁，以1Hz频率闪烁
 		if (leds_counter % 20 == 0) {
 			led_toggle(LED_BLUE);
 		}
 
 	} else {
 		/* not ready to arm, blink at 10Hz */
+		// 不能解锁，以10Hz频率闪烁
 		if (leds_counter % 2 == 0) {
 			led_toggle(LED_BLUE);
 		}

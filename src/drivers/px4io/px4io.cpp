@@ -302,14 +302,14 @@ private:
 	orb_advert_t		_to_outputs;		///< mixed servo outputs topic
 	orb_advert_t		_to_battery;		///< battery status / voltage
 	orb_advert_t		_to_servorail;		///< servorail status
-	orb_advert_t		_to_safety;		///< status of safety
+	orb_advert_t		_to_safety;		///< status of safety 安全保护状态
 	orb_advert_t 		_to_mixer_status; 	///< mixer status flags
 
 	actuator_outputs_s	_outputs;		///< mixed outputs
 	servorail_status_s	_servorail_status;	///< servorail status
 
 	bool			_primary_pwm_device;	///< true if we are the default PWM output
-	bool			_lockdown_override;	///< allow to override the safety lockdown
+	bool			_lockdown_override;	///< allow to override the safety lockdown 允许覆盖安全保护的锁定
 	bool			_armed;			///< wether the system is armed
 
 	float			_battery_amp_per_volt;	///< current sensor amps/volt
@@ -367,6 +367,7 @@ private:
 
 	/**
 	 * Fetch status and alarms from IO
+	 * 从PX4IO中获取状态以及警告
 	 *
 	 * Also publishes battery voltage/current.
 	 */
@@ -454,8 +455,10 @@ private:
 
 	/**
 	 * Handle a status update from IO.
+	 * 处理从PX4IO中更新的状态
 	 *
 	 * Publish IO status information if necessary.
+	 * 必要时发布IO的状态信息
 	 *
 	 * @param status	The status register
 	 */
@@ -741,6 +744,8 @@ PX4IO::init()
 	 * armed state, FMU is recovering from an in-air reset.
 	 * Read back status and request the commander to arm
 	 * in this case.
+	 * 检查IO的飞行状态 - 如果FMU的标志应该为解锁状态，FMU正从空中复位中恢复
+	 * 读回状态并请求commander在此情况下解锁
 	 */
 
 	uint16_t reg;
@@ -880,6 +885,7 @@ PX4IO::init()
 	} else {
 
 		/* dis-arm IO before touching anything */
+		// 首先上锁
 		io_reg_modify(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_ARMING,
 			      PX4IO_P_SETUP_ARMING_FMU_ARMED |
 			      PX4IO_P_SETUP_ARMING_INAIR_RESTART_OK |
@@ -918,7 +924,7 @@ PX4IO::init()
 
 	/* set safety to off if circuit breaker enabled */
 	// 如果断路器关闭安全保护
-	if (circuit_breaker_enabled("CBRK_IO_SAFETY", CBRK_IO_SAFETY_KEY)) {
+	if (circuit_breaker_enabled("CBRK_IO_SAFETY", CBRK_IO_SAFETY_KEY)) { //CBRK_IO_SAFETY默认为0，安全保护默认为打开状态
 		(void)io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_FORCE_SAFETY_OFF, PX4IO_FORCE_SAFETY_MAGIC);
 	}
 
@@ -1684,12 +1690,12 @@ PX4IO::io_handle_status(uint16_t status)
 		/* set the arming flag */
 		// 设置解锁标志
 		ret = io_reg_modify(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_FLAGS, 0,
-				    PX4IO_P_STATUS_FLAGS_SAFETY_OFF | PX4IO_P_STATUS_FLAGS_ARM_SYNC);
+				    PX4IO_P_STATUS_FLAGS_SAFETY_OFF | PX4IO_P_STATUS_FLAGS_ARM_SYNC/* 0x1200 */);
 
 		/* set new status */
 		// 设置新的状态
 		_status = status;
-		_status &= PX4IO_P_STATUS_FLAGS_SAFETY_OFF;
+		_status &= PX4IO_P_STATUS_FLAGS_SAFETY_OFF; // 关闭安全保护
 
 	} else if (!(_status & PX4IO_P_STATUS_FLAGS_ARM_SYNC)) {
 
@@ -1838,13 +1844,14 @@ PX4IO::io_get_status()
 	 * STATUS_FLAGS, STATUS_ALARMS, STATUS_VBATT, STATUS_IBATT,
 	 * STATUS_VSERVO, STATUS_VRSSI, STATUS_PRSSI
 	 * in that order */
+	// 按上述顺序获取IO获取状态
 	ret = io_reg_get(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_FLAGS, &regs[0], sizeof(regs) / sizeof(regs[0]));
 
 	if (ret != OK) {
 		return ret;
 	}
 
-	io_handle_status(regs[0]);
+	io_handle_status(regs[0]); // 第2页寄存器的状态
 	io_handle_alarms(regs[1]);
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
@@ -3412,6 +3419,7 @@ bind(int argc, char *argv[])
 
 	if (g_dev->system_status() & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) {
 		errx(1, "system must not be armed");
+		// 系统无法加锁
 	}
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
