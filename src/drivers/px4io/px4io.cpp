@@ -111,6 +111,7 @@
  * The PX4IO class.
  *
  * Encapsulates PX4FMU to PX4IO communications modeled as file operations.
+ * 将PX4FMU封装到通过文件操作建模的PX4IO通信。
  */
 class PX4IO : public device::CDev
 {
@@ -154,12 +155,14 @@ public:
 
 	/**
 	 * IO Control handler.
+	 * IO控制处理
 	 *
 	 * Handle all IOCTL calls to the PX4IO file descriptor.
+	 * 处理所有的调用PX4IO文件描述符的IOCTL调用
 	 *
 	 * @param[in] filp file handle (not used). This function is always called directly through object reference
-	 * @param[in] cmd the IOCTL command
-	 * @param[in] the IOCTL command parameter (optional)
+	 * @param[in] cmd the IOCTL command 控制命令
+	 * @param[in] the IOCTL command parameter (optional) 命令参数
 	 */
 	virtual int		ioctl(file *filp, int cmd, unsigned long arg);
 
@@ -264,7 +267,7 @@ private:
 	unsigned		_max_transfer;		///< Maximum number of I2C transfers supported by PX4IO
 
 	unsigned 		_update_interval;	///< Subscription interval limiting send rate
-	bool			_rc_handling_disabled;	///< If set, IO does not evaluate, but only forward the RC values
+	bool			_rc_handling_disabled;	///< If set, IO does not evaluate, but only forward the RC values 如果置位，那么IO将不作评估，直接发送遥控器的值
 	unsigned		_rc_chan_count;		///< Internal copy of the last seen number of RC channels
 	uint64_t		_rc_last_valid;		///< last valid timestamp
 
@@ -716,6 +719,8 @@ PX4IO::init()
 
 		// If IO has already safety off it won't accept going into bootloader mode,
 		// therefore we need to set safety on first.
+		// 如果IO已经关闭了安全保护，它将不接受进入bootloader模式
+		// 因此我们需要打开安全保护
 		io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_FORCE_SAFETY_ON, PX4IO_FORCE_SAFETY_MAGIC);
 
 		// Now the reboot into bootloader mode should succeed.
@@ -755,6 +760,7 @@ PX4IO::init()
 	    (reg & PX4IO_P_SETUP_ARMING_FMU_ARMED)) {
 
 		/* get a status update from IO */
+		// 获得来自IO的状态更新
 		io_get_status();
 
 		mavlink_log_emergency(&_mavlink_log_pub, "RECOVERING FROM FMU IN-AIR RESTART");
@@ -764,7 +770,8 @@ PX4IO::init()
 		 * remains untouched (so manual override is still available).
 		 */
 
-		int safety_sub = orb_subscribe(ORB_ID(actuator_armed));
+		// 订阅执行器解锁主题
+		int safety_sub = orb_subscribe(ORB_ID(actuator_armed)); // 由commander发布
 		/* fill with initial values, clear updated flag */
 		struct actuator_armed_s safety;
 		uint64_t try_start_time = hrt_absolute_time();
@@ -777,6 +784,7 @@ PX4IO::init()
 
 			if (updated) {
 				/* got data, copy and exit loop */
+				// 获取数据，复制并退出循环
 				orb_copy(ORB_ID(actuator_armed), safety_sub, &safety);
 				break;
 			}
@@ -830,6 +838,7 @@ PX4IO::init()
 		orb_advert_t pub = orb_advertise_queue(ORB_ID(vehicle_command), &cmd, vehicle_command_s::ORB_QUEUE_LENGTH);
 
 		/* spin here until IO's state has propagated into the system */
+		// 停在这里，直到IO的状态已经传输到系统中
 		do {
 			orb_check(safety_sub, &updated);
 
@@ -847,12 +856,14 @@ PX4IO::init()
 			}
 
 			/* re-send if necessary */
+			// 必要时重新发送
 			if (!safety.armed) {
 				orb_publish(ORB_ID(vehicle_command), pub, &cmd);
 				DEVICE_LOG("re-sending arm cmd");
 			}
 
 			/* keep waiting for state change for 2 s */
+			// 等待2s保持状态改变
 		} while (!safety.armed);
 
 		/* Indicate restart type is in-flight */
@@ -906,6 +917,7 @@ PX4IO::init()
 	}
 
 	/* set safety to off if circuit breaker enabled */
+	// 如果断路器关闭安全保护
 	if (circuit_breaker_enabled("CBRK_IO_SAFETY", CBRK_IO_SAFETY_KEY)) {
 		(void)io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_FORCE_SAFETY_OFF, PX4IO_FORCE_SAFETY_MAGIC);
 	}
@@ -1033,6 +1045,7 @@ PX4IO::task_main()
 			poll_last = now;
 
 			/* pull status and alarms from IO */
+			// 更新来自IO的状态与告警
 			io_get_status();
 
 			/* get raw R/C input from IO */
@@ -1140,7 +1153,7 @@ PX4IO::task_main()
 				}
 
 				int32_t safety_param_val;
-				param_t safety_param = param_find("CBRK_IO_SAFETY");
+				param_t safety_param = param_find("CBRK_IO_SAFETY"); // 默认为0
 
 				if (safety_param != PARAM_INVALID) {
 
@@ -1148,6 +1161,7 @@ PX4IO::task_main()
 
 					if (safety_param_val == PX4IO_FORCE_SAFETY_MAGIC) {
 						/* disable IO safety if circuit breaker asked for it */
+						// 如果断路器要求，可以禁用IO安全保护
 						(void)io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_FORCE_SAFETY_OFF, safety_param_val);
 					}
 				}
@@ -1660,24 +1674,30 @@ PX4IO::io_handle_status(uint16_t status)
 	int ret = 1;
 	/**
 	 * WARNING: This section handles in-air resets.
+	 *          此部分处理空中复位的情况
 	 */
 
 	/* check for IO reset - force it back to armed if necessary */
+	// 检查IO复位 - 必要时强制其回到解锁时的状态
 	if (_status & PX4IO_P_STATUS_FLAGS_SAFETY_OFF && !(status & PX4IO_P_STATUS_FLAGS_SAFETY_OFF)
 	    && !(status & PX4IO_P_STATUS_FLAGS_ARM_SYNC)) {
 		/* set the arming flag */
+		// 设置解锁标志
 		ret = io_reg_modify(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_FLAGS, 0,
 				    PX4IO_P_STATUS_FLAGS_SAFETY_OFF | PX4IO_P_STATUS_FLAGS_ARM_SYNC);
 
 		/* set new status */
+		// 设置新的状态
 		_status = status;
 		_status &= PX4IO_P_STATUS_FLAGS_SAFETY_OFF;
 
 	} else if (!(_status & PX4IO_P_STATUS_FLAGS_ARM_SYNC)) {
 
 		/* set the sync flag */
+		// 设置同步标志位
 		ret = io_reg_modify(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_FLAGS, 0, PX4IO_P_STATUS_FLAGS_ARM_SYNC);
 		/* set new status */
+		// 设置新的状态
 		_status = status;
 
 	} else {
@@ -1689,6 +1709,7 @@ PX4IO::io_handle_status(uint16_t status)
 
 	/**
 	 * Get and handle the safety status
+	 * 获取并处理安全状态
 	 */
 	struct safety_s safety;
 	safety.timestamp = hrt_absolute_time();
@@ -2702,6 +2723,7 @@ PX4IO::ioctl(file *filep, int cmd, unsigned long arg)
 
 	case PWM_SERVO_SET_FORCE_SAFETY_OFF:
 		/* force safety swith off */
+		// 强制安全开关关闭
 		ret = io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_FORCE_SAFETY_OFF, PX4IO_FORCE_SAFETY_MAGIC);
 		break;
 
@@ -3421,6 +3443,7 @@ test(void)
 	}
 
 	/* tell IO that its ok to disable its safety with the switch */
+	// 可以使用开关禁用IO的安全保护
 	ret = ioctl(fd, PWM_SERVO_SET_ARM_OK, 0);
 
 	if (ret != OK) {
@@ -3799,7 +3822,7 @@ px4io_main(int argc, char *argv[])
 		int ret = g_dev->ioctl(NULL, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
 
 		if (ret != OK) {
-			warnx("failed to disable safety");
+			warnx("failed to disable safety"); // 禁用失败
 			exit(1);
 		}
 

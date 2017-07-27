@@ -81,7 +81,7 @@
 #define GPIO_USART1_RX_SPEKTRUM		(GPIO_OUTPUT|GPIO_CNF_OUTPP|GPIO_MODE_50MHz|GPIO_OUTPUT_SET|GPIO_PORTA|GPIO_PIN10)
 
 /* Safety switch button *******************************************************/
-
+// 安全开关按钮
 #define GPIO_BTN_SAFETY (GPIO_INPUT|GPIO_CNF_INFLOAT|GPIO_MODE_INPUT|GPIO_PORTB|GPIO_PIN5)
 
 /* Power switch controls ******************************************************/

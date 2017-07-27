@@ -292,6 +292,7 @@ int prepare(int fd, unsigned long *max_channels)
 	}
 
 	/* tell IO to switch off safety without using the safety switch */
+	// 让IO不使用安全开关关闭安全保护
 	if (px4_ioctl(fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0) != OK) {
 		PX4_ERR("PWM_SERVO_SET_FORCE_SAFETY_OFF");
 		return 1;

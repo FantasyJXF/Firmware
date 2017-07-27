@@ -71,7 +71,7 @@ struct status_flags_s {
 	bool condition_home_position_valid;		// indicates a valid home position (a valid home position is not always a valid launch)
 	bool condition_local_position_valid;
 	bool condition_local_altitude_valid;
-	bool condition_airspeed_valid;			// set to true by the commander app if there is a valid airspeed measurement available
+	bool condition_airspeed_valid;			// set to true by the commander app if there is a valid airspeed measurement available 如果存在有效的空速测量，则commander应用会将此项置位
 	bool condition_power_input_valid;		// set if input power is valid 如果电源输入有效，则置位
 	bool usb_connected;				// status of the USB power supply USB供电状态
 	bool circuit_breaker_engaged_power_check;

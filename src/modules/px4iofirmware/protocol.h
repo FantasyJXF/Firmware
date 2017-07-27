@@ -39,31 +39,43 @@
  * @file protocol.h
  *
  * PX4IO interface protocol.
+ * PX4IO的接口协议
  *
  * Communication is performed via writes to and reads from 16-bit virtual
  * registers organised into pages of 255 registers each.
+ * 每一页有255个寄存器
+ * 通过从一个16位虚拟寄存器写入和读取来执行通信。
  *
  * The first two bytes of each write select a page and offset address
  * respectively. Subsequent reads and writes increment the offset within
  * the page.
+ * 每个写入的前两个字节分别选择页面和偏移地址。 随后的读取和写入会增加页面内的偏移量。
  *
  * Some pages are read- or write-only.
- *
+ * 一些页面只读或只写
+ * 
  * Note that some pages may permit offset values greater than 255, which
  * can only be achieved by long writes. The offset does not wrap.
+ * 请注意，某些页面可能允许大于255的偏移值，这只能通过写long操作来实现。 
  *
  * Writes to unimplemented registers are ignored. Reads from unimplemented
  * registers return undefined values.
+ * 写入未实现的寄存器将被忽略。 从未实现的寄存器读取将返回未定义的值。
  *
  * As convention, values that would be floating point in other parts of
  * the PX4 system are expressed as signed integer values scaled by 10000,
  * e.g. control values range from -10000..10000.  Use the REG_TO_SIGNED and
  * SIGNED_TO_REG macros to convert between register representation and
  * the signed version, and REG_TO_FLOAT/FLOAT_TO_REG to convert to float.
+ * 按照约定，在PX4系统的其他部分中浮点的值表示为以10000为单位的有符号整数值，
+ * 例如。 控制值范围为-10000..10000。 
+ * 使用REG_TO_SIGNED和SIGNED_TO_REG宏在寄存器表示和签名版本之间进行转换，
+ * 并将REG_TO_FLOAT / FLOAT_TO_REG转换为float。
  *
  * Note that the implementation of readable pages prefers registers within
  * readable pages to be densely packed. Page numbers do not need to be
  * packed.
+ * 请注意，可读页面的执行优先于可读页面中的寄存器被密集地打包。 页数不需要打包。
  *
  * Definitions marked 
  * [1] are only valid on PX4IOv1 boards. Likewise,
@@ -110,10 +122,10 @@
 #define PX4IO_P_STATUS_FLAGS_FMU_OK		(1 << 6) /* controls from FMU are valid */
 #define PX4IO_P_STATUS_FLAGS_RAW_PWM		(1 << 7) /* raw PWM from FMU is bypassing the mixer */
 #define PX4IO_P_STATUS_FLAGS_MIXER_OK		(1 << 8) /* mixer is OK */
-#define PX4IO_P_STATUS_FLAGS_ARM_SYNC		(1 << 9) /* the arming state between IO and FMU is in sync */
+#define PX4IO_P_STATUS_FLAGS_ARM_SYNC		(1 << 9) /* the arming state between IO and FMU is in sync        IO和FMU之间的解锁状态是同步的 */
 #define PX4IO_P_STATUS_FLAGS_INIT_OK		(1 << 10) /* initialisation of the IO completed without error */
 #define PX4IO_P_STATUS_FLAGS_FAILSAFE		(1 << 11) /* failsafe is active */
-#define PX4IO_P_STATUS_FLAGS_SAFETY_OFF		(1 << 12) /* safety is off */
+#define PX4IO_P_STATUS_FLAGS_SAFETY_OFF		(1 << 12) /* safety is off 关闭安全设置*/
 #define PX4IO_P_STATUS_FLAGS_FMU_INITIALIZED	(1 << 13) /* FMU was initialized and OK once */
 #define PX4IO_P_STATUS_FLAGS_RC_ST24		(1 << 14) /* ST24 input is valid */
 #define PX4IO_P_STATUS_FLAGS_RC_SUMD		(1 << 15) /* SUMD input is valid */
@@ -229,10 +241,11 @@ enum {							/* DSM bind states */
 #define PX4IO_P_SETUP_FORCE_SAFETY_OFF		12	/* force safety switch into
                                                            'armed' (PWM enabled) state - this is a non-data write and
                                                            hence index 12 can safely be used. */
+				                                                        // 强制安全开关进入解锁状态，确保索引12能够被安全使用
 #define PX4IO_P_SETUP_RC_THR_FAILSAFE_US	13	/**< the throttle failsafe pulse length in microseconds */
 
-#define PX4IO_P_SETUP_FORCE_SAFETY_ON		14	/* force safety switch into 'disarmed' (PWM disabled state) */
-#define PX4IO_FORCE_SAFETY_MAGIC		22027	/* required argument for force safety (random) */
+#define PX4IO_P_SETUP_FORCE_SAFETY_ON		14	/* force safety switch into 'disarmed' (PWM disabled state)强制安全开关进入锁定状态 */ 
+#define PX4IO_FORCE_SAFETY_MAGIC		22027	/* required argument for force safety (random) 用于强制安全保护的参数*/ 
 
 #define PX4IO_P_SETUP_PWM_REVERSE		15	/**< Bitmask to reverse PWM channels 1-8 */
 #define PX4IO_P_SETUP_TRIM_ROLL			16	/**< Roll trim, in actuator units */

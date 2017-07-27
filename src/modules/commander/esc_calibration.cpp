@@ -126,6 +126,7 @@ int do_esc_calibration(orb_advert_t *mavlink_log_pub, struct actuator_armed_s* a
 	}
 
 	/* tell IO to switch off safety without using the safety switch */
+	// 让IO在不使用安全开关的情况下关闭安全保护
 	if (px4_ioctl(fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0) != PX4_OK) {
 		calibration_log_critical(mavlink_log_pub, CAL_QGC_FAILED_MSG, "Unable to force safety off");
 		goto Error;

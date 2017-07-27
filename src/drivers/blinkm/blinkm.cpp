@@ -56,6 +56,8 @@
  *
  * System safety off but not armed:
  * The BlinkM should light flashing orange
+ * 系统安全保护关闭但是没有解锁
+ * BLinkM应该闪橙色的光
  *
  * System armed:
  * One message is made of 4 Blinks and a pause in the same length as the 4 blinks.
@@ -665,8 +667,9 @@ BlinkM::led()
 
 					if (actuator_armed.armed == false) {
 						/* system not armed */
+						// 系统未解锁
 						if (safety.safety_off) {
-							led_color_1 = LED_ORANGE;
+							led_color_1 = LED_ORANGE; // 橙色
 							led_color_2 = LED_ORANGE;
 							led_color_3 = LED_ORANGE;
 							led_color_4 = LED_ORANGE;
@@ -677,7 +680,7 @@ BlinkM::led()
 							led_blink = LED_BLINK;
 
 						} else {
-							led_color_1 = LED_CYAN;
+							led_color_1 = LED_CYAN; // 绿色
 							led_color_2 = LED_CYAN;
 							led_color_3 = LED_CYAN;
 							led_color_4 = LED_CYAN;
@@ -690,6 +693,7 @@ BlinkM::led()
 
 					} else {
 						/* armed system - initial led pattern */
+						// 解锁系统
 						led_color_1 = LED_RED;
 						led_color_2 = LED_RED;
 						led_color_3 = LED_RED;

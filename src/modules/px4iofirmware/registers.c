@@ -441,6 +441,7 @@ registers_set(uint8_t page, uint8_t offset, const uint16_t *values, unsigned num
 		/* do not change the mixer if FMU is armed and IO's safety is off
 		 * this state defines an active system. This check is done in the
 		 * text handling function.
+		 * 如果FMU解锁并且IO的安全保护关闭了，不改变混控
 		 */
 		return mixer_handle_text(values, num_values * sizeof(*values));
 
@@ -642,6 +643,7 @@ registers_set_one(uint8_t page, uint8_t offset, uint16_t value)
 		case PX4IO_P_SETUP_REBOOT_BL:
 			if (r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) {
 				// don't allow reboot while armed
+				// 解锁后不允许重启
 				break;
 			}
 
@@ -720,6 +722,7 @@ registers_set_one(uint8_t page, uint8_t offset, uint16_t value)
 
 			/**
 			 * do not allow a RC config change while safety is off
+			 * 关闭安全设置后不允许遥控器配置改变
 			 */
 			if (r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) {
 				break;

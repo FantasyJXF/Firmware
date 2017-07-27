@@ -107,7 +107,7 @@ typedef enum {
 typedef enum {
 	DM_INIT_REASON_POWER_ON = 0,	/* Data survives resets */
 	DM_INIT_REASON_IN_FLIGHT,		/* Data survives in-flight resets only */
-	DM_INIT_REASON_VOLATILE			/* Data does not survive reset */
+	DM_INIT_REASON_VOLATILE		/* Data does not survive reset数据复位后不保存*/
 } dm_reset_reason;
 
 struct dataman_compat_s {

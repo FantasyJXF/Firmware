@@ -140,6 +140,7 @@ struct sys_state_s {
 
 	/**
 	 * Last FMU receive time, in microseconds since system boot
+	 * 上次接收FMU数据的时间，
 	 */
 	volatile uint64_t	fmu_data_received_time;
 

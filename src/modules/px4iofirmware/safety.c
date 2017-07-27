@@ -50,26 +50,29 @@ static struct hrt_call failsafe_call;
 /*
  * Count the number of times in a row that we see the arming button
  * held down.
+ * 计数，解锁安全开关按下
  */
 static unsigned counter = 0;
 
 /*
  * Define the various LED flash sequences for each system state.
  */
-#define LED_PATTERN_FMU_OK_TO_ARM 		0x0003		/**< slow blinking			*/
-#define LED_PATTERN_FMU_REFUSE_TO_ARM 		0x5555		/**< fast blinking			*/
-#define LED_PATTERN_IO_ARMED 			0x5050		/**< long off, then double blink 	*/
-#define LED_PATTERN_FMU_ARMED 			0x5500		/**< long off, then quad blink 		*/
-#define LED_PATTERN_IO_FMU_ARMED 		0xffff		/**< constantly on			*/
+#define LED_PATTERN_FMU_OK_TO_ARM 		0x0003		/**< slow blinking	慢闪	*/
+#define LED_PATTERN_FMU_REFUSE_TO_ARM 		0x5555		/**< fast blinking	快闪	*/
+#define LED_PATTERN_IO_ARMED 			0x5050		/**< long off, then double blink 双闪	*/
+#define LED_PATTERN_FMU_ARMED 			0x5500		/**< long off, then quad blink 	四闪	*/
+#define LED_PATTERN_IO_FMU_ARMED 		0xffff		/**< constantly on	 常亮 */
 
 static unsigned blink_counter = 0;
 
 /*
  * IMPORTANT: The arming state machine critically
- * 	      depends on using the same threshold
+ * 	     	depends on using the same threshold
  *            for arming and disarming. Since disarming
  *            is quite deadly for the system, a similar
  *            length can be justified.
+ * 			解锁状态机严重依赖使用相同的阈值用于解锁和上锁
+ *            因为上锁对于系统是非常致命的，类似的长度可以说是合理的。
  */
 #define ARM_COUNTER_THRESHOLD	10
 
@@ -82,6 +85,7 @@ void
 safety_init(void)
 {
 	/* arrange for the button handler to be called at 10Hz */
+	// 按钮检查频率10Hz
 	hrt_call_every(&arming_call, 1000, 100000, safety_check_button, NULL);
 }
 
@@ -97,9 +101,10 @@ safety_check_button(void *arg)
 {
 	/*
 	 * Debounce the safety button, change state if it has been held for long enough.
+	 * 按下安全开关一段时间后弹回，如果已经按了足够长时间则改变状态
 	 *
 	 */
-	safety_button_pressed = BUTTON_SAFETY;
+	safety_button_pressed = BUTTON_SAFETY; // 读取安全开关
 
 	/*
 	 * Keep pressed for a while to arm.
@@ -109,7 +114,7 @@ safety_check_button(void *arg)
 	 * state machine, keep ARM_COUNTER_THRESHOLD the same
 	 * length in all cases of the if/else struct below.
 	 */
-	if (safety_button_pressed && !(r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) &&
+	if (safety_button_pressed && !(r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF/* 0与上任何数都为0，此项必定为真 */) &&
 	    (r_setup_arming & PX4IO_P_SETUP_ARMING_IO_ARM_OK)) {
 
 		if (counter < ARM_COUNTER_THRESHOLD) {
@@ -117,7 +122,8 @@ safety_check_button(void *arg)
 
 		} else if (counter == ARM_COUNTER_THRESHOLD) {
 			/* switch to armed state */
-			r_status_flags |= PX4IO_P_STATUS_FLAGS_SAFETY_OFF;
+			// 切换到解锁状态
+			r_status_flags |= PX4IO_P_STATUS_FLAGS_SAFETY_OFF; // 按位或，关闭安全保护
 			counter++;
 		}
 
@@ -128,7 +134,8 @@ safety_check_button(void *arg)
 
 		} else if (counter == ARM_COUNTER_THRESHOLD) {
 			/* change to disarmed state and notify the FMU */
-			r_status_flags &= ~PX4IO_P_STATUS_FLAGS_SAFETY_OFF;
+			// 切换到上锁状态并通知FMU
+			r_status_flags &= ~PX4IO_P_STATUS_FLAGS_SAFETY_OFF; // 新状态为0x0000
 			counter++;
 		}
 
@@ -137,6 +144,7 @@ safety_check_button(void *arg)
 	}
 
 	/* Select the appropriate LED flash pattern depending on the current IO/FMU arm state */
+	// 根据当前IO/FMU的解锁状态选取恰当的LED闪烁节奏
 	uint16_t pattern = LED_PATTERN_FMU_REFUSE_TO_ARM;
 
 	if (r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) {

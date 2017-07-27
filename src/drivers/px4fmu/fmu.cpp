@@ -97,7 +97,7 @@
 #define SCHEDULE_INTERVAL	2000	/**< The schedule interval in usec (500 Hz) */
 #define NAN_VALUE	(0.0f/0.0f)		/**< NaN value for throttle lock mode */
 #define BUTTON_SAFETY	px4_arch_gpioread(GPIO_BTN_SAFETY)
-#define CYCLE_COUNT 10			/* safety switch must be held for 1 second to activate */
+#define CYCLE_COUNT 10			/* safety switch must be held for 1 second to activate 安全开关必须按下并持续一秒才能激活 */
 
 /*
  * Define the various LED flash sequences for each system state.
@@ -370,6 +370,7 @@ PX4FMU::PX4FMU() :
 #endif
 
 	// If there is no safety button, disable it on boot.
+	// 如果没有安全开关按钮，启动时禁用此项
 #ifndef GPIO_BTN_SAFETY
 	_safety_off = true;
 #endif
@@ -425,6 +426,7 @@ PX4FMU::init()
 		warnx("FAILED registering class device");
 	}
 
+	// 通过魔数确定是否禁用安全开关
 	_safety_disabled = circuit_breaker_enabled("CBRK_IO_SAFETY", CBRK_IO_SAFETY_KEY);
 
 	work_start();
@@ -439,12 +441,14 @@ PX4FMU::safety_check_button(void)
 	static int counter = 0;
 	/*
 	 * Debounce the safety button, change state if it has been held for long enough.
+	 * 一直按住安全按钮，如果已经持续足够长时间，则更改状态。
 	 *
 	 */
 	bool safety_button_pressed = BUTTON_SAFETY;
 
 	/*
 	 * Keep pressed for a while to arm.
+	 * 按一会才能解锁
 	 *
 	 * Note that the counting sequence has to be same length
 	 * for arming / disarming in order to end up as proper
@@ -458,6 +462,7 @@ PX4FMU::safety_check_button(void)
 
 		} else if (counter == CYCLE_COUNT) {
 			/* switch to armed state */
+			// 切换到解锁状态
 			_safety_off = true;
 			counter++;
 		}
@@ -469,6 +474,7 @@ PX4FMU::safety_check_button(void)
 
 		} else if (counter == CYCLE_COUNT) {
 			/* change to disarmed state and notify the FMU */
+			// 切换到上锁状态并通知FMU
 			_safety_off = false;
 			counter++;
 		}
@@ -486,6 +492,7 @@ PX4FMU::flash_safety_button()
 #ifdef GPIO_BTN_SAFETY
 
 	/* Select the appropriate LED flash pattern depending on the current arm state */
+	// 根据当前的解锁状态选取恰当的LED闪烁节奏
 	uint16_t pattern = LED_PATTERN_FMU_REFUSE_TO_ARM;
 
 	/* cycle the blink state machine at 10Hz */
@@ -710,6 +717,7 @@ void
 PX4FMU::subscribe()
 {
 	/* subscribe/unsubscribe to required actuator control groups */
+	// 订阅/取消订阅以请求执行器控制组
 	uint32_t sub_groups = _groups_required & ~_groups_subscribed;
 	uint32_t unsub_groups = _groups_subscribed & ~_groups_required;
 	_poll_fds_num = 0;
@@ -989,6 +997,7 @@ PX4FMU::cycle()
 	}
 
 	/* check if anything updated */
+	// 检查更新
 	int ret = ::poll(_poll_fds, _poll_fds_num, 0);
 
 	/* log if main actuator updated and sync */
@@ -1005,6 +1014,7 @@ PX4FMU::cycle()
 	} else {
 
 		/* get controls for required topics */
+		// 获得所需主题的控制
 		unsigned poll_id = 0;
 
 		for (unsigned i = 0; i < actuator_controls_s::NUM_ACTUATOR_CONTROL_GROUPS; i++) {
@@ -1013,11 +1023,13 @@ PX4FMU::cycle()
 					orb_copy(_control_topics[i], _control_subs[i], &_controls[i]);
 
 					/* main outputs */
+					// 主输出
 					if (i == 0) {
 //						main_out_latency = hrt_absolute_time() - _controls[i].timestamp - 250;
 //						warnx("lat: %llu", hrt_absolute_time() - _controls[i].timestamp);
 
 						/* do only correct within the current phase */
+						// 
 						if (abs(main_out_latency) > SCHEDULE_INTERVAL) {
 							main_out_latency = SCHEDULE_INTERVAL;
 						}
@@ -1143,6 +1155,7 @@ PX4FMU::cycle()
 
 		/**
 		 * Get and handle the safety status at 10Hz
+		 * 以10Hz的频率获取并处理安全状态
 		 */
 		struct safety_s safety = {};
 
@@ -1151,10 +1164,12 @@ PX4FMU::cycle()
 
 		} else {
 			/* read safety switch input and control safety switch LED at 10Hz */
+			// 以10Hz的频率读取安全开关的输入并控制安全开关的LED
 			safety_check_button();
 		}
 
 		/* Make the safety button flash anyway, no matter if it's used or not. */
+		// 使安全按钮闪烁，无论是否使用
 		flash_safety_button();
 
 		safety.timestamp = hrt_absolute_time();
@@ -1179,6 +1194,7 @@ PX4FMU::cycle()
 
 #endif
 	/* check arming state */
+	// 检查解锁状态
 	bool updated = false;
 	orb_check(_armed_sub, &updated);
 
@@ -1187,11 +1203,14 @@ PX4FMU::cycle()
 
 		/* Update the armed status and check that we're not locked down.
 		 * We also need to arm throttle for the ESC calibration. */
+		 // 更新解锁状态并检查当前并非锁定状态。
+		 // 需要解锁油门用于电调校准
 		_throttle_armed = (_safety_off && _armed.armed && !_armed.lockdown) ||
 				  (_safety_off && _armed.in_esc_calibration_mode);
 
 
 		/* update PWM status if armed or if disarmed PWM values are set */
+		// 如果解锁了或者如果设置了上锁的PWM值则更新PWM状态
 		bool pwm_on = _armed.armed || _num_disarmed_set > 0 || _armed.in_esc_calibration_mode;
 
 		if (_pwm_on != pwm_on) {
@@ -1649,11 +1668,13 @@ PX4FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 
 	case PWM_SERVO_SET_FORCE_SAFETY_OFF:
 		/* force safety switch off */
+		// 强制安全开关为按下状态
 		_safety_off = true;
 		break;
 
 	case PWM_SERVO_SET_FORCE_SAFETY_ON:
 		/* force safety switch on */
+		// 强制安全开关为打开状态
 		_safety_off = false;
 		break;
 
