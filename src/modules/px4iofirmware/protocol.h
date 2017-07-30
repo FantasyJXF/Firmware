@@ -43,8 +43,7 @@
  *
  * Communication is performed via writes to and reads from 16-bit virtual
  * registers organised into pages of 255 registers each.
- * 每一页有255个寄存器
- * 通过从一个16位虚拟寄存器写入和读取来执行通信。
+ * 每一页包含有255个寄存器，每个寄存器都是16位的；通过读/写这些寄存器实现PX4IO的通讯。
  *
  * The first two bytes of each write select a page and offset address
  * respectively. Subsequent reads and writes increment the offset within
@@ -75,7 +74,7 @@
  * Note that the implementation of readable pages prefers registers within
  * readable pages to be densely packed. Page numbers do not need to be
  * packed.
- * 请注意，可读页面的执行优先于可读页面中的寄存器被密集地打包。 页数不需要打包。
+ * 请注意，可读页面的执行需要该页的寄存器密集的打包。 页数不需要打包。
  *
  * Definitions marked 
  * [1] are only valid on PX4IOv1 boards. Likewise,
@@ -115,7 +114,7 @@
 #define PX4IO_P_STATUS_CPULOAD			1
 
 #define PX4IO_P_STATUS_FLAGS			2	 /* monitoring flags */
-#define PX4IO_P_STATUS_FLAGS_OUTPUTS_ARMED	(1 << 0) /* arm-ok and locally armed */
+#define PX4IO_P_STATUS_FLAGS_OUTPUTS_ARMED	(1 << 0) /* arm-ok and locally armed 解锁OK并且本地解锁*/
 #define PX4IO_P_STATUS_FLAGS_OVERRIDE		(1 << 1) /* in manual override */
 #define PX4IO_P_STATUS_FLAGS_RC_OK		(1 << 2) /* RC input is valid */
 #define PX4IO_P_STATUS_FLAGS_RC_PPM		(1 << 3) /* PPM input is valid */
@@ -195,16 +194,16 @@
 #define PX4IO_P_SETUP_FEATURES_PWM_RSSI		(1 << 2) /**< enable PWM RSSI parsing */
 #define PX4IO_P_SETUP_FEATURES_ADC_RSSI		(1 << 3) /**< enable ADC RSSI parsing */
 
-#define PX4IO_P_SETUP_ARMING			1	 /* arming controls */
-#define PX4IO_P_SETUP_ARMING_IO_ARM_OK		(1 << 0) /* OK to arm the IO side */
+#define PX4IO_P_SETUP_ARMING			1	 /* arming controls 解锁控制 */
+#define PX4IO_P_SETUP_ARMING_IO_ARM_OK		(1 << 0) /* OK to arm the IO side 同意PX4IO解锁 */
 #define PX4IO_P_SETUP_ARMING_FMU_ARMED		(1 << 1) /* FMU is already armed */
 #define PX4IO_P_SETUP_ARMING_MANUAL_OVERRIDE_OK	(1 << 2) /* OK to switch to manual override via override RC channel */
 #define PX4IO_P_SETUP_ARMING_FAILSAFE_CUSTOM	(1 << 3) /* use custom failsafe values, not 0 values of mixer */
-#define PX4IO_P_SETUP_ARMING_INAIR_RESTART_OK	(1 << 4) /* OK to try in-air restart */
+#define PX4IO_P_SETUP_ARMING_INAIR_RESTART_OK	(1 << 4) /* OK to try in-air restart 可以尝试空中重启*/
 #define PX4IO_P_SETUP_ARMING_ALWAYS_PWM_ENABLE	(1 << 5) /* Output of PWM right after startup enabled to help ESCs initialize and prevent them from beeping */
-#define PX4IO_P_SETUP_ARMING_RC_HANDLING_DISABLED	(1 << 6) /* Disable the IO-internal evaluation of the RC */
-#define PX4IO_P_SETUP_ARMING_LOCKDOWN		(1 << 7) /* If set, the system operates normally, but won't actuate any servos */
-#define PX4IO_P_SETUP_ARMING_FORCE_FAILSAFE	(1 << 8) /* If set, the system will always output the failsafe values */
+#define PX4IO_P_SETUP_ARMING_RC_HANDLING_DISABLED	(1 << 6) /* Disable the IO-internal evaluation of the RC 禁用RC的IO内部评估 */
+#define PX4IO_P_SETUP_ARMING_LOCKDOWN		(1 << 7) /* If set, the system operates normally, but won't actuate any servos 如果置位，系统正常运行，但是将不会驱动电机 */
+#define PX4IO_P_SETUP_ARMING_FORCE_FAILSAFE	(1 << 8) /* If set, the system will always output the failsafe values 如果置位，系统将始终输出失控保护值 */
 #define PX4IO_P_SETUP_ARMING_TERMINATION_FAILSAFE	(1 << 9) /* If set, the system will never return from a failsafe, but remain in failsafe once triggered. */
 #define PX4IO_P_SETUP_ARMING_OVERRIDE_IMMEDIATE	(1 << 10) /* If set then on FMU failure override is immediate. Othewise it waits for the mode switch to go past the override thrshold */
 

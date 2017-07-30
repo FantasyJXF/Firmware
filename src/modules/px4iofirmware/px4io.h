@@ -94,6 +94,7 @@ extern uint16_t			r_page_servo_disarmed[];	/* PX4IO_PAGE_DISARMED_PWM */
 
 /*
  * Register aliases.
+ * ¼Ä´æÆ÷±ğÃû
  *
  * Handy aliases for registers that are widely used.
  */

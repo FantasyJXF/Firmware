@@ -117,7 +117,7 @@ static const char *const state_names[vehicle_status_s::ARMING_STATE_MAX] = {
 };
 
 static hrt_abstime last_preflight_check = 0;	///< initialize so it gets checked immediately
-static int last_prearm_ret = 1;			///< initialize to fail 初始化为失败
+static int last_prearm_ret = 1;			///< initialize to fail 初始化为失败(成功OK = 0)
 
 transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 飞机状态 */
 		struct battery_status_s *battery, /* 电池状态 */
@@ -150,7 +150,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 		/*
 		 * Get sensing state if necessary
 		 */
-		int prearm_ret = OK;
+		int prearm_ret = OK; // OK = 0
 
 		/* only perform the pre-arm check if we have to */
 		// 只在必要时执行解锁前检测
@@ -163,15 +163,15 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 
 		/* re-run the pre-flight check as long as sensors are failing */
 		// 只要传感器依然失败就重新进行飞行前检查
-		if (!status_flags->condition_system_sensors_initialized
+		if (!status_flags->condition_system_sensors_initialized /* 传感器未初始化 */
 		    && (new_arming_state == vehicle_status_s::ARMING_STATE_ARMED
 			|| new_arming_state == vehicle_status_s::ARMING_STATE_STANDBY)
 		    && status->hil_state == vehicle_status_s::HIL_STATE_OFF) {
 
 			if (last_preflight_check == 0 || hrt_absolute_time() - last_preflight_check > 1000 * 1000/* 1秒 */) {
 				prearm_ret = preflight_check(status, mavlink_log_pub, false /* pre-flight */, false /* force_report */,
-							     status_flags, battery, can_arm_without_gps, time_since_boot);
-				status_flags->condition_system_sensors_initialized = !prearm_ret;
+							     status_flags, battery, can_arm_without_gps, time_since_boot); // OK返回0
+				status_flags->condition_system_sensors_initialized = !prearm_ret; // 传感器初始化完成
 				last_preflight_check = hrt_absolute_time();
 				last_prearm_ret = prearm_ret;
 
@@ -209,16 +209,19 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 
 		if (valid_transition) {
 			// We have a good transition. Now perform any secondary validation.
+			// 进行二级验证
 			if (new_arming_state == vehicle_status_s::ARMING_STATE_ARMED) { // 新状态为解锁
 
 				//      Do not perform pre-arm checks if coming from in air restore
+				//      如果来自于空中重启则不要进行解锁前检查
 				//      Allow if vehicle_status_s::HIL_STATE_ON
+				//      如果为HIL状态则允许
 				if (status->arming_state != vehicle_status_s::ARMING_STATE_IN_AIR_RESTORE &&
 				    status->hil_state == vehicle_status_s::HIL_STATE_OFF) { // 当前不在空中 && 不处于HIL状态
 
 					// Fail transition if pre-arm check fails
-					// 若飞行前检查失败，则转换失败
-					if (prearm_ret) {
+					// 若解锁前检查失败，则转换失败
+					if (prearm_ret) { // 解锁前检查失败
 						/* the prearm check already prints the reject reason */
 						// 飞行前检查已经打印了拒绝原因
 						feedback_provided = true;
@@ -273,8 +276,8 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 				}
 
 			} else if (new_arming_state == vehicle_status_s::ARMING_STATE_STANDBY
-				   && status->arming_state == vehicle_status_s::ARMING_STATE_ARMED_ERROR) {
-				new_arming_state = vehicle_status_s::ARMING_STATE_STANDBY_ERROR;
+				   && status->arming_state == vehicle_status_s::ARMING_STATE_ARMED_ERROR) { /* 新状态为待命 && 当前处于解锁错误状态 */
+				new_arming_state = vehicle_status_s::ARMING_STATE_STANDBY_ERROR; // 新状态为待定错误
 			}
 		}
 
@@ -284,13 +287,13 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 		}
 
 		// Check if we are trying to arm, checks look good but we are in STANDBY_ERROR
-		// 检查我们是否尝试去解锁，
-		if (status->arming_state == vehicle_status_s::ARMING_STATE_STANDBY_ERROR) {
+		// 检查我们是否尝试去解锁，检查状态良好但是目前仍处于STANDBY_ERROR状态
+		if (status->arming_state == vehicle_status_s::ARMING_STATE_STANDBY_ERROR) { // 当前为STANDBY_ERROR
 
-			if (new_arming_state == vehicle_status_s::ARMING_STATE_ARMED) {
+			if (new_arming_state == vehicle_status_s::ARMING_STATE_ARMED) { // 新状态为ARMED
 
-				if (status_flags->condition_system_sensors_initialized) {
-					mavlink_log_critical(mavlink_log_pub, "Preflight check resolved, reboot before arming");
+				if (status_flags->condition_system_sensors_initialized) { // 传感器初始化
+					mavlink_log_critical(mavlink_log_pub, "Preflight check resolved, reboot before arming"); // 飞行前检查已解决，重新启动之前布防
 
 				} else {
 					mavlink_log_critical(mavlink_log_pub, "Preflight check failed, refusing to arm");
@@ -299,7 +302,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 				feedback_provided = true;
 
 			} else if ((new_arming_state == vehicle_status_s::ARMING_STATE_STANDBY) &&
-				   status_flags->condition_system_sensors_initialized) {
+				   status_flags->condition_system_sensors_initialized) { // 新状态为STANDBY
 				mavlink_log_critical(mavlink_log_pub, "Preflight check resolved, reboot to complete");
 				feedback_provided = true;
 
@@ -330,11 +333,12 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 		}
 
 		// Finish up the state transition
+		// 完成了状态切换
 		if (valid_transition) {
 			armed->armed = new_arming_state == vehicle_status_s::ARMING_STATE_ARMED
-				       || new_arming_state == vehicle_status_s::ARMING_STATE_ARMED_ERROR;
+				       || new_arming_state == vehicle_status_s::ARMING_STATE_ARMED_ERROR; // 解锁状态确定
 			armed->ready_to_arm = new_arming_state == vehicle_status_s::ARMING_STATE_ARMED
-					      || new_arming_state == vehicle_status_s::ARMING_STATE_STANDBY;
+					      || new_arming_state == vehicle_status_s::ARMING_STATE_STANDBY; // 待命状态确定
 			ret = TRANSITION_CHANGED;
 			status->arming_state = new_arming_state;
 		}
@@ -367,13 +371,13 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 
 bool is_safe(const struct vehicle_status_s *status, const struct safety_s *safety, const struct actuator_armed_s *armed)
 {
+	/*
+	 * 如果满足以下几点则系统是安全的
+	 */
 	// System is safe if:
 	// 1) Not armed
 	// 2) Armed, but in software lockdown (HIL)
 	// 3) Safety switch is present AND engaged -> actuators locked
-	/*
-	 * 如果满足以下几点则系统是安全的
-	 */
 	if (!armed->armed || (armed->armed && armed->lockdown) || (safety->safety_switch_available && !safety->safety_off)) {
 		return true;
 
@@ -1126,6 +1130,8 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 	return status->nav_state != nav_state_old;
 }
 
+// 检查OK返回0
+// 不OK返回1
 int preflight_check(struct vehicle_status_s *status, orb_advert_t *mavlink_log_pub, bool prearm, bool force_report,
 		    status_flags_s *status_flags, battery_status_s *battery, bool can_arm_without_gps, hrt_abstime time_since_boot)
 {
@@ -1162,6 +1168,7 @@ int preflight_check(struct vehicle_status_s *status, orb_advert_t *mavlink_log_p
 	}
 
 	/* report once, then set the flag */
+	// 报告一次，然后设置标志位
 	if (reportFailures && !preflight_ok) {
 		status_flags->condition_system_prearm_error_reported = true;
 	}

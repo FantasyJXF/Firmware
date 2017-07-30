@@ -91,7 +91,7 @@ PARAM_DEFINE_INT32(SYS_USE_IO, 1);
  * @max 2
  * @value 0 Data survives resets
  * @value 1 Data survives in-flight resets only
- * @value 2 Data does not survive reset
+ * @value 2 Data does not survive reset 重置后数据不保存
  * @group System
  */
 PARAM_DEFINE_INT32(SYS_RESTART_TYPE, 2);

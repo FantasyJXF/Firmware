@@ -33,12 +33,16 @@
 
 /**
  * @file PWM servo output interface.
+ *       PWM舵机输出接口
  *
  * Servo values can be set with the PWM_SERVO_SET ioctl, by writing a
  * pwm_output_values structure to the device, or by publishing to the
  * output_pwm ORB topic.
  * Writing a value of 0 to a channel suppresses any output for that
  * channel.
+ * 电机的值可以使用PWM_SERVO_SET设置，通过写一个pwm_output_values结构体到设备中
+ * 或者通过发布到output_pwm_pwm这个ORB主题中
+ * 向一个通道中写0将覆盖该通道所有输出
  */
 
 #pragma once
@@ -182,7 +186,7 @@ struct pwm_output_rc_config {
 #define PWM_SERVO_SET_ARM_OK	_PX4_IOC(_PWM_SERVO_BASE, 8)
 
 /** clear the 'ARM ok' bit, which deactivates the safety switch */
-// 清楚'ARM ok'位，取消激活安全开关
+// 清除'ARM ok'位，取消激活安全开关
 #define PWM_SERVO_CLEAR_ARM_OK	_PX4_IOC(_PWM_SERVO_BASE, 9)
 
 /** start DSM bind */

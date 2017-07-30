@@ -515,7 +515,7 @@ PX4FMU::flash_safety_button()
 	}
 
 	/* Turn the LED on if we have a 1 at the current bit position */
-	px4_arch_gpiowrite(GPIO_LED_SAFETY, !(pattern & (1 << blink_counter++)));
+	px4_arch_gpiowrite(GPIO_LED_SAFETY, !(pattern & (1 << blink_counter++))); /* FMUv4上的灯 */
 
 	if (blink_counter > 15) {
 		blink_counter = 0;
@@ -1205,8 +1205,8 @@ PX4FMU::cycle()
 		 * We also need to arm throttle for the ESC calibration. */
 		 // 更新解锁状态并检查当前并非锁定状态。
 		 // 需要解锁油门用于电调校准
-		_throttle_armed = (_safety_off && _armed.armed && !_armed.lockdown) ||
-				  (_safety_off && _armed.in_esc_calibration_mode);
+		_throttle_armed = (_safety_off && _armed.armed && !_armed.lockdown) || /* 关闭安全保护 && 执行器解锁 && 执行器未锁定 */
+				  (_safety_off && _armed.in_esc_calibration_mode);/* 关闭了安全保护 && 处于电调校准模式 */ 
 
 
 		/* update PWM status if armed or if disarmed PWM values are set */

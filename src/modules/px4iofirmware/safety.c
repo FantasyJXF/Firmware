@@ -114,8 +114,8 @@ safety_check_button(void *arg)
 	 * state machine, keep ARM_COUNTER_THRESHOLD the same
 	 * length in all cases of the if/else struct below.
 	 */
-	if (safety_button_pressed && !(r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF/* 0与上任何数都为0，此项必定为真 */) &&
-	    (r_setup_arming & PX4IO_P_SETUP_ARMING_IO_ARM_OK)) {
+	if (safety_button_pressed && !(r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) /* 当前为IO锁定状态时，此项为真 */&&
+	    (r_setup_arming & PX4IO_P_SETUP_ARMING_IO_ARM_OK)) { /* 锁定 -> 解锁 */
 
 		if (counter < ARM_COUNTER_THRESHOLD) {
 			counter++;
@@ -127,7 +127,7 @@ safety_check_button(void *arg)
 			counter++;
 		}
 
-	} else if (safety_button_pressed && (r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF)) {
+	} else if (safety_button_pressed && (r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF)) { /* 解锁到锁定 */
 
 		if (counter < ARM_COUNTER_THRESHOLD) {
 			counter++;
@@ -135,7 +135,7 @@ safety_check_button(void *arg)
 		} else if (counter == ARM_COUNTER_THRESHOLD) {
 			/* change to disarmed state and notify the FMU */
 			// 切换到上锁状态并通知FMU
-			r_status_flags &= ~PX4IO_P_STATUS_FLAGS_SAFETY_OFF; // 新状态为0x0000
+			r_status_flags &= ~PX4IO_P_STATUS_FLAGS_SAFETY_OFF; // 安全状态位置0 
 			counter++;
 		}
 

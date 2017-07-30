@@ -450,6 +450,7 @@ BlinkM::led()
 		orb_set_interval(vehicle_gps_position_sub_fd, 250);
 
 		/* Subscribe to safety topic */
+		// 订阅安全保护话题
 		safety_sub_fd = orb_subscribe(ORB_ID(safety));
 		orb_set_interval(safety_sub_fd, 250);
 

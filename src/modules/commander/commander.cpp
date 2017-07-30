@@ -736,6 +736,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 			transition_result_t hil_ret = hil_state_transition(new_hil_state, status_pub, status_local, &mavlink_log_pub);
 
 			// Transition the arming state
+			// 切换锁定状态
 			bool cmd_arm = base_mode & VEHICLE_MODE_FLAG_SAFETY_ARMED;
 
 			arming_ret = arm_disarm(cmd_arm, &mavlink_log_pub, "set mode command");
@@ -2062,7 +2063,7 @@ int commander_thread_main(int argc, char *argv[])
 			orb_copy(ORB_ID(safety), safety_sub, &safety); // 更新安全开关的状态
 
 			/* disarm if safety is now on and still armed */
-			// 如果存在安全开关并且依然处于解锁状态，则上锁
+			// 如果开启了安全保护并且依然处于解锁状态，则上锁
 			if (status.hil_state == vehicle_status_s::HIL_STATE_OFF && safety.safety_switch_available && !safety.safety_off && armed.armed) {
 				arming_state_t new_arming_state = (status.arming_state == vehicle_status_s::ARMING_STATE_ARMED ? vehicle_status_s::ARMING_STATE_STANDBY :
 								   vehicle_status_s::ARMING_STATE_STANDBY_ERROR);

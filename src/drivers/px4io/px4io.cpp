@@ -132,8 +132,10 @@ public:
 
 	/**
 	 * Initialize the PX4IO class.
+	 * 实例化PX4IO类
 	 *
 	 * Retrieve relevant initial system parameters. Initialize PX4IO registers.
+	 * 检索相关的初始系统参数。 初始化PX4IO寄存器。
 	 */
 	virtual int		init();
 
@@ -143,6 +145,7 @@ public:
 	 * Retrieve relevant initial system parameters. Initialize PX4IO registers.
 	 *
 	 * @param disable_rc_handling set to true to forbid override / RC handling on IO
+	 * disable_rc_handling为真则禁用IO上RC的处理
 	 */
 	int			init(bool disable_rc_handling);
 
@@ -266,7 +269,7 @@ private:
 	unsigned		_max_relays;		///< Maximum relays supported by PX4IO
 	unsigned		_max_transfer;		///< Maximum number of I2C transfers supported by PX4IO
 
-	unsigned 		_update_interval;	///< Subscription interval limiting send rate
+	unsigned 		_update_interval;	///< Subscription interval limiting send rate 订阅间隔
 	bool			_rc_handling_disabled;	///< If set, IO does not evaluate, but only forward the RC values 如果置位，那么IO将不作评估，直接发送遥控器的值
 	unsigned		_rc_chan_count;		///< Internal copy of the last seen number of RC channels
 	uint64_t		_rc_last_valid;		///< last valid timestamp
@@ -310,14 +313,14 @@ private:
 
 	bool			_primary_pwm_device;	///< true if we are the default PWM output
 	bool			_lockdown_override;	///< allow to override the safety lockdown 允许覆盖安全保护的锁定
-	bool			_armed;			///< wether the system is armed
+	bool			_armed;			///< wether the system is armed 系统是否解锁了
 
 	float			_battery_amp_per_volt;	///< current sensor amps/volt
 	float			_battery_amp_bias;	///< current sensor bias
 	float			_battery_mamphour_total;///< amp hours consumed so far
 	uint64_t		_battery_last_timestamp;///< last amp hour calculation timestamp
-	bool			_cb_flighttermination;	///< true if the flight termination circuit breaker is enabled
-	bool 			_in_esc_calibration_mode;	///< do not send control outputs to IO (used for esc calibration)
+	bool			_cb_flighttermination;	///< true if the flight termination circuit breaker is enabled 如果使能了飞行终止，则为真
+	bool 			_in_esc_calibration_mode;	///< do not send control outputs to IO (used for esc calibration)不要发送控制输出到IO(用于电调校准)
 
 	Battery			_battery;
 
@@ -357,6 +360,7 @@ private:
 
 	/**
 	 * Update IO's arming-related state
+	 * 更新IO上的与解锁相关状态
 	 */
 	int			io_set_arming_state();
 
@@ -559,7 +563,7 @@ PX4IO::PX4IO(device::Device *interface) :
 	_battery_amp_bias(0),
 	_battery_mamphour_total(0),
 	_battery_last_timestamp(0),
-	_cb_flighttermination(true),
+	_cb_flighttermination(true), /* 使能飞行终止 */
 	_in_esc_calibration_mode(false),
 	_battery{},
 	_rssi_pwm_chan(0),
@@ -648,7 +652,7 @@ PX4IO::detect()
 int
 PX4IO::init(bool rc_handling_disabled)
 {
-	_rc_handling_disabled = rc_handling_disabled;
+	_rc_handling_disabled = rc_handling_disabled;  // false 使用IO处理RC数据
 	return init();
 }
 
@@ -712,7 +716,7 @@ PX4IO::init()
 	    (_max_transfer < 16) || (_max_transfer > 255)  ||
 	    (_max_rc_input < 1)  || (_max_rc_input > 255)) {
 
-		DEVICE_LOG("config read error");
+		DEVICE_LOG("config read error"); // 读取配置错误
 		mavlink_log_emergency(&_mavlink_log_pub, "[IO] config read fail, abort.");
 
 		// ask IO to reboot into bootloader as the failure may
@@ -724,7 +728,7 @@ PX4IO::init()
 		// therefore we need to set safety on first.
 		// 如果IO已经关闭了安全保护，它将不接受进入bootloader模式
 		// 因此我们需要打开安全保护
-		io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_FORCE_SAFETY_ON, PX4IO_FORCE_SAFETY_MAGIC);
+		io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_FORCE_SAFETY_ON, PX4IO_FORCE_SAFETY_MAGIC); // 此时需要启动安全保护了
 
 		// Now the reboot into bootloader mode should succeed.
 		io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_REBOOT_BL, PX4IO_REBOOT_BL_MAGIC);
@@ -744,8 +748,8 @@ PX4IO::init()
 	 * armed state, FMU is recovering from an in-air reset.
 	 * Read back status and request the commander to arm
 	 * in this case.
-	 * 检查IO的飞行状态 - 如果FMU的标志应该为解锁状态，FMU正从空中复位中恢复
-	 * 读回状态并请求commander在此情况下解锁
+	 * 检查IO的飞行状态 - 如果FMU的标志为解锁状态，FMU正从空中复位中恢复。
+	 * 回读状态并请求commander在此情况下解锁
 	 */
 
 	uint16_t reg;
@@ -760,13 +764,14 @@ PX4IO::init()
 	/*
 	 * in-air restart is only tried if the IO board reports it is
 	 * already armed, and has been configured for in-air restart
+	 * 只有IO板报告它已经解锁，并且已经配置过空中重新启动，才会尝试空中重新启动
 	 */
 	if ((reg & PX4IO_P_SETUP_ARMING_INAIR_RESTART_OK) &&
 	    (reg & PX4IO_P_SETUP_ARMING_FMU_ARMED)) {
 
 		/* get a status update from IO */
 		// 获得来自IO的状态更新
-		io_get_status();
+		io_get_status(); // 获取初始状态   _status
 
 		mavlink_log_emergency(&_mavlink_log_pub, "RECOVERING FROM FMU IN-AIR RESTART");
 
@@ -784,6 +789,8 @@ PX4IO::init()
 
 		/* keep checking for an update, ensure we got a arming information,
 		   not something that was published a long time ago. */
+		// 一直检查更新，确保获得了解锁的信息
+		// 而不是很久之前发布的消息
 		do {
 			orb_check(safety_sub, &updated);
 
@@ -791,13 +798,13 @@ PX4IO::init()
 				/* got data, copy and exit loop */
 				// 获取数据，复制并退出循环
 				orb_copy(ORB_ID(actuator_armed), safety_sub, &safety);
-				break;
+				break; // 更新就跳出while 
 			}
 
 			/* wait 10 ms */
 			usleep(10000);
 
-			/* abort after 5s */
+			/* abort after 3s */
 			if ((hrt_absolute_time() - try_start_time) / 1000 > 3000) {
 				mavlink_log_emergency(&_mavlink_log_pub, "Failed to recover from in-air restart (1), abort");
 				return 1;
@@ -806,7 +813,12 @@ PX4IO::init()
 		} while (true);
 
 		/* send command to arm system via command API */
+		// 通过命令API发送命令来解锁系统
 		vehicle_command_s cmd;
+		// 	MAV_CMD_COMPONENT_ARM_DISARM   解锁/锁定一个组件
+		//   Mission Param #1   
+		//   1 为解锁
+		//   0 为锁定
 		/* send this to itself */
 		param_t sys_id_param = param_find("MAV_SYS_ID");
 		param_t comp_id_param = param_find("MAV_COMP_ID");
@@ -827,7 +839,8 @@ PX4IO::init()
 		cmd.source_system = sys_id;
 		cmd.source_component = comp_id;
 		/* request arming */
-		cmd.param1 = 1.0f;
+		// 请求解锁
+		cmd.param1 = 1.0f; // 1 表示解锁
 		cmd.param2 = 0;
 		cmd.param3 = 0;
 		cmd.param4 = 0;
@@ -840,6 +853,7 @@ PX4IO::init()
 		cmd.confirmation =  1;
 
 		/* send command once */
+		// 发送一次命令
 		orb_advert_t pub = orb_advertise_queue(ORB_ID(vehicle_command), &cmd, vehicle_command_s::ORB_QUEUE_LENGTH);
 
 		/* spin here until IO's state has propagated into the system */
@@ -854,7 +868,7 @@ PX4IO::init()
 			/* wait 50 ms */
 			usleep(50000);
 
-			/* abort after 5s */
+			/* abort after 2s */
 			if ((hrt_absolute_time() - try_start_time) / 1000 > 2000) {
 				mavlink_log_emergency(&_mavlink_log_pub, "Failed to recover from in-air restart (2), abort");
 				return 1;
@@ -882,7 +896,7 @@ PX4IO::init()
 
 		/* regular boot, no in-air restart, init IO */
 
-	} else {
+	} else {// 没有设置过空中重启
 
 		/* dis-arm IO before touching anything */
 		// 首先上锁
@@ -894,7 +908,7 @@ PX4IO::init()
 			      PX4IO_P_SETUP_ARMING_LOCKDOWN, 0);
 
 		if (_rc_handling_disabled) {
-			ret = io_disable_rc_handling();
+			ret = io_disable_rc_handling(); // 禁用IO处理遥控器的数据
 
 			if (ret != OK) {
 				DEVICE_LOG("failed disabling RC handling");
@@ -991,8 +1005,10 @@ PX4IO::task_main()
 	}
 
 	/* Fetch initial flight termination circuit breaker state */
-	_cb_flighttermination = circuit_breaker_enabled("CBRK_FLIGHTTERM", CBRK_FLIGHTTERM_KEY);
-
+	// 获取初始的飞行终止断路器状态
+	_cb_flighttermination = circuit_breaker_enabled("CBRK_FLIGHTTERM", CBRK_FLIGHTTERM_KEY); // 默认禁止IO终止飞行
+	// 默认为true，使能IO禁止飞行
+	
 	/* poll descriptor */
 	pollfd fds[1];
 	fds[0].fd = _t_actuator_controls_0;
@@ -1025,6 +1041,7 @@ PX4IO::task_main()
 		}
 
 		/* sleep waiting for topic updates, but no more than 20ms */
+		// 等待主题更新，不超过20ms，50hz
 		unlock();
 		int ret = ::poll(fds, 1, 20);
 		lock();
@@ -1051,7 +1068,7 @@ PX4IO::task_main()
 			poll_last = now;
 
 			/* pull status and alarms from IO */
-			// 更新来自IO的状态与告警
+			// 更新来自IO的状态与警告
 			io_get_status();
 
 			/* get raw R/C input from IO */
@@ -1064,6 +1081,7 @@ PX4IO::task_main()
 			bool updated = false;
 
 			/* arming state */
+			// 解锁状态
 			orb_check(_t_actuator_armed, &updated);
 
 			if (!updated) {
@@ -1071,7 +1089,7 @@ PX4IO::task_main()
 			}
 
 			if (updated) {
-				io_set_arming_state();
+				io_set_arming_state(); //设置解锁状态
 			}
 		}
 
@@ -1173,13 +1191,14 @@ PX4IO::task_main()
 				}
 
 				/* Check if the flight termination circuit breaker has been updated */
+				// 检查飞行终止断路器是否更新
 				_cb_flighttermination = circuit_breaker_enabled("CBRK_FLIGHTTERM", CBRK_FLIGHTTERM_KEY);
 
 				param_get(param_find("RC_RSSI_PWM_CHAN"), &_rssi_pwm_chan);
 				param_get(param_find("RC_RSSI_PWM_MAX"), &_rssi_pwm_max);
 				param_get(param_find("RC_RSSI_PWM_MIN"), &_rssi_pwm_min);
 
-				param_t thermal_param = param_find("SENS_EN_THERMAL");
+				param_t thermal_param = param_find("SENS_EN_THERMAL");// -1 不可控
 
 				if (thermal_param != PARAM_INVALID) {
 
@@ -1428,8 +1447,8 @@ PX4IO::io_set_control_state(unsigned group)
 int
 PX4IO::io_set_arming_state()
 {
-	actuator_armed_s	armed;		///< system armed state
-	vehicle_control_mode_s	control_mode;	///< vehicle_control_mode
+	actuator_armed_s	armed;		///< system armed state 系统解锁状态
+	vehicle_control_mode_s	control_mode;	///< vehicle_control_mode 
 
 	int have_armed = orb_copy(ORB_ID(actuator_armed), _t_actuator_armed, &armed);
 	int have_control_mode = orb_copy(ORB_ID(vehicle_control_mode), _t_vehicle_control_mode, &control_mode);
@@ -1442,16 +1461,16 @@ PX4IO::io_set_arming_state()
 		_in_esc_calibration_mode = armed.in_esc_calibration_mode;
 
 		if (armed.armed || _in_esc_calibration_mode) {
-			set |= PX4IO_P_SETUP_ARMING_FMU_ARMED;
+			set |= PX4IO_P_SETUP_ARMING_FMU_ARMED; // FMU解锁标志位置位
 
 		} else {
-			clear |= PX4IO_P_SETUP_ARMING_FMU_ARMED;
+			clear |= PX4IO_P_SETUP_ARMING_FMU_ARMED; // FMU解锁标志位清除
 		}
 
 		_armed = armed.armed;
 
 		if (armed.lockdown && !_lockdown_override) {
-			set |= PX4IO_P_SETUP_ARMING_LOCKDOWN;
+			set |= PX4IO_P_SETUP_ARMING_LOCKDOWN; // 电机无法输出，安全锁定
 			_lockdown_override = true;
 
 		} else if (!armed.lockdown && _lockdown_override) {
@@ -1460,8 +1479,9 @@ PX4IO::io_set_arming_state()
 		}
 
 		/* Do not set failsafe if circuit breaker is enabled */
+		// 如果使能断路器的话，不要设置失控保护
 		if (armed.force_failsafe && !_cb_flighttermination) {
-			set |= PX4IO_P_SETUP_ARMING_FORCE_FAILSAFE;
+			set |= PX4IO_P_SETUP_ARMING_FORCE_FAILSAFE; // 时钟输出失控保护值
 
 		} else {
 			clear |= PX4IO_P_SETUP_ARMING_FORCE_FAILSAFE;
@@ -1511,7 +1531,7 @@ PX4IO::disable_rc_handling()
 int
 PX4IO::io_disable_rc_handling()
 {
-	uint16_t set = PX4IO_P_SETUP_ARMING_RC_HANDLING_DISABLED;
+	uint16_t set = PX4IO_P_SETUP_ARMING_RC_HANDLING_DISABLED; // RC的数据在IO中不用进行评估处理
 	uint16_t clear = 0;
 
 	return io_reg_modify(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_ARMING, clear, set);
@@ -1685,26 +1705,28 @@ PX4IO::io_handle_status(uint16_t status)
 
 	/* check for IO reset - force it back to armed if necessary */
 	// 检查IO复位 - 必要时强制其回到解锁时的状态
-	if (_status & PX4IO_P_STATUS_FLAGS_SAFETY_OFF && !(status & PX4IO_P_STATUS_FLAGS_SAFETY_OFF)
-	    && !(status & PX4IO_P_STATUS_FLAGS_ARM_SYNC)) {
+	// _status是解锁后初始化的IO状态标志
+	if (_status & PX4IO_P_STATUS_FLAGS_SAFETY_OFF  && !(status & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) /* 当前安全保护状态为打开 */
+	    && !(status & PX4IO_P_STATUS_FLAGS_ARM_SYNC)/* 当前解锁状态未同步 */) {
 		/* set the arming flag */
 		// 设置解锁标志
+		// 成功返回OK = 0
 		ret = io_reg_modify(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_FLAGS, 0,
-				    PX4IO_P_STATUS_FLAGS_SAFETY_OFF | PX4IO_P_STATUS_FLAGS_ARM_SYNC/* 0x1200 */);
+				    PX4IO_P_STATUS_FLAGS_SAFETY_OFF | PX4IO_P_STATUS_FLAGS_ARM_SYNC/* 0x1200 */); // 强制关闭安全保护
 
 		/* set new status */
 		// 设置新的状态
 		_status = status;
-		_status &= PX4IO_P_STATUS_FLAGS_SAFETY_OFF; // 关闭安全保护
+		_status &= PX4IO_P_STATUS_FLAGS_SAFETY_OFF; // 更新状态位
 
-	} else if (!(_status & PX4IO_P_STATUS_FLAGS_ARM_SYNC)) {
+	} else if (!(_status & PX4IO_P_STATUS_FLAGS_ARM_SYNC)) { /* 未同步 */
 
 		/* set the sync flag */
 		// 设置同步标志位
-		ret = io_reg_modify(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_FLAGS, 0, PX4IO_P_STATUS_FLAGS_ARM_SYNC);
+		ret = io_reg_modify(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_FLAGS, 0, PX4IO_P_STATUS_FLAGS_ARM_SYNC); // 强制同步
 		/* set new status */
 		// 设置新的状态
-		_status = status;
+		_status = status; // 在空中状态未改变
 
 	} else {
 		ret = 0;
@@ -1844,14 +1866,14 @@ PX4IO::io_get_status()
 	 * STATUS_FLAGS, STATUS_ALARMS, STATUS_VBATT, STATUS_IBATT,
 	 * STATUS_VSERVO, STATUS_VRSSI, STATUS_PRSSI
 	 * in that order */
-	// 按上述顺序获取IO获取状态
+	// 按上述顺序获取IO状态
 	ret = io_reg_get(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_FLAGS, &regs[0], sizeof(regs) / sizeof(regs[0]));
 
 	if (ret != OK) {
 		return ret;
 	}
 
-	io_handle_status(regs[0]); // 第2页寄存器的状态
+	io_handle_status(regs[0]); // 发布安全保护主题
 	io_handle_alarms(regs[1]);
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
@@ -2551,16 +2573,19 @@ PX4IO::ioctl(file *filep, int cmd, unsigned long arg)
 	switch (cmd) {
 	case PWM_SERVO_ARM:
 		/* set the 'armed' bit */
+		// 设置'解锁'位
 		ret = io_reg_modify(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_ARMING, 0, PX4IO_P_SETUP_ARMING_FMU_ARMED);
 		break;
 
 	case PWM_SERVO_SET_ARM_OK:
 		/* set the 'OK to arm' bit */
+		// 设置'同意解锁'位
 		ret = io_reg_modify(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_ARMING, 0, PX4IO_P_SETUP_ARMING_IO_ARM_OK);
 		break;
 
 	case PWM_SERVO_CLEAR_ARM_OK:
 		/* clear the 'OK to arm' bit */
+		// 清除'同意解锁'位
 		ret = io_reg_modify(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_ARMING, PX4IO_P_SETUP_ARMING_IO_ARM_OK, 0);
 		break;
 
@@ -3419,7 +3444,7 @@ bind(int argc, char *argv[])
 
 	if (g_dev->system_status() & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) {
 		errx(1, "system must not be armed");
-		// 系统无法加锁
+		// 系统无法解锁
 	}
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
@@ -3826,7 +3851,7 @@ px4io_main(int argc, char *argv[])
 		exit(0);
 	}
 
-	if (!strcmp(argv[1], "safety_off")) {
+	if (!strcmp(argv[1], "safety_off")) { // 禁用安全开关
 		int ret = g_dev->ioctl(NULL, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
 
 		if (ret != OK) {
@@ -3837,7 +3862,7 @@ px4io_main(int argc, char *argv[])
 		exit(0);
 	}
 
-	if (!strcmp(argv[1], "safety_on")) {
+	if (!strcmp(argv[1], "safety_on")) { // 启用安全开关
 		int ret = g_dev->ioctl(NULL, PWM_SERVO_SET_FORCE_SAFETY_ON, 0);
 
 		if (ret != OK) {

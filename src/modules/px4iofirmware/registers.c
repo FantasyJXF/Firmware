@@ -35,6 +35,7 @@
  * @file registers.c
  *
  * Implementation of the PX4IO register space.
+ * PX4IO寄存器空间的实现
  */
 
 #include <px4_config.h>

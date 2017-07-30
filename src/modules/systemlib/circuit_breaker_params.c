@@ -79,10 +79,10 @@ PARAM_DEFINE_INT32(CBRK_RATE_CTRL, 0);
 
 /**
  * Circuit breaker for IO safety
- * 用于IO上安全开关的断路器
+ * 用于IO上安全保护的断路器
  *
  * Setting this parameter to 22027 will disable IO safety.
- * 将此值设置为22027将禁用安全开关 
+ * 将此值设置为22027将禁用安全保护
  * 
  * WARNING: ENABLING THIS CIRCUIT BREAKER IS AT OWN RISK
  *
@@ -108,9 +108,13 @@ PARAM_DEFINE_INT32(CBRK_AIRSPD_CHK, 0);
 
 /**
  * Circuit breaker for flight termination
+ * 用于飞行终止的断路器
  *
  * Setting this parameter to 121212 will disable the flight termination action.
  * --> The IO driver will not do flight termination if requested by the FMU
+ * 将此值设置为121212将禁用飞行终止动作。
+ * PX4IO的驱动收到PX4FMU的请求将不会终止飞行
+ *
  * WARNING: ENABLING THIS CIRCUIT BREAKER IS AT OWN RISK
  *
  * @reboot_required true
