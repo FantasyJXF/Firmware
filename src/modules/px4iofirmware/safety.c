@@ -147,24 +147,24 @@ safety_check_button(void *arg)
 	// 根据当前IO/FMU的解锁状态选取恰当的LED闪烁节奏
 	uint16_t pattern = LED_PATTERN_FMU_REFUSE_TO_ARM;
 
-	if (r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) {
-		if (r_setup_arming & PX4IO_P_SETUP_ARMING_FMU_ARMED) {
-			pattern = LED_PATTERN_IO_FMU_ARMED;
+	if (r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) { // 当前IO保护关闭
+		if (r_setup_arming & PX4IO_P_SETUP_ARMING_FMU_ARMED) {  // FMU已解锁
+			pattern = LED_PATTERN_IO_FMU_ARMED; // 常亮
 
-		} else {
+		} else { // FMU未解锁(pixhawk的FMU就是为解锁状态，安全开关灯双闪表示关闭了安全保护)
 			pattern = LED_PATTERN_IO_ARMED;
 		}
 
-	} else if (r_setup_arming & PX4IO_P_SETUP_ARMING_FMU_ARMED) {
+	} else if (r_setup_arming & PX4IO_P_SETUP_ARMING_FMU_ARMED) { // IO安全保护打开，FMU已解锁
 		pattern = LED_PATTERN_FMU_ARMED;
 
-	} else if (r_setup_arming & PX4IO_P_SETUP_ARMING_IO_ARM_OK) {
-		pattern = LED_PATTERN_FMU_OK_TO_ARM;
+	} else if (r_setup_arming & PX4IO_P_SETUP_ARMING_IO_ARM_OK) { // 同意IO解锁
+		pattern = LED_PATTERN_FMU_OK_TO_ARM; // 慢闪(orearmed状态下安全开关灯状态)
 
 	}
 
 	/* Turn the LED on if we have a 1 at the current bit position */
-	LED_SAFETY(pattern & (1 << blink_counter++));
+	LED_SAFETY(pattern & (1 << blink_counter++)); // 安全开关状态灯
 
 	if (blink_counter > 15) {
 		blink_counter = 0;

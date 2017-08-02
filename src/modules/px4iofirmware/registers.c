@@ -271,7 +271,7 @@ uint16_t		r_page_servo_control_max[PX4IO_SERVO_COUNT] = { PWM_DEFAULT_MAX, PWM_D
  * PAGE 108
  *
  * disarmed PWM values for difficult ESCs
- * 对有困难的电调禁用PWM
+ * 对有问题的电调禁用PWM
  *
  */
 uint16_t		r_page_servo_disarmed[PX4IO_SERVO_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -446,14 +446,15 @@ registers_set(uint8_t page, uint8_t offset, const uint16_t *values, unsigned num
 		 */
 		return mixer_handle_text(values, num_values * sizeof(*values));
 
-	default:
+	default: // 默认
 
 		/* avoid offset wrap */
-		if ((offset + num_values) > 255) {
+		if ((offset + num_values) > 255) { // 寄存器偏移大于255
 			num_values = 255 - offset;
 		}
 
 		/* iterate individual registers, set each in turn */
+		// 迭代单个寄存器，依次设置每个寄存器
 		while (num_values--) {
 			if (registers_set_one(page, offset, *values)) {
 				return -1;

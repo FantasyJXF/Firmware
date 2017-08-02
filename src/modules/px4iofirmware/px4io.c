@@ -291,6 +291,7 @@ user_start(int argc, char *argv[])
 	adc_init();
 
 	/* start the FMU interface */
+	// 打开FMU的接口
 	interface_init();
 
 	/* add a performance counter for mixing */
