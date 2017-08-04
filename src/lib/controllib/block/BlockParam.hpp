@@ -72,11 +72,7 @@ protected:
 
 /**
  * Parameters that are tied to blocks for updating and nameing.
-<<<<<<< HEAD
- * 绑定到blocks的参数，用于更新以及命名
-=======
  * 与block更新和命名相关联的参数。
->>>>>>> e17fe034656e1615b788be904a20ebe9855f4296
  */
 
 template <class T>

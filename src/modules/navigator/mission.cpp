@@ -98,7 +98,7 @@ Mission::~Mission()
 }
 
 void
-Mission::on_inactive()
+Mission::on_inactive() // 禁用mission模式
 {
 	/* We need to reset the mission cruising speed, otherwise the
 	 * mission velocity which might have been set using mission items
@@ -110,6 +110,7 @@ Mission::on_inactive()
 	_navigator->set_cruising_speed();
 
 	/* Without home a mission can't be valid yet anyway, let's wait. */
+	// 反正没有home点，任务无法有效，我们等等。
 	// 等待home点坐标才能进入misssion 
 	if (!_navigator->home_position_valid()) {
 		return;
@@ -122,7 +123,7 @@ Mission::on_inactive()
 		orb_check(_navigator->get_onboard_mission_sub(), &onboard_updated); // 板上任务
 
 		if (onboard_updated) {
-			update_onboard_mission();
+			update_onboard_mission(); // 更新任务项的索引号
 		}
 
 		bool offboard_updated = false;
@@ -133,9 +134,9 @@ Mission::on_inactive()
 		}
 
 		/* reset the current offboard mission if needed */
-		// 必要时复位当前外部任务
+		// 必要时重新设置当前外部任务
 		if (need_to_reset_mission(false)) {
-			reset_offboard_mission(_offboard_mission);
+			reset_offboard_mission(_offboard_mission);  // 重设外部任务
 			update_offboard_mission();
 		}
 
@@ -148,29 +149,34 @@ Mission::on_inactive()
 		dm_lock(DM_KEY_MISSION_STATE);
 
 		/* read current state */
-		int read_res = dm_read(DM_KEY_MISSION_STATE, 0, &mission_state, sizeof(mission_s));
+		int read_res = dm_read(DM_KEY_MISSION_STATE, 0, &mission_state, sizeof(mission_s)); // 读第一个任务点
 
 		dm_unlock(DM_KEY_MISSION_STATE);
 
-		if (read_res == sizeof(mission_s)) {
+		if (read_res == sizeof(mission_s)) { // 确定任务点信息
 			_offboard_mission.dataman_id = mission_state.dataman_id;
 			_offboard_mission.count = mission_state.count;
 			_current_offboard_mission_index = mission_state.current_seq;
 		}
 
 		/* On init let's check the mission, maybe there is already one available. */
-		// 初始化时检查任务，可能已经有一个可用
+		// 初始化时检查任务是否有效，可能已经有一个可用
 		check_mission_valid(false);
 
 		_inited = true;
 	}
 
 	/* require takeoff after non-loiter or landing */
+	// 当前位置设定值不能用于悬停或者已经着陆，则需要起飞
 	if (!_navigator->get_can_loiter_at_sp() || _navigator->get_land_detected()->landed) {
 		_need_takeoff = true;
 
 		/* Reset work item type to default if auto take-off has been paused or aborted,
 		   and we landed in manual mode. */
+		/*
+		 * 如果自动起飞已被暂停或中止，则将工作项类型重设为默认值
+		 * 在手动模式下着陆
+		 */
 		if (_work_item_type == WORK_ITEM_TYPE_TAKEOFF) {
 			_work_item_type = WORK_ITEM_TYPE_DEFAULT;
 		}
@@ -204,7 +210,7 @@ Mission::on_active()
 	}
 
 	/* reset the current offboard mission if needed */
-	// 必要时复位当前的外部任务
+	// 必要时重设当前的外部任务
 	if (need_to_reset_mission(true)) {
 		reset_offboard_mission(_offboard_mission);
 		update_offboard_mission();
@@ -212,26 +218,26 @@ Mission::on_active()
 	}
 
 	/* reset mission items if needed */
-	// 必要时复位任务项
+	// 必要时重新设置任务项
 	if (onboard_updated || offboard_updated) {
 		set_mission_items();
 	}
 
 	/* lets check if we reached the current mission item */
 	// 检查是否已经到达了当前的任务目标
-	if (_mission_type != MISSION_TYPE_NONE && is_mission_item_reached()) {
+	if (_mission_type != MISSION_TYPE_NONE && is_mission_item_reached()) { // 有任务并且没有到达航点
 
 		/* If we just completed a takeoff which was inserted before the right waypoint,
 		   there is no need to report that we reached it because we didn't. */
 		// 如果我们刚刚完成了在正确的航点插入之前的起飞，那么就没有必要报告我们达到了，因为我们没有。
-		if (_work_item_type != WORK_ITEM_TYPE_TAKEOFF) {
+		if (_work_item_type != WORK_ITEM_TYPE_TAKEOFF) { // 航点不要求起飞，但是其实需要先起飞，这个不算是一个航点，我们还是完成了起飞
 			set_mission_item_reached();
 		}
 
 		if (_mission_item.autocontinue) {
 			/* switch to next waypoint if 'autocontinue' flag set */
 			advance_mission(); // 下一个任务 index
-			set_mission_items(); //
+			set_mission_items(); // 设置任务，完成任务
 		}
 
 	} else if (_mission_type != MISSION_TYPE_NONE && _param_altmode.get() == MISSION_ALTMODE_FOH) {
@@ -315,6 +321,7 @@ Mission::update_onboard_mission()
 {
 	if (orb_copy(ORB_ID(onboard_mission), _navigator->get_onboard_mission_sub(), &_onboard_mission) == OK) {
 		/* accept the current index set by the onboard mission if it is within bounds */
+		// 如果当前索引在范围内，则接受板上任务设置的current index
 		if (_onboard_mission.current_seq >= 0
 		    && _onboard_mission.current_seq < (int)_onboard_mission.count) {
 
@@ -322,7 +329,7 @@ Mission::update_onboard_mission()
 
 		} else {
 			/* if less WPs available, reset to first WP */
-			// 当前任务序号大于板上任务总数  复位成第一个航点
+			// 当前任务序号大于板上任务总数，将当前航点设置成第一个航点
 			if (_current_onboard_mission_index >= (int)_onboard_mission.count) {
 				_current_onboard_mission_index = 0;
 				/* if not initialized, set it to 0 */
@@ -337,6 +344,7 @@ Mission::update_onboard_mission()
 		// XXX check validity here as well
 		_navigator->get_mission_result()->valid = true;
 		/* reset mission failure if we have an updated valid mission */
+		// 如果我们有更新的有效任务  取消任务失败   任务继续
 		_navigator->get_mission_result()->mission_failure = false;
 
 		/* reset reached info as well */
@@ -345,10 +353,10 @@ Mission::update_onboard_mission()
 		_navigator->get_mission_result()->seq_reached = 0;
 		_navigator->get_mission_result()->seq_total = _onboard_mission.count;
 
-		_navigator->increment_mission_instance_count();
+		_navigator->increment_mission_instance_count(); // 任务实例数 + 1
 		_navigator->set_mission_result_updated();
 
-	} else {
+	} else { // 更新板载任务失败
 		_onboard_mission.count = 0;
 		_onboard_mission.current_seq = 0;
 		_current_onboard_mission_index = 0;
@@ -365,6 +373,7 @@ Mission::update_offboard_mission()
 		      _offboard_mission.count, _offboard_mission.current_seq);
 
 		/* determine current index */
+		// 确定当前任务号
 		if (_offboard_mission.current_seq >= 0 && _offboard_mission.current_seq < (int)_offboard_mission.count) {
 			_current_offboard_mission_index = _offboard_mission.current_seq; // 更新索引
 
@@ -456,7 +465,7 @@ Mission::set_mission_items()
 	updateParams();
 
 	/* reset the altitude foh (first order hold) logic, if altitude foh is enabled (param) a new foh element starts now */
-	// 高度保持
+	// 重设高度的一阶采样保持
 	altitude_sp_foh_reset();
 
 	struct position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
@@ -478,8 +487,9 @@ Mission::set_mission_items()
 	    && prepare_mission_items(true, &_mission_item, &mission_item_next_position, &has_next_position_item)) {
 
 		/* if mission type changed, notify */
-		if (_mission_type != MISSION_TYPE_ONBOARD) {
-			mavlink_log_info(_navigator->get_mavlink_log_pub(), "Executing internal mission");
+		// 如果任务类型改变，需要发出通知
+		if (_mission_type != MISSION_TYPE_ONBOARD) { // 初始类型为MISSION_TYPE_NONE
+			mavlink_log_info(_navigator->get_mavlink_log_pub(), "Executing internal mission"); // 执行内部任务
 			user_feedback_done = true;
 		}
 
@@ -509,19 +519,21 @@ Mission::set_mission_items()
 				mavlink_log_info(_navigator->get_mavlink_log_pub(), "mission finished, loitering");
 
 				/* use last setpoint for loiter */
+				// 在最后一个位置设定值处悬停
 				_navigator->set_can_loiter_at_sp(true);
 			}
 
 			user_feedback_done = true;
 		}
 
-		_mission_type = MISSION_TYPE_NONE;
+		_mission_type = MISSION_TYPE_NONE; // 没有任务了
 
 		/* set loiter mission item and ensure that there is a minimum clearance from home */
 		// 设置悬停任务项并确保距离home点的最短距离
 		set_loiter_item(&_mission_item, _param_takeoff_alt.get());
 
-		/* update position setpoint triplet  */
+		/* update position setpoint triplet */
+		// 更新位置设定值
 		pos_sp_triplet->previous.valid = false;
 		/* 将任务设定值转换为当前的位置设定值*/
 		mission_item_to_position_setpoint(&_mission_item, &pos_sp_triplet->current); 
@@ -531,7 +543,7 @@ Mission::set_mission_items()
 		// LOITER的重新设定值只有在空闲时才能使用
 		_navigator->set_can_loiter_at_sp(pos_sp_triplet->current.type == position_setpoint_s::SETPOINT_TYPE_LOITER);
 
-		set_mission_finished();
+		set_mission_finished(); // 任务完成
 
 		if (!user_feedback_done) {
 			/* only tell users that we got no mission if there has not been any
@@ -555,6 +567,7 @@ Mission::set_mission_items()
 	}
 
 	/*********************************** handle mission item *********************************************/
+	/*************************************** 处理任务项 **************************************************/
 
 	/* handle position mission items */
 	if (item_contains_position(&_mission_item)) {
@@ -567,14 +580,18 @@ Mission::set_mission_items()
 		}
 
 		/* we have a new position item so set previous position setpoint to current */
+		// 我们有一个新的位置项，将current赋给previous，保存航点信息，继续向前
 		set_previous_pos_setpoint();
 
 		/* do takeoff before going to setpoint if needed and not already in takeoff */
-		if (do_need_takeoff() && _work_item_type != WORK_ITEM_TYPE_TAKEOFF) {
+		// 如果需要，在进入设定点之前起飞，并且不是由任务设置的在向航点移动前起飞
+		// 意思是这里的起飞不是任务设置的，是逻辑判断需要先起飞到一定高度
+		if (do_need_takeoff() && _work_item_type != WORK_ITEM_TYPE_TAKEOFF) { 
 
 			new_work_item_type = WORK_ITEM_TYPE_TAKEOFF;
 
 			/* use current mission item as next position item */
+			// 将现在的任务作为下一个任务，当务之急是要先起飞
 			memcpy(&mission_item_next_position, &_mission_item, sizeof(struct mission_item_s));
 			mission_item_next_position.nav_cmd = NAV_CMD_WAYPOINT;
 			has_next_position_item = true;
@@ -582,13 +599,13 @@ Mission::set_mission_items()
 			float takeoff_alt = calculate_takeoff_altitude(&_mission_item);
 
 			mavlink_log_info(_navigator->get_mavlink_log_pub(), "Takeoff to %.1f meters above home",
-					 (double)(takeoff_alt - _navigator->get_home_position()->alt));
+					 (double)(takeoff_alt - _navigator->get_home_position()->alt)); // 起飞到一个高于home点X米的高度
 
 			_mission_item.nav_cmd = NAV_CMD_TAKEOFF;
 			_mission_item.lat = _navigator->get_global_position()->lat;
 			_mission_item.lon = _navigator->get_global_position()->lon;
 			/* ignore yaw for takeoff items */
-			_mission_item.yaw = NAN;
+			_mission_item.yaw = NAN; // 高度不变
 			_mission_item.altitude = takeoff_alt;
 			_mission_item.altitude_is_relative = false;
 			_mission_item.autocontinue = true;
@@ -596,6 +613,7 @@ Mission::set_mission_items()
 		}
 
 		/* if we just did a takeoff navigate to the actual waypoint now */
+		// 如果我们刚刚起飞到现在的航点
 		if (_work_item_type == WORK_ITEM_TYPE_TAKEOFF) {
 
 			if (_mission_item.nav_cmd == NAV_CMD_VTOL_TAKEOFF
@@ -619,6 +637,7 @@ Mission::set_mission_items()
 				new_work_item_type = WORK_ITEM_TYPE_DEFAULT;
 				_mission_item.nav_cmd = NAV_CMD_WAYPOINT;
 				/* ignore yaw here, otherwise it might yaw before heading_sp_update takes over */
+				// 在这里忽略偏航，否则它可能在heading_sp_update接管之前偏航
 				_mission_item.yaw = NAN;
 				_mission_item.time_inside = 0.0f;
 			}
@@ -669,6 +688,7 @@ Mission::set_mission_items()
 		}
 
 		/* move to landing waypoint before descent if necessary */
+		// 如果有必要，在下降之前移动到降落航点
 		if (do_need_move_to_land() &&
 		    (_work_item_type == WORK_ITEM_TYPE_DEFAULT ||
 		     _work_item_type == WORK_ITEM_TYPE_MOVE_TO_LAND_AFTER_TRANSITION)) {
@@ -676,11 +696,12 @@ Mission::set_mission_items()
 			new_work_item_type = WORK_ITEM_TYPE_MOVE_TO_LAND;
 
 			/* use current mission item as next position item */
+			// 使用当前任务项作为下一个位置项
 			memcpy(&mission_item_next_position, &_mission_item, sizeof(struct mission_item_s));
 			has_next_position_item = true;
 
 			/*
-			 * Ignoring waypoint altitude:
+			 * Ignoring waypoint altitude:  忽略航点高度
 			 * Set altitude to the same as we have now to prevent descending too fast into
 			 * the ground. Actual landing will descend anyway until it touches down.
 			 * XXX: We might want to change that at some point if it is clear to the user
@@ -697,6 +718,7 @@ Mission::set_mission_items()
 		}
 
 		/* we just moved to the landing waypoint, now descend */
+		// 我们刚刚移动到着陆航点，现在开始下降
 		if (_work_item_type == WORK_ITEM_TYPE_MOVE_TO_LAND
 		    && _navigator->get_vstatus()->is_rotary_wing) {
 
@@ -704,16 +726,21 @@ Mission::set_mission_items()
 		}
 
 		/* ignore yaw for landing items */
+		// 降落时忽略偏航
 		/* XXX: if specified heading for landing is desired we could add another step before the descent
 		 * that aligns the vehicle first */
+		 // 如果需要指定的着陆航向，我们可以在下降之前添加另一个步骤
+		 // 首先将飞行器的航向对齐
 		if (_mission_item.nav_cmd == NAV_CMD_LAND || _mission_item.nav_cmd == NAV_CMD_VTOL_LAND) {
 			_mission_item.yaw = NAN;
 		}
 
 	} else {
 		/* handle non-position mission items such as commands */
+		// 处理非位置任务项目，例如命令
 
 		/* turn towards next waypoint before MC to FW transition */
+		// 在MC到FW转换之前转向下一个航点
 		if (_mission_item.nav_cmd == NAV_CMD_DO_VTOL_TRANSITION
 		    && _work_item_type != WORK_ITEM_TYPE_ALIGN
 		    && _navigator->get_vstatus()->is_rotary_wing
@@ -721,28 +748,34 @@ Mission::set_mission_items()
 		    && has_next_position_item) {
 
 			new_work_item_type = WORK_ITEM_TYPE_ALIGN;
-			set_align_mission_item(&_mission_item, &mission_item_next_position);
+			set_align_mission_item(&_mission_item, &mission_item_next_position); // 与下一个航点对齐
 		}
 
 		/* yaw is aligned now */
+		// 航向已对齐
 		if (_work_item_type == WORK_ITEM_TYPE_ALIGN) {
 			new_work_item_type = WORK_ITEM_TYPE_DEFAULT;
-			set_previous_pos_setpoint();
+			set_previous_pos_setpoint(); // 保存已完成的航点信息
 		}
 	}
 
 	/*********************************** set setpoints and check next *********************************************/
+	/*********************************** 设置设定值并检查下一个 *********************************************/
 
 	/* set current position setpoint from mission item (is protected against non-position items) */
+	// 从任务项目设置当前位置设定值（受到非位置项目的保护）
 	mission_item_to_position_setpoint(&_mission_item, &pos_sp_triplet->current);
 
 	/* issue command if ready (will do nothing for position mission items) */
+	// 如果准备就绪则发布命令（对位置任务项不做任何事情)
 	issue_command(&_mission_item);
 
 	/* set current work item type */
+	// 设置当前工作项类型
 	_work_item_type = new_work_item_type;
 
 	/* require takeoff after landing or idle */
+	// 着陆或空闲后需要起飞
 	if (pos_sp_triplet->current.type == position_setpoint_s::SETPOINT_TYPE_LAND
 	    || pos_sp_triplet->current.type == position_setpoint_s::SETPOINT_TYPE_IDLE) {
 
@@ -750,7 +783,7 @@ Mission::set_mission_items()
 	}
 
 	_navigator->set_can_loiter_at_sp(false);
-	reset_mission_item_reached();
+	reset_mission_item_reached(); // 重设任务到达标志，即当前任务尚未完成
 
 	if (_mission_type == MISSION_TYPE_OFFBOARD) {
 		set_current_offboard_mission_item();
@@ -758,22 +791,26 @@ Mission::set_mission_items()
 
 	if (_mission_item.autocontinue && Navigator::get_time_inside(_mission_item) < FLT_EPSILON) {
 		/* try to process next mission item */
-
+		// 处理下一个任务项目
 		if (has_next_position_item) {
 			/* got next mission item, update setpoint triplet */
+			// 获得下一个任务项目，更新设定值三元组
 			mission_item_to_position_setpoint(&mission_item_next_position, &pos_sp_triplet->next);
 
 		} else {
 			/* next mission item is not available */
+			// 下一个任务项目不可用
 			pos_sp_triplet->next.valid = false;
 		}
 
-	} else {
+	} else { // 不自动去下一个航点或在需要在到达航点后悬停一段时间
 		/* vehicle will be paused on current waypoint, don't set next item */
+		// 飞行器将暂停在当前航点，不要设置下一个项目
 		pos_sp_triplet->next.valid = false;
 	}
 
 	/* Save the distance between the current sp and the previous one */
+	// 保存当前位置设定值和前一个之间的距离
 	if (pos_sp_triplet->current.valid && pos_sp_triplet->previous.valid) {
 
 		_distance_current_previous = get_distance_to_next_waypoint(
@@ -794,19 +831,21 @@ Mission::do_need_takeoff()
 		float takeoff_alt = calculate_takeoff_altitude(&_mission_item);
 
 		/* force takeoff if landed (additional protection) */
+		// 在地面上时强制起飞（附加保护）
 		if (_navigator->get_land_detected()->landed) {
 			_need_takeoff = true;
 
 			/* if in-air and already above takeoff height, don't do takeoff */
-
+			// 如果在控制并且已经高于起飞高度，不要起飞
 		} else if (_navigator->get_global_position()->alt > takeoff_alt) {
 			_need_takeoff = false;
 		}
 
 		/* check if current mission item is one that requires takeoff before */
+		// 检查当前的任务项目是否需要起飞
 		if (_need_takeoff && (
 			    _mission_item.nav_cmd == NAV_CMD_WAYPOINT ||
-			    _mission_item.nav_cmd == NAV_CMD_LOITER_UNLIMITED ||
+			    _mission_item.nav_cmd == NAV_CMD_LOITER_UNLIMITED || // 在任务点悬停无限长时间
 			    _mission_item.nav_cmd == NAV_CMD_LOITER_TIME_LIMIT ||
 			    _mission_item.nav_cmd == NAV_CMD_TAKEOFF ||
 			    _mission_item.nav_cmd == NAV_CMD_LOITER_TO_ALT ||
@@ -874,7 +913,7 @@ Mission::set_align_mission_item(struct mission_item_s *mission_item, struct miss
 	mission_item->altitude_is_relative = false;
 	mission_item->autocontinue = true;
 	mission_item->time_inside = 0.0f;
-	mission_item->yaw = get_bearing_to_next_waypoint(
+	mission_item->yaw = get_bearing_to_next_waypoint( /* 返回到下一个航点的方位角 */
 				    _navigator->get_global_position()->lat,
 				    _navigator->get_global_position()->lon,
 				    mission_item_next->lat,
@@ -886,13 +925,15 @@ float
 Mission::calculate_takeoff_altitude(struct mission_item_s *mission_item)
 {
 	/* calculate takeoff altitude */
-	float takeoff_alt = get_absolute_altitude_for_item(*mission_item);
+	float takeoff_alt = get_absolute_altitude_for_item(*mission_item); // 起飞点的绝对高度 = home高度 + mission高度
 
 	/* takeoff to at least MIS_TAKEOFF_ALT above home/ground, even if first waypoint is lower */
-	if (_navigator->get_land_detected()->landed) {
+	// 起飞到一个至少高于home点MIS_TAKEOFF_ALT高度的位置，即使第一个航点较低
+	if (_navigator->get_land_detected()->landed) { // 在地上
+		// 如果任务项设置的高度高于MIS_TAKEOFF_ALT，则按任务项设置的相对高度起飞，按大的来
 		takeoff_alt = fmaxf(takeoff_alt, _navigator->get_global_position()->alt + _param_takeoff_alt.get());
 
-	} else {
+	} else { // 在空中
 		takeoff_alt = fmaxf(takeoff_alt, _navigator->get_home_position()->alt + _param_takeoff_alt.get());
 	}
 
@@ -990,6 +1031,7 @@ Mission::altitude_sp_foh_update()
 	/* Don't change setpoint if last and current waypoint are not valid
 	 * or if the previous altitude isn't from a position or loiter setpoint
 	 */
+	 // 如果上一个航点和当前航点无效或前一个高度不在位置或悬停设定值设定点，则不要更改设定值
 	if (!pos_sp_triplet->previous.valid || !pos_sp_triplet->current.valid || !PX4_ISFINITE(pos_sp_triplet->previous.alt)
 		|| !(pos_sp_triplet->previous.type == position_setpoint_s::SETPOINT_TYPE_POSITION ||
 			pos_sp_triplet->previous.type == position_setpoint_s::SETPOINT_TYPE_LOITER)) {
@@ -998,12 +1040,15 @@ Mission::altitude_sp_foh_update()
 	}
 
 	/* Do not try to find a solution if the last waypoint is inside the acceptance radius of the current one */
+	// 如果上一个航点位于当前航点的可接受半径内，请勿尝试找到解决方案
 	if (_distance_current_previous - _navigator->get_acceptance_radius(_mission_item.acceptance_radius) < FLT_EPSILON) {
 		return;
 	}
 
 	/* Don't do FOH for non-missions, landing and takeoff waypoints, the ground may be near
 	 * and the FW controller has a custom landing logic
+	 *
+	 * 不进行高度保持
 	 *
 	 * NAV_CMD_LOITER_TO_ALT doesn't change altitude until reaching desired lat/lon
 	 * */
@@ -1017,24 +1062,31 @@ Mission::altitude_sp_foh_update()
 	}
 
 	/* Calculate distance to current waypoint */
+	// 计算到下一个航点的距离
 	float d_current = get_distance_to_next_waypoint(_mission_item.lat, _mission_item.lon,
 			  _navigator->get_global_position()->lat, _navigator->get_global_position()->lon);
 
 	/* Save distance to waypoint if it is the smallest ever achieved, however make sure that
 	 * _min_current_sp_distance_xy is never larger than the distance between the current and the previous wp */
+	 // 如果距离航点的距离最小，那么确保_min_current_sp_distance_xy不会大于当前和之前的航点之间的距离
 	_min_current_sp_distance_xy = math::min(math::min(d_current, _min_current_sp_distance_xy),
 						_distance_current_previous);
 
 	/* if the minimal distance is smaller then the acceptance radius, we should be at waypoint alt
 	 * navigator will soon switch to the next waypoint item (if there is one) as soon as we reach this altitude */
+	 // 如果最小距离小于可接受半径，我们应该在航点高度
+	 // 一旦我们达到这个高度，navigator将很快切换到下一个航点项目（如果有的话）
 	if (_min_current_sp_distance_xy < _navigator->get_acceptance_radius(_mission_item.acceptance_radius)) {
 		pos_sp_triplet->current.alt = get_absolute_altitude_for_item(_mission_item);
 
 	} else {
 		/* update the altitude sp of the 'current' item in the sp triplet, but do not update the altitude sp
 		 * of the mission item as it is used to check if the mission item is reached
+		 * 更新位置设定值三元组中“当前”项目的高度值，但不要更新任务项目的高度值，因为它用于检查任务项目是否到达
+		 *
 		 * The setpoint is set linearly and such that the system reaches the current altitude at the acceptance
 		 * radius around the current waypoint
+		 * 设定值是线性设置的，使得系统在当前航点周围的可接受半径处达到当前高度
 		 **/
 		float delta_alt = (get_absolute_altitude_for_item(_mission_item) - pos_sp_triplet->previous.alt);
 		float grad = -delta_alt / (_distance_current_previous - _navigator->get_acceptance_radius(
@@ -1044,6 +1096,7 @@ Mission::altitude_sp_foh_update()
 	}
 
 	// we set altitude directly so we can run this in parallel to the heading update
+	// 我们直接设置高度，所以我们可以于航向更新并行运行此项
 	_navigator->set_position_setpoint_triplet_updated();
 }
 
@@ -1092,7 +1145,7 @@ Mission::do_abort_landing()
 	_current_offboard_mission_index -= 1;
 }
 
-// 准备好所有任务项
+// 准备好当前以及下一个任务项
 bool
 Mission::prepare_mission_items(bool onboard, struct mission_item_s *mission_item,
 			       struct mission_item_s *next_position_mission_item, bool *has_next_position_item)
@@ -1106,11 +1159,11 @@ Mission::prepare_mission_items(bool onboard, struct mission_item_s *mission_item
 
 		/* trying to find next position mission item */
 		// 寻找下一个任务项
-		while (read_mission_item(onboard, offset, next_position_mission_item)) {
+		while (read_mission_item(onboard, offset, next_position_mission_item)) { // 读取下一个任务
 
-			if (item_contains_position(next_position_mission_item)) {
+			if (item_contains_position(next_position_mission_item)) { // 下一个任务项的属性检查
 				*has_next_position_item = true;
-				break;
+				break; // 有下一个任务项，跳出循环，不执行 offset++ ，这里读取航点只会往下读一个
 			}
 
 			offset++;
@@ -1152,6 +1205,7 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 
 	/* Repeat this several times in case there are several DO JUMPS that we need to follow along, however, after
 	 * 10 iterations we have to assume that the DO JUMPS are probably cycling and give up. 
+	 * 重复数次以jump一些航点
 	 */
 	for (int i = 0; i < 10; i++) {
 
@@ -1189,9 +1243,9 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 
 				/* only raise the repeat count if this is for the current mission item
 				 * but not for the read ahead mission item */
-				 /*
-				  * 只有当这是针对当前的任务项目而不是预读任务项目时才提高重复计数
-				  */
+			      /*
+			     * 只有当这是针对当前的任务项目而不是预读任务项目时才提高重复计数
+				 */
 				if (offset == 0) {
 					(mission_item_tmp.do_jump_current_count)++;
 
@@ -1205,14 +1259,15 @@ Mission::read_mission_item(bool onboard, int offset, struct mission_item_s *miss
 						return false;
 					}
 
-					report_do_jump_mission_changed(*mission_index_ptr, mission_item_tmp.do_jump_repeat_count);
+					report_do_jump_mission_changed(*mission_index_ptr, mission_item_tmp.do_jump_repeat_count); // 指明跳过的任务项
 				}
 
 				/* set new mission item index and repeat
-				 * we don't have to validate here, if it's invalid, we should realize this later .*/
+				 * we don't have to validate here, if it's invalid, we should realize this later .
+				 */
 				 // 设置新的任务项的索引并重复
 				 // 此处不用验证
-				*mission_index_ptr = mission_item_tmp.do_jump_mission_index; // 下一个jump
+				*mission_index_ptr = mission_item_tmp.do_jump_mission_index; // 要jump到的任务索引点
 
 			} else { // DO_ JUMP次数达到
 				if (offset == 0) {
@@ -1244,12 +1299,15 @@ Mission::save_offboard_mission_state()
 	dm_lock(DM_KEY_MISSION_STATE);
 
 	/* read current state */
+	// 读取当前状态
 	int read_res = dm_read(DM_KEY_MISSION_STATE, 0, &mission_state, sizeof(mission_s));
 
 	if (read_res == sizeof(mission_s)) {
 		/* data read successfully, check dataman ID and items count */
+		// 数据读取成功，检查dataman ID和项目计数
 		if (mission_state.dataman_id == _offboard_mission.dataman_id && mission_state.count == _offboard_mission.count) {
 			/* navigator may modify only sequence, write modified state only if it changed */
+			// navigator只能修改序列，只有在更改时才会修改状态
 			if (mission_state.current_seq != _current_offboard_mission_index) {
 				if (dm_write(DM_KEY_MISSION_STATE, 0, DM_PERSIST_POWER_ON_RESET, &mission_state,
 					     sizeof(mission_s)) != sizeof(mission_s)) {
@@ -1270,6 +1328,7 @@ Mission::save_offboard_mission_state()
 		mavlink_log_critical(_navigator->get_mavlink_log_pub(), "ERROR: invalid mission state");
 
 		/* write modified state only if changed */
+		// 仅在更改时才写入修改状态
 		if (dm_write(DM_KEY_MISSION_STATE, 0, DM_PERSIST_POWER_ON_RESET, &mission_state,
 			     sizeof(mission_s)) != sizeof(mission_s)) {
 
@@ -1327,7 +1386,7 @@ Mission::check_mission_valid(bool force)
 		dm_item_t dm_current = DM_KEY_WAYPOINTS_OFFBOARD(_offboard_mission.dataman_id);
 
 		_navigator->get_mission_result()->valid =
-			_missionFeasibilityChecker.checkMissionFeasible(
+			_missionFeasibilityChecker.checkMissionFeasible( // 检查任务类型/地理围栏/航点高度...
 				_navigator->get_mavlink_log_pub(), /* MAVLink消息 */
 				(_navigator->get_vstatus()->is_rotary_wing || _navigator->get_vstatus()->is_vtol), /* 机型 */
 				dm_current, (size_t) _offboard_mission.count, _navigator->get_geofence(), 
@@ -1341,12 +1400,13 @@ Mission::check_mission_valid(bool force)
 				_navigator->get_land_detected()->landed);  /* 着陆检测 */
 
 		_navigator->get_mission_result()->seq_total = _offboard_mission.count;
-		_navigator->increment_mission_instance_count(); /* 任务数增加 */
-		_navigator->set_mission_result_updated(); /* 任务结果更新置位 */
-		_home_inited = _navigator->home_position_valid();  /* 起点GPS数据更新 */
+		_navigator->increment_mission_instance_count(); /* 当前任务的实例数增加 */
+		_navigator->set_mission_result_updated(); /* 任务结果更新标志位 */
+		_home_inited = _navigator->home_position_valid();  /* home点GPS数据更新 */
 	}
 }
 
+// 重新设置外部任务
 void
 Mission::reset_offboard_mission(struct mission_s &mission)
 {
@@ -1385,6 +1445,7 @@ Mission::reset_offboard_mission(struct mission_s &mission)
 			mavlink_log_critical(_navigator->get_mavlink_log_pub(), "ERROR: could not read mission");
 
 			/* initialize mission state in dataman */
+			// 在dataman中初始化任务状态
 			mission.dataman_id = 0;
 			mission.count = 0;
 			mission.current_seq = 0;

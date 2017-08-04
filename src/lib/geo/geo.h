@@ -269,6 +269,7 @@ __EXPORT void waypoint_from_heading_and_distance(double lat_start, double lon_st
 
 /**
  * Returns the bearing to the next waypoint in radians.
+ * 返回到下一个航点的方位角，以弧度表示。
  *
  * @param lat_now current position in degrees (47.1234567°, not 471234567°)
  * @param lon_now current position in degrees (8.1234567°, not 81234567°)

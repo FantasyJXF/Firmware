@@ -122,6 +122,7 @@ public:
 
 	/**
 	 * Set the MAVLink version
+	 * 设置MAVLink格式
 	 *
 	 * Currently supporting v1 and v2
 	 *
@@ -262,6 +263,7 @@ public:
 
 	/**
 	 * Set communication protocol for this mavlink instance
+	 * 设置这个mavlink实例的通讯协议
 	 */
 	void 		set_protocol(Protocol p) {_protocol = p;};
 
@@ -467,14 +469,15 @@ private:
 
 	/* states */
 	bool			_hil_enabled;		/**< Hardware In the Loop mode */
-	bool			_generate_rc;		/**< Generate RC messages from manual input MAVLink messages */
+	bool			_generate_rc;		/**< Generate RC messages from manual input MAVLink messages 从手动输入MAVLink消息生成RC消息 */
 	bool			_use_hil_gps;		/**< Accept GPS HIL messages (for example from an external motion capturing system to fake indoor gps) */
 	bool			_forward_externalsp;	/**< Forward external setpoint messages to controllers directly if in offboard mode */
+										// 在外部模式下，将外部设定值消息转发给控制器
 	bool			_is_usb_uart;		/**< Port is USB */
-	bool			_wait_to_transmit;  	/**< Wait to transmit until received messages. */
-	bool			_received_messages;	/**< Whether we've received valid mavlink messages. */
+	bool			_wait_to_transmit;  	/**< Wait to transmit until received messages. 等待发送直到收到消息 */
+	bool			_received_messages;	/**< Whether we've received valid mavlink messages. 我们是否收到有效的mavlink消息 */
 
-	unsigned		_main_loop_delay;	/**< mainloop delay, depends on data rate */
+	unsigned		_main_loop_delay;	/**< mainloop delay, depends on data rate 主循环延迟，取决于数据速率 */
 
 	MavlinkOrbSubscription	*_subscriptions;
 	MavlinkStream		*_streams;
@@ -504,8 +507,8 @@ private:
 	int			_uart_fd;
 #endif
 	int			_baudrate;
-	int			_datarate;		///< data rate for normal streams (attitude, position, etc.)
-	int			_datarate_events;	///< data rate for params, waypoints, text messages
+	int			_datarate;		///<一般流(姿态、位置)的数据速率 data rate for normal streams (attitude, position, etc.)
+	int			_datarate_events;	///< 参数的数据速率(航点，文件消息)data rate for params, waypoints, text messages
 	float			_rate_mult;
 	hrt_abstime		_last_hw_rate_timestamp;
 
@@ -602,8 +605,11 @@ private:
 
 	/**
 	 * Adjust the stream rates based on the current rate
+	 * 根据当前速率调整流速
 	 *
-	 * @param multiplier if greater than 1, the transmission rate will increase, if smaller than one decrease
+	 * @param multiplier 
+	 *                    if greater than 1, the transmission rate will increase, if smaller than one decrease
+	 *                    如果大于1，传输速率将会增加，如果小于1则减小
 	 */
 	void adjust_stream_rates(const float multiplier);
 

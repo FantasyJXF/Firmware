@@ -52,6 +52,7 @@
 int px4_sem_init(px4_sem_t *s, int pshared, unsigned value)
 {
 	// We do not used the process shared arg
+	// 我们不使用进程共享的参数
 	(void)pshared;
 	s->value = value;
 	pthread_cond_init(&(s->wait), NULL);

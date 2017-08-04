@@ -86,10 +86,11 @@ MavlinkOrbSubscription::update(uint64_t *time, void *data)
 
 	// TODO this is NOT atomic operation, we can get data newer than time
 	// if topic was published between orb_stat and orb_copy calls.
+	// 这不是原子操作，如果在orb_stat和orb_copy调用之间发布主题，我们可以获得比时间更新的数据。
 
 	uint64_t time_topic;
 
-	if (orb_stat(_fd, &time_topic)) {
+	if (orb_stat(_fd, &time_topic)) { //订阅者可以用来检查一个主题最后的发布时间；
 		/* error getting last topic publication time */
 		time_topic = 0;
 	}
@@ -161,6 +162,7 @@ MavlinkOrbSubscription::is_published()
 	}
 
 	// Telemetry can sustain an initial published check at 10 Hz
+	// 遥测可以维持10 Hz的初始发布检查
 	hrt_abstime now = hrt_absolute_time();
 
 	if (now - _last_pub_check < 100000) {
@@ -199,7 +201,7 @@ MavlinkOrbSubscription::is_published()
 
 	// topic may have been last published before we subscribed
 	uint64_t time_topic = 0;
-	if (!_published && orb_stat(_fd, &time_topic) == PX4_OK) {
+	if (!_published && orb_stat(_fd, &time_topic) == PX4_OK) {  // PX4_OK = 0
 		if (time_topic != 0) {
 			_published = true;
 		}

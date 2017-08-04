@@ -59,6 +59,7 @@ LandDetector::LandDetector() :
 	_work{}
 {
 	// Use Trigger time when transitioning from in-air (false) to landed (true).
+	// 当从空中(false)到着陆(true)时使用触发器时间
 	_landed_hysteresis.set_hysteresis_time_from(false, LAND_DETECTOR_TRIGGER_TIME_US);
 }
 
@@ -95,6 +96,7 @@ void LandDetector::_cycle()
 {
 	if (!_taskIsRunning) {
 		// Advertise the first land detected uORB.
+		// 公告第一个着陆检测uORB消息
 		_landDetected.timestamp = hrt_absolute_time();
 		_landDetected.landed = false;
 		_landDetected.freefall = false;
@@ -110,17 +112,18 @@ void LandDetector::_cycle()
 
 	_check_params(false);
 
-	_update_topics();
+	_update_topics(); // 更新uORB主题
 
-	_update_state();
+	_update_state(); // 更新着陆状态
 
 	bool landDetected = (_state == LandDetectionState::LANDED);
 	bool freefallDetected = (_state == LandDetectionState::FREEFALL);
 
 	// Only publish very first time or when the result has changed.
+	// 只发布第一次或当结果发生变化
 	if ((_landDetectedPub == nullptr) ||
 	    (_landDetected.landed != landDetected) ||
-	    (_landDetected.freefall != freefallDetected)) {
+	    (_landDetected.freefall != freefallDetected)) { // 处于飞行中
 
 		_landDetected.timestamp = hrt_absolute_time();
 		_landDetected.landed = (_state == LandDetectionState::LANDED);
@@ -160,8 +163,8 @@ void LandDetector::_check_params(const bool force)
 
 void LandDetector::_update_state()
 {
-	bool landed = _get_landed_state();
-	_landed_hysteresis.set_state_and_update(landed);
+	bool landed = _get_landed_state(); // 着陆时为真
+	_landed_hysteresis.set_state_and_update(landed); // 设置状态并更新
 	_freefall_hysteresis.set_state_and_update(_get_freefall_state());
 
 	if (_freefall_hysteresis.get_state()) {

@@ -61,15 +61,15 @@ enum NAV_CMD {
 	NAV_CMD_LOITER_TIME_LIMIT = 19,
 	NAV_CMD_LAND = 21,
 	NAV_CMD_TAKEOFF = 22,
-	NAV_CMD_LOITER_TO_ALT = 31,
+	NAV_CMD_LOITER_TO_ALT = 31, // 在指定的纬度和经度悬停
 	NAV_CMD_DO_FOLLOW_REPOSITION = 33,
 	NAV_CMD_ROI = 80,
-	NAV_CMD_VTOL_TAKEOFF = 84,
+	NAV_CMD_VTOL_TAKEOFF = 84, /* 使用VTOL模式从地面起飞 */
 	NAV_CMD_VTOL_LAND = 85,
 	NAV_CMD_DO_JUMP = 177, /* 跳转到任务列表中所需的命令。仅重复此操作指定的次数 */
-	NAV_CMD_DO_CHANGE_SPEED = 178,
-	NAV_CMD_DO_SET_SERVO=183,
-	NAV_CMD_DO_LAND_START=189,
+	NAV_CMD_DO_CHANGE_SPEED = 178, /* 更改速度/油门设定值 */
+	NAV_CMD_DO_SET_SERVO=183, /* 将伺服电机设置为所需的PWM值。 */
+	NAV_CMD_DO_LAND_START=189, /* 任务命令执行着陆 */
 	NAV_CMD_DO_SET_ROI=201,
 	NAV_CMD_DO_DIGICAM_CONTROL=203,
 	NAV_CMD_DO_MOUNT_CONFIGURE=204,
@@ -110,7 +110,7 @@ struct mission_item_s {
 		struct {
 			union {
 				float time_inside;		/**< time that the MAV should stay inside the radius before advancing in seconds */
-				float pitch_min;		/**< minimal pitch angle for fixed wing takeoff waypoints */
+				float pitch_min;		/**< minimal pitch angle for fixed wing takeoff waypoints 固定翼起飞航点的最小俯仰角 */
 			};
 			float acceptance_radius;	/**< default radius in which the mission is accepted as reached in meters */
 									/* 默认半径，到达此范围内认为任务航点已达到，单位m */
@@ -123,15 +123,15 @@ struct mission_item_s {
 		float params[7];				/**< array to store mission command values for MAV_FRAME_MISSION ***/
 	};
 	uint16_t nav_cmd;					/**< navigation command */
-	int16_t do_jump_mission_index;		/**< index where the do jump will go to */
-	uint16_t do_jump_repeat_count;		/**< how many times do jump needs to be done            */
-	uint16_t do_jump_current_count;		/**< count how many times the jump has been done	*/
+	int16_t do_jump_mission_index;		/**< index where the do jump will go to 要jump到的任务索引点*/
+	uint16_t do_jump_repeat_count;		/**< how many times do jump needs to be done 所需jump次数 */
+	uint16_t do_jump_current_count;		/**< count how many times the jump has been done 已经jump的次数 */
 	struct {
 		uint16_t frame : 4,				/**< mission frame ***/
 		origin : 3,						/**< how the mission item was generated */
 		loiter_exit_xtrack : 1,			/**< exit xtrack location: 0 for center of loiter wp, 1 for exit location */
-		force_heading : 1,				/**< heading needs to be reached ***/
-		altitude_is_relative : 1,		/**< true if altitude is relative from start point	*/
+		force_heading : 1,				/**< heading needs to be reached 对齐航向 ***/
+		altitude_is_relative : 1,		/**< true if altitude is relative from start point 高度为相对起始点的高度	*/
 		autocontinue : 1,				/**< true if next waypoint should follow after this one */
 		disable_mc_yaw : 1;				/**< weathervane mode */
 	};

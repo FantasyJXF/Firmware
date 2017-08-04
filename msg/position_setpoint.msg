@@ -1,12 +1,12 @@
 # this file is only used in the position_setpoint triple as a dependency
 
-uint8 SETPOINT_TYPE_POSITION=0	# position setpoint
-uint8 SETPOINT_TYPE_VELOCITY=1	# velocity setpoint
-uint8 SETPOINT_TYPE_LOITER=2	# loiter setpoint
-uint8 SETPOINT_TYPE_TAKEOFF=3	# takeoff setpoint
-uint8 SETPOINT_TYPE_LAND=4	# land setpoint, altitude must be ignored, descend until landing
-uint8 SETPOINT_TYPE_IDLE=5	# do nothing, switch off motors or keep at idle speed (MC) 
-uint8 SETPOINT_TYPE_OFFBOARD=6 	# setpoint in NED frame (x, y, z, vx, vy, vz) set by offboard
+uint8 SETPOINT_TYPE_POSITION=0	# position setpoint 位置设定值
+uint8 SETPOINT_TYPE_VELOCITY=1	# velocity setpoint 速度设定值
+uint8 SETPOINT_TYPE_LOITER=2	# loiter setpoint     悬停
+uint8 SETPOINT_TYPE_TAKEOFF=3	# takeoff setpoint 
+uint8 SETPOINT_TYPE_LAND=4	# land setpoint, altitude must be ignored, descend until landing 着陆
+uint8 SETPOINT_TYPE_IDLE=5	# do nothing, switch off motors or keep at idle speed (MC)  
+uint8 SETPOINT_TYPE_OFFBOARD=6 	# setpoint in NED frame (x, y, z, vx, vy, vz) set by offboard 外部控制
 uint8 SETPOINT_TYPE_FOLLOW_TARGET=7  # setpoint in NED frame (x, y, z, vx, vy, vz) set by follow target
 
 bool valid			# true if setpoint is valid

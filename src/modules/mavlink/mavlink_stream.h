@@ -71,6 +71,7 @@ public:
 
 	/**
 	 * @return 0 if updated / sent, -1 if unchanged
+	 * 已更新/发送则返回1
 	 */
 	int update(const hrt_abstime t);
 	virtual const char *get_name() const = 0;

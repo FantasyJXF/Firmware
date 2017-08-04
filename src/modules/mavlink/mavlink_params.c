@@ -90,9 +90,11 @@ PARAM_DEFINE_INT32(MAV_USEHILGPS, 0);
 
 /**
  * Forward external setpoint messages
+ * 转发外部设定值消息
  *
  * If set to 1 incoming external setpoint messages will be directly forwarded
  * to the controllers if in offboard control mode
+ * 如果设置为1个进入的外部设定值消息将直接转发到控制器，如果在外部控制模式
  *
  * @boolean
  * @group MAVLink
@@ -101,11 +103,13 @@ PARAM_DEFINE_INT32(MAV_FWDEXTSP, 1);
 
 /**
  * Broadcast heartbeats on local network
+ * 在本地网络广播心跳
  *
  * This allows a ground control station to automatically find the drone
  * on the local network.
+ * 这使得地面控制站能够在本地网络上自动找到无人机。
  *
- * @value 0 Never broadcast
+ * @value 0 Never broadcast 不广播
  * @value 1 Always broadcast
  * @group MAVLink
  */

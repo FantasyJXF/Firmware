@@ -108,11 +108,13 @@ protected:
 
 	/*
 	 * @return true if UAV is in a landed state.
+	 * 如果UAV处于着陆状态时返回真
 	 */
 	virtual bool _get_landed_state() = 0;
 
 	/*
 	 * @return true if UAV is in free-fall state.
+	 * 如果UAV处于自由落体状态时为真
 	 */
 	virtual bool _get_freefall_state() = 0;
 
@@ -130,6 +132,7 @@ protected:
 	static constexpr uint64_t LAND_DETECTOR_TRIGGER_TIME_US = 2000000;
 
 	/* Time interval in us in which wider acceptance thresholds are used after arming. */
+	// 时间us
 	static constexpr uint64_t LAND_DETECTOR_ARM_PHASE_TIME_US = 2000000;
 
 	orb_advert_t _landDetectedPub;

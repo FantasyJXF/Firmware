@@ -61,6 +61,7 @@ static char isvalidopt(char p, const char *options, int *takesarg)
 }
 
 // reorder argv and put non-options at the end
+// 对参数进行重新排序，并将非选项放在最后
 static int reorder(int argc, char **argv, const char *options)
 {
 	char *tmp_argv[argc];
@@ -70,6 +71,7 @@ static int reorder(int argc, char **argv, const char *options)
 	int takesarg;
 
 	// move the options to the front
+	// 将选项移动到前面
 	while (idx < argc && argv[idx] != 0) {
 		if (argv[idx][0] == '-') {
 			c = isvalidopt(argv[idx][1], options, &takesarg);

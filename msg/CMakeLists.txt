@@ -64,6 +64,7 @@ set(msg_file_names
 	gps_inject_data.msg
 	hil_sensor.msg
 	home_position.msg
+	infrared_tof.msg
 	input_rc.msg
 	log_message.msg
 	manual_control_setpoint.msg
@@ -124,7 +125,6 @@ set(msg_file_names
 	vehicle_roi.msg
 	mount_orientation.msg
 	collision_report.msg
-	target_basic.msg
 	)
 
 # Get absolute paths

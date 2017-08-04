@@ -80,6 +80,7 @@ Land::on_activation()
 	reset_mission_item_reached();
 
 	/* convert mission item to current setpoint */
+	// 将任务项转换成当前设定值
 	struct position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 	pos_sp_triplet->previous.valid = false;
 	mission_item_to_position_setpoint(&_mission_item, &pos_sp_triplet->current);

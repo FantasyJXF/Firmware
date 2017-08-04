@@ -34,7 +34,7 @@
  * @file navigator_mode.cpp
  *
  * Base class for different modes in navigator
- * navigatoræ¨¡å—ä¸­ä¸åŒæ¨¡å¼çš„åŸºç±»
+ * navigator?§Ó?????????
  *
  * @author Julian Oes <julian@oes.ch>
  * @author Anton Babushkin <anton.babushkin@me.com>
@@ -66,19 +66,19 @@ NavigatorMode::run(bool active)
 			/* first run */
 			_first_run = false;
 			/* Reset stay in failsafe flag */
-			_navigator->get_mission_result()->stay_in_failsafe = false;  // é€€å‡ºfailsafeæ¨¡å¼
+			_navigator->get_mission_result()->stay_in_failsafe = false;  // ÍË³öfailsafeÄ£Ê½
 			_navigator->set_mission_result_updated();
 			on_activation();
 
 		} else {
 			/* periodic updates when active */
-			// æ¿€æ´»æ—¶å®šæœŸæ›´æ–°
+			// ¼¤»îÊ±¶¨ÆÚ¸üĞÂ
 			on_active();
 		}
 
 	} else {
 		/* periodic updates when inactive */
-		// æœªæ¿€æ´»æ—¶å®šæœŸæ›´æ–°
+		// Î´¼¤»îÊ±¶¨ÆÚ¸üĞÂ
 		_first_run = true;
 		on_inactive();
 	}
@@ -93,7 +93,7 @@ void
 NavigatorMode::on_activation()
 {
 	/* invalidate position setpoint by default */
-	// é»˜è®¤æƒ…å†µä¸‹ä½ç½®è®¾å®šå€¼æ— æ•ˆ
+	// Ä¬ÈÏÇé¿öÏÂÎ»ÖÃÉè¶¨ÖµÎŞĞ§
 	_navigator->get_position_setpoint_triplet()->current.valid = false;
 }
 

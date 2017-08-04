@@ -430,7 +430,7 @@ void
 MissionBlock::issue_command(const struct mission_item_s *item)
 {
 	if (item_contains_position(item)) {
-		return;
+		return; //退出函数
 	}
 
 	// NAV_CMD_DO_LAND_START is only a marker
@@ -441,14 +441,17 @@ MissionBlock::issue_command(const struct mission_item_s *item)
 	if (item->nav_cmd == NAV_CMD_DO_SET_SERVO) {
 		PX4_INFO("do_set_servo command");
 		// XXX: we should issue a vehicle command and handle this somewhere else
+		// 发布一个飞行器的命令并处理
 		memset(&actuators, 0, sizeof(actuators));
 		// params[0] actuator number to be set 0..5 (corresponds to AUX outputs 1..6)
+		// param[0]表示电机号0-5对应辅助通道输出1-6
 		// params[1] new value for selected actuator in ms 900...2000
+		// param[1]表示选定电机的控制量:高电平时间 900ms-2000ms
 		actuators.control[(int)item->params[0]] = 1.0f / 2000 * -item->params[1];
 		actuators.timestamp = hrt_absolute_time();
 
 		if (_actuator_pub != nullptr) {
-			orb_publish(ORB_ID(actuator_controls_2), _actuator_pub, &actuators);
+			orb_publish(ORB_ID(actuator_controls_2), _actuator_pub, &actuators); // 发布执行器控制组2输出，云台控制
 
 		} else {
 			_actuator_pub = orb_advertise(ORB_ID(actuator_controls_2), &actuators);
@@ -473,6 +476,7 @@ bool
 MissionBlock::item_contains_position(const struct mission_item_s *item)
 {
 	// XXX: maybe extend that check onto item properties
+	// 项目属性检查
 	if (item->nav_cmd == NAV_CMD_DO_JUMP ||
 		item->nav_cmd == NAV_CMD_DO_CHANGE_SPEED ||
 		item->nav_cmd == NAV_CMD_DO_SET_SERVO ||
@@ -499,7 +503,7 @@ void
 MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *item, struct position_setpoint_s *sp)
 {
 	/* set the correct setpoint for vtol transition */
-
+	// 为VTOL转换设置正确的设定值
 	if (item->nav_cmd == NAV_CMD_DO_VTOL_TRANSITION && PX4_ISFINITE(item->yaw)
 			&& item->params[0] >= vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW - 0.5f) {
 
@@ -524,7 +528,7 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 	sp->alt = item->altitude_is_relative ? item->altitude + _navigator->get_home_position()->alt : item->altitude;
 	sp->yaw = item->yaw;
 	sp->loiter_radius = (fabsf(item->loiter_radius) > NAV_EPSILON_POSITION) ? fabsf(item->loiter_radius) :
-				_navigator->get_loiter_radius();
+				_navigator->get_loiter_radius(); // 悬停半径由任务点设置
 	sp->loiter_direction = (item->loiter_radius > 0) ? 1 : -1;
 	sp->acceptance_radius = item->acceptance_radius;
 	sp->disable_mc_yaw_control = item->disable_mc_yaw;
@@ -539,6 +543,7 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 
 	case NAV_CMD_TAKEOFF:
 		// set pitch and ensure that the hold time is zero
+		// 设置俯仰角以确保hold时间为0
 		sp->pitch_min = item->pitch_min;
 	case NAV_CMD_VTOL_TAKEOFF:
 		sp->type = position_setpoint_s::SETPOINT_TYPE_TAKEOFF;
@@ -554,6 +559,7 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 
 	case NAV_CMD_LOITER_TO_ALT:
 		// initially use current altitude, and switch to mission item altitude once in loiter position
+		// 高度至少达到最小悬停高度
 		sp->alt = math::max(_navigator->get_global_position()->alt, _navigator->get_home_position()->alt + _param_loiter_min_alt.get());
 
 		// no break
@@ -573,6 +579,8 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 	sp->valid = true;
 }
 
+
+// 保存已完成的航点信息
 void
 MissionBlock::set_previous_pos_setpoint()
 {
@@ -598,6 +606,7 @@ MissionBlock::set_loiter_item(struct mission_item_s *item, float min_clearance)
 
 		if (_navigator->get_can_loiter_at_sp() && pos_sp_triplet->current.valid) {
 			/* use current position setpoint */
+			// 使用当前位置设定值
 			item->lat = pos_sp_triplet->current.lat;
 			item->lon = pos_sp_triplet->current.lon;
 			item->altitude = pos_sp_triplet->current.alt;
@@ -618,9 +627,9 @@ MissionBlock::set_loiter_item(struct mission_item_s *item, float min_clearance)
 		item->yaw = NAN; // 航向不变
 		item->loiter_radius = _navigator->get_loiter_radius();
 		item->acceptance_radius = _navigator->get_acceptance_radius();
-		item->time_inside = 0.0f;
-		item->autocontinue = false;
-		item->origin = ORIGIN_ONBOARD;
+		item->time_inside = 0.0f; // 在航点半径内停留时间
+		item->autocontinue = false; // 继续下一个航点则为1/true
+		item->origin = ORIGIN_ONBOARD;  // 航点数据源 来自板载
 	}
 }
 

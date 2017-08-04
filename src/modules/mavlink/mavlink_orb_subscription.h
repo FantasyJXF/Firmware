@@ -34,6 +34,7 @@
 /**
  * @file mavlink_orb_subscription.h
  * uORB subscription definition.
+ * uORB订阅定义。
  *
  * @author Anton Babushkin <anton.babushkin@me.com>
  */
@@ -96,9 +97,10 @@ public:
 private:
 	const orb_id_t _topic;		///< topic metadata
 	int _fd;			///< subscription handle
-	const uint8_t _instance;		///< get topic instance
-	bool _published;		///< topic was ever published
+	const uint8_t _instance;		///< get topic instance 获得主题实例
+	bool _published;		///< topic was ever published 主题曾经发布过
 	bool _subscribe_from_beginning; ///< we need to subscribe from the beginning, e.g. for vehicle_command_acks
+								    // 我们需要从一开始订阅，例如:vehicle_command_acks	
 	hrt_abstime _last_pub_check;	///< when we checked last
 
 	/* do not allow copying this class */

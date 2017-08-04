@@ -785,11 +785,13 @@ dm_read(dm_item_t item, unsigned char index, void *buf, size_t count)
 	work_q_item_t *work;
 
 	/* Make sure data manager has been started and is not shutting down */
+	// 确保数据管理器已经启动并且没有关闭
 	if (!is_running() || g_task_should_exit) {
 		return -1;
 	}
 
 	/* get a work item and queue up a read request */
+	// 获取工作项并排队读取请求
 	if ((work = create_work_item()) == NULL) {
 		return -1;
 	}
@@ -801,6 +803,7 @@ dm_read(dm_item_t item, unsigned char index, void *buf, size_t count)
 	work->read_params.count = count;
 
 	/* Enqueue the item on the work queue and wait for the worker thread to complete processing it */
+	// 将工作队列上的项目排队，等待工作线程完成处理
 	return (ssize_t)enqueue_work_item_and_wait_for_result(work);
 }
 
@@ -832,6 +835,7 @@ __EXPORT void
 dm_lock(dm_item_t item)
 {
 	/* Make sure data manager has been started and is not shutting down */
+	// 确保数据管理器已经启动并且没有关闭
 	if (!is_running() || g_task_should_exit) {
 		return;
 	}

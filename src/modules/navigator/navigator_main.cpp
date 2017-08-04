@@ -93,7 +93,7 @@
  */
 extern "C" __EXPORT int navigator_main(int argc, char *argv[]);
 
-#define GEOFENCE_CHECK_INTERVAL 200000
+#define GEOFENCE_CHECK_INTERVAL 200000 // 2秒
 
 namespace navigator
 {
@@ -575,16 +575,19 @@ Navigator::task_main()
 			_geofence_result.geofence_action = _geofence.getGeofenceAction();
 			if (!inside) {
 				/* inform other apps via the mission result */
+				// 通过任务结果通知其他应用
 				_geofence_result.geofence_violated = true;
-				publish_geofence_result();
+				publish_geofence_result(); // 发布围栏结果
 
 				/* Issue a warning about the geofence violation once */
+				// 发出一次有关地理围栏违规的警告
 				if (!_geofence_violation_warning_sent) {
 					mavlink_log_critical(&_mavlink_log_pub, "Geofence violation");
 					_geofence_violation_warning_sent = true;
 				}
 			} else {
 				/* inform other apps via the mission result */
+				// 通过任务结果通知其他应用
 				_geofence_result.geofence_violated = false;
 				publish_geofence_result();
 				/* Reset the _geofence_violation_warning_sent field */
@@ -633,7 +636,7 @@ Navigator::task_main()
 				break;
 			case vehicle_status_s::NAVIGATION_STATE_AUTO_RTGS: // 数据链丢失时回到地面站
 				/* Use complex data link loss mode only when enabled via param
-				* otherwise use rtl */
+				 * otherwise use rtl */
 				_pos_sp_triplet_published_invalid_once = false;
 				if (_param_datalinkloss_act.get() == 1) {
 					_navigation_mode = &_loiter;
@@ -678,6 +681,7 @@ Navigator::task_main()
 		}
 
 		/* if nothing is running, set position setpoint triplet invalid once */
+		// 如果没有运行，则设置位置设定值三元组无效一次
 		if (_navigation_mode == nullptr && !_pos_sp_triplet_published_invalid_once) {
 			_pos_sp_triplet_published_invalid_once = true;
 			_pos_sp_triplet.previous.valid = false;
@@ -686,14 +690,14 @@ Navigator::task_main()
 			_pos_sp_triplet_updated = true;
 		}
 
-		if (_pos_sp_triplet_updated) {
+		if (_pos_sp_triplet_updated) { // 如果任务设定值需要发布，则置位
 			_pos_sp_triplet.timestamp = hrt_absolute_time();
-			publish_position_setpoint_triplet();
+			publish_position_setpoint_triplet(); // 发布位置设定值triplet
 			_pos_sp_triplet_updated = false;
 		}
 
-		if (_mission_result_updated) {
-			publish_mission_result();
+		if (_mission_result_updated) { // 如果任务结果已经更新，则置位
+			publish_mission_result();  // 发布任务结果
 			_mission_result_updated = false;
 		}
 
@@ -757,9 +761,11 @@ void
 Navigator::publish_position_setpoint_triplet()
 {
 	/* update navigation state */
+	// 更新导航状态
 	_pos_sp_triplet.nav_state = _vstatus.nav_state;
 
 	/* do not publish an empty triplet */
+	// 不要发布空的位置设定值triplet
 	if (!_pos_sp_triplet.current.valid) {
 		return;
 	}
@@ -824,7 +830,7 @@ Navigator::get_acceptance_radius(float mission_item_radius)
 {
 	float radius = mission_item_radius;
 
-	// XXX only use navigation capabilities for now
+	// XXX only use navigation capabilities for now 现在只能使用导航功能
 	// when in fixed wing mode
 	// this might need locking against a commanded transition
 	// so that a stale _vstatus doesn't trigger an accepted mission item.
@@ -943,6 +949,7 @@ Navigator::publish_mission_result()
 	}
 
 	/* reset some of the flags */
+	// 重置一些标志位
 	_mission_result.seq_current = 0;
 	_mission_result.item_do_jump_changed = false;
 	_mission_result.item_changed_index = 0;
@@ -955,6 +962,7 @@ Navigator::publish_geofence_result()
 {
 
 	/* lazily publish the geofence result only once available */
+	// 只能一次性发布地理围栏结果
 	if (_geofence_result_pub != nullptr) {
 		/* publish mission result */
 		orb_publish(ORB_ID(geofence_result), _geofence_result_pub, &_geofence_result);

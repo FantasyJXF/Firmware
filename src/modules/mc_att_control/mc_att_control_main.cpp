@@ -931,6 +931,17 @@ MulticopterAttitudeControl::task_main()
 			float dt = (hrt_absolute_time() - last_run) / 1000000.0f;
 			last_run = hrt_absolute_time();
 
+			// 记录log日志
+			FILE *fd = NULL;
+			fd = fopen("/fs/microsd/fantasy.txt","a+");
+			 printf(fd,"%.3f\t",(double)dt);
+			
+			time_t timeSec = time(NULL);//1970.01.01
+			struct tm *timeinfo=localtime(&timeSec);
+			fprintf(fd,"%d-%d-%d  %d:%d:%d  \n",timeinfo->tm_year+1900,timeinfo->tm_mon+1,timeinfo->tm_mday,timeinfo->tm_hour+8,timeinfo->tm_min,timeinfo->tm_sec);
+			fclose(fd);
+			// 结束日志记录
+
 			/* guard against too small (< 2ms) and too large (> 20ms) dt's */
 			if (dt < 0.002f) {
 				dt = 0.002f;

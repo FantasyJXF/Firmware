@@ -34,6 +34,7 @@
 /**
  * @file mavlink_parameters.cpp
  * Mavlink parameters manager implementation.
+ * Mavlink参数管理器实现。
  *
  * @author Anton Babushkin <anton.babushkin@me.com>
  * @author Lorenz Meier <lorenz@px4.io>
