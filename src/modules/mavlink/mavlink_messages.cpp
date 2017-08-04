@@ -267,6 +267,9 @@ void get_mavlink_mode_state(struct vehicle_status_s *status, uint8_t *mavlink_st
 }
 
 
+
+
+/***********************************   ·Ö¸îÏß   **************************************************/
 class MavlinkStreamHeartbeat : public MavlinkStream
 {
 public:

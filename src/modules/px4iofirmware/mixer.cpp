@@ -96,6 +96,7 @@ mixer_tick(void)
 {
 
 	/* check that we are receiving fresh data from the FMU */
+	// 检查我们是否在接收来自FMU的新数据
 	if ((system_state.fmu_data_received_time == 0) ||
 	    hrt_elapsed_time(&system_state.fmu_data_received_time) > FMU_INPUT_DROP_LIMIT_US) {
 

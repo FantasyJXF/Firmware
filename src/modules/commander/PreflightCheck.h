@@ -35,6 +35,7 @@
  * @file PreflightCheck.h
  *
  * Preflight check for main system components
+ * 主系统组件的飞行前检查
  *
  * @author Johan Jansen <jnsn.johan@gmail.com>
  */
@@ -47,9 +48,12 @@ namespace Commander
 {
 /**
 * Runs a preflight check on all sensors to see if they are properly calibrated and healthy
+* 传感器的飞行前检查及其是否校准正确
 *
 * The function won't fail the test if optional sensors are not found, however,
 * it will fail the test if optional sensors are found but not in working condition.
+* 如果可选的传感器没有找到，该函数不会报错；
+* 如果找到了但是工作不正常将报错
 *
 * @param mavlink_log_pub
 *   Mavlink output orb handle reference for feedback when a sensor fails
@@ -72,6 +76,7 @@ bool preflightCheck(orb_advert_t *mavlink_log_pub, bool checkMag, bool checkAcc,
     bool checkGyro, bool checkBaro, bool checkAirspeed, bool checkRC, bool checkGNSS,
     bool checkDynamic, bool isVTOL, bool reportFailures, bool prearm, hrt_abstime time_since_boot);
 
+// 最大传感器数
 const unsigned max_mandatory_gyro_count = 1;
 const unsigned max_optional_gyro_count = 3;
 

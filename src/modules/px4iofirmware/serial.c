@@ -123,6 +123,7 @@ interface_init(void)
 	rBRR = (mantissa << USART_BRR_MANT_SHIFT) | (fraction << USART_BRR_FRAC_SHIFT);
 
 	/* connect our interrupt */
+	// 连接中断
 	irq_attach(PX4FMU_SERIAL_VECTOR, serial_interrupt);
 	up_enable_irq(PX4FMU_SERIAL_VECTOR);
 
@@ -173,6 +174,7 @@ rx_handle_packet(void)
 	if (PKT_CODE(dma_packet) == PKT_CODE_WRITE) {
 
 		/* it's a blind write - pass it on */
+		// 不用处理直接发
 		if (registers_set(dma_packet.page, dma_packet.offset, &dma_packet.regs[0], PKT_COUNT(dma_packet))) {
 			perf_count(pc_regerr);
 			dma_packet.count_code = PKT_CODE_ERROR;
@@ -231,6 +233,7 @@ rx_dma_callback(DMA_HANDLE handle, uint8_t status, void *arg)
 	rCR3 &= ~(USART_CR3_DMAT | USART_CR3_DMAR);
 
 	/* handle the received packet */
+	// 处理接收到的包
 	rx_handle_packet();
 
 	/* re-set DMA for reception first, so we are ready to receive before we start sending */
@@ -319,6 +322,7 @@ serial_interrupt(int irq, void *context)
 		/*
 		 * Looks like we received a packet. Stop the DMA and go process the
 		 * packet.
+		 * 接收到一个包。停止DMA并处理这个包
 		 */
 		perf_count(pc_idle);
 		stm32_dmastop(rx_dma);
@@ -352,6 +356,7 @@ dma_reset(void)
 		DMA_CCR_PRIVERYHI);
 
 	/* start receive DMA ready for the next packet */
+	// 开始接收DMA准备下一包 
 	stm32_dmastart(rx_dma, rx_dma_callback, NULL, false);
 	rCR3 |= USART_CR3_DMAR;
 }

@@ -59,8 +59,12 @@
 __BEGIN_DECLS
 
 /* Struct that stores the communication settings of this system.
+   存储系统通信设置的结构体
+
    you can also define / alter these settings elsewhere, as long
    as they're included BEFORE mavlink.h.
+   可以在别的地方定义/更改这些设置，只要它们包含在mavlink.h之前
+   
    So you can set the
 
    mavlink_system.sysid = 100; // System ID, 1-255

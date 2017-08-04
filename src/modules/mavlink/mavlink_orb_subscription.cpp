@@ -97,6 +97,7 @@ MavlinkOrbSubscription::update(uint64_t *time, void *data)
 
 	if (update(data)) {
 		/* data copied successfully */
+		// 成功地复制了数据
 
 		if (time_topic == 0 || (time_topic != *time)) {
 			*time = time_topic;

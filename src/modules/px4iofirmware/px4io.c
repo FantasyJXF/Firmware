@@ -236,6 +236,7 @@ int
 user_start(int argc, char *argv[])
 {
 	/* configure the first 8 PWM outputs (i.e. all of them) */
+	// 配置开始的8路PWM输出
 	up_pwm_servo_init(0xff);
 
 	/* run C++ ctors before we go any further */
@@ -280,6 +281,7 @@ user_start(int argc, char *argv[])
 #endif
 
 	/* start the safety switch handler */
+	// 开始安全开关处理
 	safety_init();
 
 	/* initialise the control inputs */
@@ -289,6 +291,7 @@ user_start(int argc, char *argv[])
 	adc_init();
 
 	/* start the FMU interface */
+	// 打开FMU的接口
 	interface_init();
 
 	/* add a performance counter for mixing */

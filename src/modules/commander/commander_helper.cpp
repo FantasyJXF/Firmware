@@ -217,6 +217,7 @@ void tune_positive(bool use_buzzer)
 
 /**
  * Blink white LED and play neutral tune (if use_buzzer == true).
+ * 闪白色并播放普通声调
  */
 void tune_neutral(bool use_buzzer)
 {

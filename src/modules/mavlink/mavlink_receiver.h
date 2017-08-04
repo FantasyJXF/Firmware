@@ -154,11 +154,13 @@ private:
 
 	/**
 	 * Set the interval at which the given message stream is published.
+	 * 设置时间间隔，给定的消息流将以此速度发布
+	 *
 	 * The rate is the number of messages per second.
 	 *
 	 * @param msgId the message ID of to change the interval of
 	 * @param interval the interval in us to send the message at
-	 * @param data_rate the total link data rate in bytes per second
+	 * @param data_rate the total link data rate in bytes per second 链路上的总数据速率(bytes/s)
 	 *
 	 * @return PX4_OK on success, PX4_ERROR on fail
 	 */

@@ -110,6 +110,7 @@ __EXPORT void stm32_boardinitialize(void)
 	px4_arch_configgpio(GPIO_LED3);
 	px4_arch_configgpio(GPIO_LED4);
 
+	// 配置安全开关引脚
 	px4_arch_configgpio(GPIO_BTN_SAFETY);
 
 	/* spektrum power enable is active high - enable it by default */

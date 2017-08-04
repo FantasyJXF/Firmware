@@ -33,12 +33,16 @@
 
 /**
  * @file PWM servo output interface.
+ *       PWM舵机输出接口
  *
  * Servo values can be set with the PWM_SERVO_SET ioctl, by writing a
  * pwm_output_values structure to the device, or by publishing to the
  * output_pwm ORB topic.
  * Writing a value of 0 to a channel suppresses any output for that
  * channel.
+ * 电机的值可以使用PWM_SERVO_SET设置，通过写一个pwm_output_values结构体到设备中
+ * 或者通过发布到output_pwm_pwm这个ORB主题中
+ * 向一个通道中写0将覆盖该通道所有输出
  */
 
 #pragma once
@@ -178,9 +182,11 @@ struct pwm_output_rc_config {
 #define PWM_SERVO_GET_SELECT_UPDATE_RATE _PX4_IOC(_PWM_SERVO_BASE, 7)
 
 /** set the 'ARM ok' bit, which activates the safety switch */
+// 设置'ARM ok'位，激活安全开关
 #define PWM_SERVO_SET_ARM_OK	_PX4_IOC(_PWM_SERVO_BASE, 8)
 
 /** clear the 'ARM ok' bit, which deactivates the safety switch */
+// 清除'ARM ok'位，取消激活安全开关
 #define PWM_SERVO_CLEAR_ARM_OK	_PX4_IOC(_PWM_SERVO_BASE, 9)
 
 /** start DSM bind */
@@ -228,6 +234,7 @@ struct pwm_output_rc_config {
 #define PWM_SERVO_GET_DISABLE_LOCKDOWN		_PX4_IOC(_PWM_SERVO_BASE, 22)
 
 /** force safety switch off (to disable use of safety switch) */
+// 强制安全开关关闭(禁用安全开关)
 #define PWM_SERVO_SET_FORCE_SAFETY_OFF		_PX4_IOC(_PWM_SERVO_BASE, 23)
 
 /** force failsafe mode (failsafe values are set immediately even if failsafe condition not met) */
@@ -237,6 +244,7 @@ struct pwm_output_rc_config {
 #define PWM_SERVO_SET_TERMINATION_FAILSAFE	_PX4_IOC(_PWM_SERVO_BASE, 25)
 
 /** force safety switch on (to enable use of safety switch) */
+// 强制打开安全开关(使能安全开关)
 #define PWM_SERVO_SET_FORCE_SAFETY_ON		_PX4_IOC(_PWM_SERVO_BASE, 26)
 
 /** set RC config for a channel. This takes a pointer to pwm_output_rc_config */

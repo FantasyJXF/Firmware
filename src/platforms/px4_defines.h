@@ -95,6 +95,7 @@
 typedef param_t px4_param_t;
 
 /* Get value of parameter by name */
+// 通过名称获取参数的值
 #define PX4_PARAM_GET_BYNAME(_name, _destpt) param_get(param_find(_name), _destpt)
 
 #else // defined(__PX4_NUTTX) || defined(__PX4_POSIX)

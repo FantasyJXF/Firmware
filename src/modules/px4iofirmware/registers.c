@@ -35,6 +35,7 @@
  * @file registers.c
  *
  * Implementation of the PX4IO register space.
+ * PX4IO寄存器空间的实现
  */
 
 #include <px4_config.h>
@@ -270,7 +271,7 @@ uint16_t		r_page_servo_control_max[PX4IO_SERVO_COUNT] = { PWM_DEFAULT_MAX, PWM_D
  * PAGE 108
  *
  * disarmed PWM values for difficult ESCs
- * 对有困难的电调禁用PWM
+ * 对有问题的电调禁用PWM
  *
  */
 uint16_t		r_page_servo_disarmed[PX4IO_SERVO_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -441,17 +442,19 @@ registers_set(uint8_t page, uint8_t offset, const uint16_t *values, unsigned num
 		/* do not change the mixer if FMU is armed and IO's safety is off
 		 * this state defines an active system. This check is done in the
 		 * text handling function.
+		 * 如果FMU解锁并且IO的安全保护关闭了，不改变混控
 		 */
 		return mixer_handle_text(values, num_values * sizeof(*values));
 
-	default:
+	default: // 默认
 
 		/* avoid offset wrap */
-		if ((offset + num_values) > 255) {
+		if ((offset + num_values) > 255) { // 寄存器偏移大于255
 			num_values = 255 - offset;
 		}
 
 		/* iterate individual registers, set each in turn */
+		// 迭代单个寄存器，依次设置每个寄存器
 		while (num_values--) {
 			if (registers_set_one(page, offset, *values)) {
 				return -1;
@@ -642,6 +645,7 @@ registers_set_one(uint8_t page, uint8_t offset, uint16_t value)
 		case PX4IO_P_SETUP_REBOOT_BL:
 			if (r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) {
 				// don't allow reboot while armed
+				// 解锁后不允许重启
 				break;
 			}
 
@@ -720,6 +724,7 @@ registers_set_one(uint8_t page, uint8_t offset, uint16_t value)
 
 			/**
 			 * do not allow a RC config change while safety is off
+			 * 关闭安全设置后不允许遥控器配置改变
 			 */
 			if (r_status_flags & PX4IO_P_STATUS_FLAGS_SAFETY_OFF) {
 				break;

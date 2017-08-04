@@ -72,16 +72,19 @@
  ******************************************************************************/
 
 /* LEDS  **********************************************************************/
-
+// 蓝灯(ACT)
 #define GPIO_LED1 (GPIO_OUTPUT|GPIO_CNF_OUTOD|GPIO_MODE_50MHz|GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN14)
+// 黄灯(POWER)
 #define GPIO_LED2 (GPIO_OUTPUT|GPIO_CNF_OUTOD|GPIO_MODE_50MHz|GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN15)
+// ��ȫ����״̬��
 #define GPIO_LED3 (GPIO_OUTPUT|GPIO_CNF_OUTOD|GPIO_MODE_50MHz|GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN13)
+// IO的呼吸灯(备用)
 #define GPIO_LED4 (GPIO_OUTPUT|GPIO_CNF_OUTOD|GPIO_MODE_50MHz|GPIO_OUTPUT_SET|GPIO_PORTA|GPIO_PIN11)
 
 #define GPIO_USART1_RX_SPEKTRUM		(GPIO_OUTPUT|GPIO_CNF_OUTPP|GPIO_MODE_50MHz|GPIO_OUTPUT_SET|GPIO_PORTA|GPIO_PIN10)
 
 /* Safety switch button *******************************************************/
-
+// 安全开关按钮
 #define GPIO_BTN_SAFETY (GPIO_INPUT|GPIO_CNF_INFLOAT|GPIO_MODE_INPUT|GPIO_PORTB|GPIO_PIN5)
 
 /* Power switch controls ******************************************************/

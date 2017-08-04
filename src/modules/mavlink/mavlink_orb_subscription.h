@@ -56,6 +56,7 @@ public:
 
 	/**
 	 * Check if subscription updated based on timestamp.
+	 * 检查订阅是否基于时间戳已经更新
 	 *
 	 * @return true only if topic was updated based on a timestamp and
 	 * copied to buffer successfully.

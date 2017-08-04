@@ -3142,8 +3142,9 @@ PARAM_DEFINE_INT32(SENS_EN_SF1XX, 0);
 
 /**
  * Thermal control of sensor temperature
+ * 传感器温度控制
  *
- * @value -1 Thermal control unavailable
+ * @value -1 Thermal control unavailable 不可控
  * @value 0 Thermal control off
  * @group Sensor Enable
  */

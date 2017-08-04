@@ -585,7 +585,7 @@ void Mavlink::mavlink_update_system(void)
 
 	/* only allow system ID and component ID updates
 	 * after reboot - not during operation */
-	 // 系统ID以及组件ID仅在重启后更新，操作中不变
+	 // 系统ID以及组件ID仅在重启后更新，在操作中不变
 	if (!_param_initialized) {
 		if (system_id > 0 && system_id < 255) {
 			mavlink_system.sysid = system_id;
@@ -904,6 +904,8 @@ Mavlink::get_free_tx_buf()
 	/*
 	 * Check if the OS buffer is full and disable HW
 	 * flow control if it continues to be full
+	 * 检查系统的缓存是否已满
+	 * 如果一直是满的则禁用硬件流控制
 	 */
 	int buf_free = 0;
 
@@ -921,7 +923,7 @@ Mavlink::get_free_tx_buf()
 #endif
 
 		if (get_flow_control_enabled() && buf_free < FLOW_CONTROL_DISABLE_THRESHOLD) {
-			/* Disable hardware flow control:
+			/* Disable hardware flow control: 禁用硬件流控制
 			 * if no successful write since a defined time
 			 * and if the last try was not the last successful write
 			 */
@@ -967,6 +969,7 @@ Mavlink::send_packet()
 		struct telemetry_status_s &tstatus = get_rx_status();
 
 		/* resend message via broadcast if no valid connection exists */
+		// 如果没有有效的连接，则重新通广播发送消息
 		if ((_mode != MAVLINK_MODE_ONBOARD) && broadcast_enabled() &&
 		    (!get_client_source_initialized()
 		     || (hrt_elapsed_time(&tstatus.heartbeat_time) > 3 * 1000 * 1000))) {
@@ -1009,6 +1012,7 @@ Mavlink::send_bytes(const uint8_t *buf, unsigned packet_len)
 {
 	/* If the wait until transmit flag is on, only transmit after we've received messages.
 	   Otherwise, transmit all the time. */
+	// 如果等待直到发送标志为on，则只有在收到消息后才发送。 否则，一直传送。
 	if (!should_transmit()) {
 		return;
 	}
@@ -1021,12 +1025,14 @@ Mavlink::send_bytes(const uint8_t *buf, unsigned packet_len)
 
 	if (get_protocol() == SERIAL) {
 		/* check if there is space in the buffer, let it overflow else */
+		// 检查缓冲区中是否有空间，否则溢出
 		unsigned buf_free = get_free_tx_buf();
 
 		if (buf_free < packet_len) {
 			/* not enough space in buffer to send */
-			count_txerr();
-			count_txerrbytes(packet_len);
+			// 缓冲区空间不够
+			count_txerr(); // 发送区错误计数
+			count_txerrbytes(packet_len); // 错误字节数加packet_len
 			return;
 		}
 	}
@@ -1034,6 +1040,7 @@ Mavlink::send_bytes(const uint8_t *buf, unsigned packet_len)
 	size_t ret = -1;
 
 	/* send message to UART */
+	// 将消息发送到串口
 	if (get_protocol() == SERIAL) {
 		ret = ::write(_uart_fd, buf, packet_len);
 	}
@@ -1364,8 +1371,9 @@ Mavlink::configure_stream(const char *stream_name, const float rate)
 	unsigned int interval = interval_from_rate(rate);
 
 	/* search if stream exists */
+	// 如果流存在则进行搜索
 	MavlinkStream *stream;
-	LL_FOREACH(_streams, stream) {
+	LL_FOREACH(_streams, stream) { // foreach循环访问
 		if (strcmp(stream_name, stream->get_name()) == 0) {
 			if (interval > 0) {
 				/* set new interval */
@@ -1387,6 +1395,7 @@ Mavlink::configure_stream(const char *stream_name, const float rate)
 	}
 
 	/* search for stream with specified name in supported streams list */
+	// 在支持的流列表中按特定的名字寻找流
 	for (unsigned int i = 0; streams_list[i] != nullptr; i++) {
 
 		if (strcmp(stream_name, streams_list[i]->get_name()) == 0) {
@@ -1436,6 +1445,11 @@ Mavlink::configure_stream_threadsafe(const char *stream_name, const float rate)
 	/* orb subscription must be done from the main thread,
 	 * set _subscribe_to_stream and _subscribe_to_stream_rate fields
 	 * which polled in mavlink main loop */
+	 /*
+	  * orb订阅必须从主线程完成
+	  * 设置_subscribe_to_stream以及_subscribe_to_stream_rate字段
+	  * 其都是在mavlink主循环里面轮循的
+	  */
 	if (!_task_should_exit) {
 		/* wait for previous subscription completion */
 		while (_subscribe_to_stream != nullptr) {
@@ -1962,7 +1976,7 @@ Mavlink::task_main(int argc, char *argv[])
 
 	/* start the MAVLink receiver */
 /////// 开始MAVLink接收
-	MavlinkReceiver::receive_start(&_receive_thread, this);
+	MavlinkReceiver::receive_start(&_receive_thread, this);   // handle_message  将MAVLink数据转换成uORB结构体
 
 	MavlinkOrbSubscription *param_sub = add_orb_subscription(ORB_ID(parameter_update)); //若无此主题，添加之
 	uint64_t param_time = 0;
@@ -2177,10 +2191,12 @@ Mavlink::task_main(int argc, char *argv[])
 
 		if (param_sub->update(&param_time, nullptr)) {
 			/* parameters updated */
+			// 系统赋初值 sysid compid
 			mavlink_update_system();
 		}
 
 		/* radio config check */
+		// 检查是否通过电台连接
 		if (_uart_fd >= 0 && _radio_id != 0 && _rstatus.type == telemetry_status_s::TELEMETRY_STATUS_RADIO_TYPE_3DR_RADIO) {
 			/* request to configure radio and radio is present */
 			FILE *fs = fdopen(_uart_fd, "w");

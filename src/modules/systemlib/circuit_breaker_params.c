@@ -35,15 +35,19 @@
  * @file circuit_breaker.c
  *
  * Circuit breaker parameters.
+ *  断路器参数
+ *
  * Analog to real aviation circuit breakers these parameters
  * allow to disable subsystems. They are not supported as standard
  * operation procedure and are only provided for development purposes.
  * To ensure they are not activated accidentally, the associated
  * parameter needs to set to the key (magic).
+ * 为了确保它们不被意外激活，相关参数需要设置为魔数
  */
 
 /**
  * Circuit breaker for power supply check
+ * 用于供电检查的断路器
  *
  * Setting this parameter to 894281 will disable the power valid
  * checks in the commander.
@@ -58,9 +62,12 @@ PARAM_DEFINE_INT32(CBRK_SUPPLY_CHK, 0);
 
 /**
  * Circuit breaker for rate controller output
+ * 用于速率控制器输出的断路器
  *
  * Setting this parameter to 140253 will disable the rate
  * controller uORB publication.
+ * 将此值设置为104253将禁用速率控制器uORB的发布
+ *
  * WARNING: ENABLING THIS CIRCUIT BREAKER IS AT OWN RISK
  *
  * @reboot_required true
@@ -72,8 +79,11 @@ PARAM_DEFINE_INT32(CBRK_RATE_CTRL, 0);
 
 /**
  * Circuit breaker for IO safety
+ * 用于IO上安全保护的断路器
  *
  * Setting this parameter to 22027 will disable IO safety.
+ * 将此值设置为22027将禁用安全保护
+ * 
  * WARNING: ENABLING THIS CIRCUIT BREAKER IS AT OWN RISK
  *
  * @reboot_required true
@@ -98,9 +108,13 @@ PARAM_DEFINE_INT32(CBRK_AIRSPD_CHK, 0);
 
 /**
  * Circuit breaker for flight termination
+ * 用于飞行终止的断路器
  *
  * Setting this parameter to 121212 will disable the flight termination action.
  * --> The IO driver will not do flight termination if requested by the FMU
+ * 将此值设置为121212将禁用飞行终止动作。
+ * PX4IO的驱动收到PX4FMU的请求将不会终止飞行
+ *
  * WARNING: ENABLING THIS CIRCUIT BREAKER IS AT OWN RISK
  *
  * @reboot_required true
@@ -158,9 +172,12 @@ PARAM_DEFINE_INT32(CBRK_BUZZER, 0);
 
 /**
  * Circuit breaker for USB link check
+ * 用于USB连接检测的断路器
  *
  * Setting this parameter to 197848 will disable the USB connected
  * checks in the commander.
+ * 将此值设置成197848将禁用USB连接
+ *
  * WARNING: ENABLING THIS CIRCUIT BREAKER IS AT OWN RISK
  *
  * @reboot_required true

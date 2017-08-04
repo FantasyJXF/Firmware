@@ -524,6 +524,11 @@ out:
 	return success;
 }
 
+/* 
+ * 飞行前检查:
+ * 成功则返回true  
+ * 失败则返回false 
+ */
 bool preflightCheck(orb_advert_t *mavlink_log_pub, bool checkMag, bool checkAcc, bool checkGyro,
 		    bool checkBaro, bool checkAirspeed, bool checkRC, bool checkGNSS,
 		    bool checkDynamic, bool isVTOL, bool reportFailures, bool prearm, hrt_abstime time_since_boot)

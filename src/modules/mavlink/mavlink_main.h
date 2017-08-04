@@ -380,11 +380,13 @@ public:
 
 	/**
 	 * Count transmitted bytes
+	 * 计算已发送的字节数
 	 */
 	void			count_txbytes(unsigned n) { _bytes_tx += n; };
 
 	/**
 	 * Count bytes not transmitted because of errors
+	 * 计算由于错误而未传输的字节数
 	 */
 	void			count_txerrbytes(unsigned n) { _bytes_txerr += n; };
 
