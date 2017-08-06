@@ -181,6 +181,7 @@ orb_advert_t uORB::Manager::orb_advertise_multi(const struct orb_metadata *meta,
 
 	/* Set the queue size. This must be done before the first publication; thus it fails if
 	 * this is not the first advertiser.
+	 * 设置队列大小。这在第一次发布之前必须完成；因此如果这不是第一个公告者就会失败
 	 */
 	result = px4_ioctl(fd, ORBIOCSETQUEUESIZE, (unsigned long)queue_size);
 

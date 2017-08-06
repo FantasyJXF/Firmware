@@ -131,9 +131,9 @@ bool MulticopterLandDetector::_get_freefall_state()
 	float acc_norm = _ctrl_state.x_acc * _ctrl_state.x_acc
 			 + _ctrl_state.y_acc * _ctrl_state.y_acc
 			 + _ctrl_state.z_acc * _ctrl_state.z_acc;
-	acc_norm = sqrtf(acc_norm);	//norm of specific force. Should be close to 9.8 m/s^2 when landed. 着陆后加速度应该近似等于9.8m/s^2
+	acc_norm = sqrtf(acc_norm);	//norm of specific force. Should be close to 9.8 m/s^2 when landed. 归一化后的力。着陆后加速度应该近似等于9.8m/s^2
 
-	return (acc_norm < _params.acc_threshold_m_s2);	//true if we are currently falling 处于自由落体状态时为真
+	return (acc_norm < _params.acc_threshold_m_s2);	//true if we are currently falling 处于自由落体状态时为真，此时向下的加速度大于8m/s^2
 }
 
 bool MulticopterLandDetector::_get_landed_state()
@@ -145,7 +145,7 @@ bool MulticopterLandDetector::_get_landed_state()
 
 	// Determine the system min throttle based on flight mode
 	// 基于飞行模式确定系统的最小油门
-	if (!_ctrl_mode.flag_control_altitude_enabled) {
+	if (!_ctrl_mode.flag_control_altitude_enabled) { // 非高度控制模式
 		sys_min_throttle = (_params.minManThrottle + 0.01f); // 0.09
 	}
 

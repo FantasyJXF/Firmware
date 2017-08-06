@@ -118,6 +118,7 @@ PARAM_DEFINE_INT32(NAV_DLL_ACT, 0);
 
 /**
  * Set RC loss failsafe mode
+ * 设置遥控器丢失模式
  *
  * The RC loss failsafe will only be entered after a timeout,
  * set by COM_RC_LOSS_T in seconds. If RC input checks have been disabled
@@ -127,7 +128,7 @@ PARAM_DEFINE_INT32(NAV_DLL_ACT, 0);
  *
  * @value 0 Disabled
  * @value 1 Loiter
- * @value 2 Return to Land
+ * @value 2 Return to Land 返回着陆
  * @value 3 Land at current position
  *
  * @group Mission

@@ -67,8 +67,8 @@ struct status_flags_s {
 	bool condition_system_hotplug_timeout;		// true if the hotplug sensor search is over 热拔插传感器搜索超时
 	bool condition_system_returned_to_home;
 	bool condition_auto_mission_available;
-	bool condition_global_position_valid;		// set to true by the commander app if the quality of the position estimate is good enough to use it for navigation
-	bool condition_home_position_valid;		// indicates a valid home position (a valid home position is not always a valid launch)
+	bool condition_global_position_valid;		// set to true by the commander app if the quality of the position estimate is good enough to use it for navigation 如果位置估计的质量足够好并可以用来导航，commander会将此项置为真
+	bool condition_home_position_valid;		// indicates a valid home position (a valid home position is not always a valid launch) 表示存在一个有效的home点位置(并非必须是起飞点)
 	bool condition_local_position_valid;
 	bool condition_local_altitude_valid;
 	bool condition_airspeed_valid;			// set to true by the commander app if there is a valid airspeed measurement available 如果存在有效的空速测量，则commander应用会将此项置位
@@ -86,7 +86,7 @@ struct status_flags_s {
 	bool offboard_control_set_by_command;		// true if the offboard mode was set by a mavlink command and should not be overridden by RC 如果使用mavlink指令设置了外部控制模式则为真，此值不会被遥控器覆盖
 	bool offboard_control_loss_timeout;		// true if offboard is lost for a certain amount of time  如果外部控制已经丢失了这么长时间，则为真
 	bool rc_signal_found_once;
-	bool rc_signal_lost_cmd;			// true if RC lost mode is commanded
+	bool rc_signal_lost_cmd;			// true if RC lost mode is commanded 如果命令遥控器丢失模式，则为真
 	bool rc_input_blocked;				// set if RC input should be ignored temporarily 如果遥控器输入应该暂时被忽略，则置位
 	bool data_link_lost_cmd;			// datalink to GCS lost mode commanded
 	bool vtol_transition_failure;			// Set to true if vtol transition failed

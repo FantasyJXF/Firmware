@@ -690,6 +690,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 	status->failsafe = false;
 
 	/* evaluate main state to decide in normal (non-failsafe) mode */
+	// 评估主状态已确定normal模式
 	switch (internal_state->main_state) {
 	case commander_state_s::MAIN_STATE_ACRO:
 	case commander_state_s::MAIN_STATE_MANUAL:
@@ -703,13 +704,13 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_rc);
 
 			if (status_flags->condition_global_position_valid && status_flags->condition_home_position_valid) {
-				status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_RCRECOVER;
+				status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_RCRECOVER; // RC恢复模式
 
 			} else if (status_flags->condition_local_position_valid) {
-				status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND;
+				status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND; // 自动着陆(Land)
 
 			} else if (status_flags->condition_local_altitude_valid) {
-				status->nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND;
+				status->nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND; // 不带位置控制的下降
 
 			} else {
 				status->nav_state = vehicle_status_s::NAVIGATION_STATE_TERMINATION;
@@ -753,15 +754,15 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 
 				if (status_flags->condition_global_position_valid &&
 				    status_flags->condition_home_position_valid &&
-				    !status_flags->gps_failure) {
+				    !status_flags->gps_failure) { // 存在home点
 					status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_RCRECOVER;
 
 				} else if (status_flags->condition_local_position_valid &&
-					   !status_flags->gps_failure) {
-					status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND;
+					   !status_flags->gps_failure) { 
+					status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND; // 自动着陆
 
 				} else if (status_flags->condition_local_altitude_valid) {
-					status->nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND;
+					status->nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND; // 下降模式
 
 				} else {
 					status->nav_state = vehicle_status_s::NAVIGATION_STATE_TERMINATION;
@@ -771,6 +772,9 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 				/* A local position estimate is enough for POSCTL for multirotors,
 				 * this enables POSCTL using e.g. flow.
 				 * For fixedwing, a global position is needed. */
+				 // 只有有遥控器，就可以回退到ACLCTL或者STAB
+				 // 本地位置估计对于多旋翼来说是足够进行POSCTL的
+				 // 例如可以使用光流进行POSCTL
 
 			} else if (((status->is_rotary_wing && !status_flags->condition_local_position_valid) ||
 				    (!status->is_rotary_wing && !status_flags->condition_global_position_valid))
@@ -778,10 +782,10 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 				enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_rc);
 
 				if (status_flags->condition_local_altitude_valid) {
-					status->nav_state = vehicle_status_s::NAVIGATION_STATE_ALTCTL;
+					status->nav_state = vehicle_status_s::NAVIGATION_STATE_ALTCTL; // 定高
 
 				} else {
-					status->nav_state = vehicle_status_s::NAVIGATION_STATE_STAB;
+					status->nav_state = vehicle_status_s::NAVIGATION_STATE_STAB; // 增稳
 				}
 
 			} else {
@@ -797,6 +801,13 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 		 * - if we have an engine failure
 		 * - if we have vtol transition failure
 		 * - depending on datalink, RC and if the mission is finished */
+		 /* 
+		 * 下列情况下进入失控保护模式
+		 * - 命令进入
+		 * - 电机失效
+		 * - VTOL转换失败
+		 * - 取决于数据链，RC以及任务是否完成
+		 */
 
 		/* first look at the commands */
 		if (status->engine_failure_cmd) {
@@ -852,6 +863,8 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 			/* datalink loss disabled:
 			 * check if both, RC and datalink are lost during the mission
 			 * or all links are lost after the mission finishes in air: this should always trigger RCRECOVER */
+			 // 检测是否RC和数据链都在任务过程中丢失
+			 // 或者所有的连接都在任务完成后飞机仍在空中时丢失
 
 		} else if (!data_link_loss_enabled && status->rc_signal_lost && status->data_link_lost && !landed && mission_finished) {
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_datalink);
@@ -883,8 +896,8 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 		if (status->engine_failure) {
 			status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LANDENGFAIL;
 
-		} else if (status_flags->gps_failure) {
-			status->nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND;
+		} else if (status_flags->gps_failure) { // GPS无效
+			status->nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND; // 下降
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_gps);
 
 			/* also go into failsafe if just datalink is lost */
@@ -906,6 +919,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 			}
 
 			/* go into failsafe if RC is lost and datalink loss is not set up and rc loss is not disabled */
+			// 如果遥控器丢失并且没有设置数据链丢失、没有禁用rc丢失，则进入失控保护
 
 		} else if (status->rc_signal_lost && rc_loss_enabled && !data_link_loss_enabled) {
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_rc);
@@ -927,6 +941,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 		} else if (status->rc_signal_lost) {
 
 			/* this mode is ok, we don't need RC for loitering */
+			// 遥控器丢失，进入HOLD = loiter模式
 			status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER;
 
 		} else {
@@ -939,6 +954,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 	case commander_state_s::MAIN_STATE_AUTO_RTL:
 
 		/* require global position and home, also go into failsafe on an engine failure */
+		// 需要global位置以及home点，在电机故障时也进入失控保护
 
 		if (status->engine_failure) {
 			status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LANDENGFAIL;
@@ -948,7 +964,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_gps);
 
 		} else if ((!status_flags->condition_global_position_valid ||
-			    !status_flags->condition_home_position_valid)) {
+			    !status_flags->condition_home_position_valid)) { // 没有home点
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_home);
 
 			if (status_flags->condition_local_position_valid) {
@@ -1047,6 +1063,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 	case commander_state_s::MAIN_STATE_OFFBOARD:
 
 		/* require offboard control, otherwise stay where you are */
+		/* 需要外部控制，否则停在原地 */
 		if (status_flags->offboard_control_signal_lost && !status->rc_signal_lost) {
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_rc);
 

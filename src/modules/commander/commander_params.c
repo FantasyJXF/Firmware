@@ -189,8 +189,10 @@ PARAM_DEFINE_FLOAT(COM_RC_LOSS_T, 0.5f);
 
 /**
  * Home set horizontal threshold
+ * 设置home点的水平阈值
  *
  * The home position will be set if the estimated positioning accuracy is below the threshold.
+ * 如果估计的位置精度低于此阈值，那么home点的位置将被设置
  *
  * @group Commander
  * @unit m
@@ -203,10 +205,10 @@ PARAM_DEFINE_FLOAT(COM_HOME_H_T, 5.0f);
 
 /**
  * Home set vertical threshold
- * HOME点设置垂直阈值
+ * 设置home点的垂直阈值
  *
  * The home position will be set if the estimated positioning accuracy is below the threshold.
- * Home点的位置将被置位，如果估计的位置精度低于此阈值
+ * 如果估计的位置精度低于此阈值，那么home点的位置将被设置
  *
  * @group Commander
  * @unit m

@@ -105,7 +105,7 @@ public:
 	 *      For topics updated by interrupt handlers, the advertisement
 	 *      must be performed from non-interrupt context.
 	 * @param queue_size  Maximum number of buffered elements. If this is 1, no queuing is
-	 *      used.
+	 *      used. 队列大小  缓存元素的最大值。如果为1，则没有队列被使用
 	 * @return    nullptr on error, otherwise returns an object pointer
 	 *      that can be used to publish to the topic.
 	 *      If the topic in question is not known (due to an
@@ -130,6 +130,8 @@ public:
 	 * (each instance has its own buffer).
 	 * This is useful for multiple publishers who publish the same topic. The subscriber
 	 * then subscribes to all instances and chooses which source he wants to use.
+	 * 这对于多个发布者发布相同的主题是非常有效的。
+	 * 订阅者订阅所有这些事例并选择他们想要使用的源
 	 *
 	 * @param meta    The uORB metadata (usually from the ORB_ID() macro)
 	 *      for the topic.
@@ -139,12 +141,15 @@ public:
 	 * @param instance  Pointer to an integer which will yield the instance ID (0-based)
 	 *      of the publication. This is an output parameter and will be set to the newly
 	 *      created instance, ie. 0 for the first advertiser, 1 for the next and so on.
+	 *      指向整数的指针，产生发布者的实例ID号。输出给新产生的实例，第一个公告者为0
 	 * @param priority  The priority of the instance. If a subscriber subscribes multiple
 	 *      instances, the priority allows the subscriber to prioritize the best
 	 *      data source as long as its available. The subscriber is responsible to check
 	 *      and handle different priorities (@see orb_priority()).
+	 *      优先级   实例的优先级
 	 * @param queue_size  Maximum number of buffered elements. If this is 1, no queuing is
 	 *      used.
+	 *      缓存元素的最大值。如果为1，则不使用队列
 	 * @return    ERROR on error, otherwise returns a handle
 	 *      that can be used to publish to the topic.
 	 *      If the topic in question is not known (due to an
@@ -207,6 +212,7 @@ public:
 
 	/**
 	 * Subscribe to a multi-instance of a topic.
+	 * 订阅一个主题的多个实例
 	 *
 	 * The returned value is a file descriptor that can be passed to poll()
 	 * in order to wait for updates to a topic, as well as topic_read,
@@ -232,6 +238,8 @@ public:
 	 * @param instance  The instance of the topic. Instance 0 matches the
 	 *      topic of the orb_subscribe() call, higher indices
 	 *      are for topics created with orb_advertise_multi().
+	 *      主题的实例。实例0匹配orb_subscribe()调用的主题，
+	 *		更高的指数是用于orb_advertise_multi()所创建的主题
 	 * @return    ERROR on error, otherwise returns a handle
 	 *      that can be used to read and update the topic.
 	 *      If the topic in question is not known (due to an
