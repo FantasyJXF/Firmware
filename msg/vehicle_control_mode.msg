@@ -11,13 +11,13 @@ bool flag_system_hil_enabled
 bool flag_control_manual_enabled			# true if manual input is mixed in
 bool flag_control_auto_enabled			# true if onboard autopilot should act
 bool flag_control_offboard_enabled		# true if offboard control should be used
-bool flag_control_rates_enabled			# true if rates are stabilized
-bool flag_control_attitude_enabled		# true if attitude stabilization is mixed in
-bool flag_control_rattitude_enabled		# true if rate/attitude stabilization is enabled
+bool flag_control_rates_enabled			# true if rates are stabilized   角速度稳定
+bool flag_control_attitude_enabled			# true if attitude stabilization is mixed in  混入了姿态增稳
+bool flag_control_rattitude_enabled		# true if rate/attitude stabilization is enabled   角度/角速度增稳
 bool flag_control_force_enabled			# true if force control is mixed in
-bool flag_control_acceleration_enabled	# true if acceleration is controlled
-bool flag_control_velocity_enabled		# true if horizontal velocity (implies direction) is controlled
-bool flag_control_position_enabled		# true if position is controlled
-bool flag_control_altitude_enabled		# true if altitude is controlled
+bool flag_control_acceleration_enabled		# true if acceleration is controlled
+bool flag_control_velocity_enabled			# true if horizontal velocity (implies direction) is controlled
+bool flag_control_position_enabled			# true if position is controlled
+bool flag_control_altitude_enabled			# true if altitude is controlled
 bool flag_control_climb_rate_enabled		# true if climb rate is controlled
 bool flag_control_termination_enabled		# true if flighttermination is enabled

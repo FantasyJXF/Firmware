@@ -446,7 +446,7 @@ int commander_main(int argc, char *argv[])
 				cmd.param6 = NAN;
 				cmd.param7 = NAN;
 
-				orb_advert_t h = orb_advertise_queue(ORB_ID(vehicle_command), &cmd, vehicle_command_s::ORB_QUEUE_LENGTH);
+				orb_advert_t h = orb_advertise_queue(ORB_ID(vehicle_command), &cmd, vehicle_command_s::ORB_QUEUE_LENGTH); // 3
 				(void)orb_unadvertise(h);
 
 			} else {
@@ -705,8 +705,10 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 		// doing something sensible with the coordinates. Its designed
 		// to not require navigator and command to receive / process
 		// the data at the exact same time.
+		// 在这里切换飞行模式
 
 		// Check if a mode switch had been requested
+		// 检查是否有模式切换请求
 		if ((((uint32_t)cmd->param2) & 1) > 0) {
 			transition_result_t main_ret = main_state_transition(status_local, commander_state_s::MAIN_STATE_AUTO_LOITER, main_state_prev, &status_flags, &internal_state);
 
@@ -722,7 +724,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 		}
 	}
 	break;
-	case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE: { // 设置系统模型
+	case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE: { // 设置系统模式
 			uint8_t base_mode = (uint8_t)cmd->param1;
 			uint8_t custom_main_mode = (uint8_t)cmd->param2;
 			uint8_t custom_sub_mode = (uint8_t)cmd->param3;
@@ -742,6 +744,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 			arming_ret = arm_disarm(cmd_arm, &mavlink_log_pub, "set mode command");
 
 			/* update home position on arming if at least 500 ms from commander start spent to avoid setting home on in-air restart */
+			// 至少在commander应用启动500ms后更新home点位置，防止空中重启时设置home点
 			if (cmd_arm && (arming_ret == TRANSITION_CHANGED) &&
 				(hrt_absolute_time() > (commander_boot_timestamp + INAIR_RESTART_HOLDOFF_INTERVAL))) {
 
@@ -814,6 +817,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 
 			} else {
 				/* use base mode */
+				// 使用基本模式
 				if (base_mode & VEHICLE_MODE_FLAG_AUTO_ENABLED) {
 					/* AUTO */
 					main_ret = main_state_transition(status_local, commander_state_s::MAIN_STATE_AUTO_MISSION, main_state_prev, &status_flags, &internal_state);
@@ -907,7 +911,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 		}
 		break;
 
-	case vehicle_command_s::VEHICLE_CMD_OVERRIDE_GOTO: {
+	case vehicle_command_s::VEHICLE_CMD_OVERRIDE_GOTO: { // 保持/继续当前动作
 			// TODO listen vehicle_command topic directly from navigator (?)
 
 			// Increase by 0.5f and rely on the integer cast
@@ -996,8 +1000,8 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 		}
 		break;
 
-	case vehicle_command_s::VEHICLE_CMD_DO_SET_HOME: {
-			bool use_current = cmd->param1 > 0.5f;
+	case vehicle_command_s::VEHICLE_CMD_DO_SET_HOME: { // 更改home点的位置，要么到当前位置，或者到一个特殊位置
+			bool use_current = cmd->param1 > 0.5f; // 1 = 当前; 0 = 特定
 
 			if (use_current) {
 				/* use current position */
@@ -1037,6 +1041,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 				}
 
 				/* mark home position as set */
+				// 标记home点的位置已设置
 				status_flags.condition_home_position_valid = true;
 			}
 		}
@@ -1092,6 +1097,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 
 	case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF: {
 			/* ok, home set, use it to take off */
+			// home点已设置，使用其来起飞
 			if (TRANSITION_CHANGED == main_state_transition(&status, commander_state_s::MAIN_STATE_AUTO_TAKEOFF, main_state_prev, &status_flags, &internal_state)) {
 				mavlink_and_console_log_info(&mavlink_log_pub, "Taking off");
 				cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
@@ -1221,6 +1227,7 @@ static void commander_set_home_position(orb_advert_t &homePub, home_position_s &
 					const vehicle_attitude_s &attitude)
 {
 	// Need global position fix to be able to set home
+	// 需要global位置定位才能设置home点
 	if (!status_flags.condition_global_position_valid) {
 		return;
 	}
@@ -1317,7 +1324,7 @@ int commander_thread_main(int argc, char *argv[])
 	param_t _param_disarm_land = param_find("COM_DISARM_LAND"); // 值为0表示禁用自动上锁
 	param_t _param_low_bat_act = param_find("COM_LOW_BAT_ACT");
 	param_t _param_offboard_loss_timeout = param_find("COM_OF_LOSS_T");
-	param_t _param_arm_without_gps = param_find("COM_ARM_WO_GPS");
+	param_t _param_arm_without_gps = param_find("COM_ARM_WO_GPS");  // 允许无GPS解锁
 
 	param_t _param_fmode_1 = param_find("COM_FLTMODE1");
 	param_t _param_fmode_2 = param_find("COM_FLTMODE2");
@@ -1385,13 +1392,14 @@ int commander_thread_main(int argc, char *argv[])
 	}
 
 	/* vehicle status topic */
+	// 飞行器的状态主题
 	memset(&status, 0, sizeof(status));
 
 	// We want to accept RC inputs as default
 	// 默认接收遥控器输入
 	status_flags.rc_input_blocked = false;
 	status.rc_input_mode = vehicle_status_s::RC_IN_MODE_DEFAULT;
-	internal_state.main_state = commander_state_s::MAIN_STATE_MANUAL;
+	internal_state.main_state = commander_state_s::MAIN_STATE_MANUAL; // 若未分配遥控器模式的话，内部状态为手动MANUAL模式
 	internal_state.timestamp = hrt_absolute_time();
 	main_state_prev = commander_state_s::MAIN_STATE_MAX;
 	status.nav_state = vehicle_status_s::NAVIGATION_STATE_MANUAL;
@@ -1658,6 +1666,7 @@ int commander_thread_main(int argc, char *argv[])
 	thread_running = true;
 
 	/* update vehicle status to find out vehicle type (required for preflight checks) */
+	// 更新飞行器的状态以确定飞机类型(飞行前检测必须)
 	param_get(_param_sys_type, &(status.system_type)); // get system type
 	status.is_rotary_wing = is_rotary_wing(&status) || is_vtol(&status);
 	status.is_vtol = is_vtol(&status);
@@ -1681,15 +1690,16 @@ int commander_thread_main(int argc, char *argv[])
 	status.rc_input_mode = rc_in_off;
 	if (is_hil_setup(autostart_id)) {
 		// HIL configuration selected: real sensors will be disabled
-		// 选中HIL配置: 禁用真是传感器
+		// 选中HIL配置: 禁用真实传感器
 		status_flags.condition_system_sensors_initialized = false;
 		set_tune_override(TONE_STARTUP_TUNE); //normal boot tune
 	} else {
 			// sensor diagnostics done continuously, not just at boot so don't warn about any issues just yet
+			// 传感器诊断继续完成
 			status_flags.condition_system_sensors_initialized = Commander::preflightCheck(&mavlink_log_pub, true, true, true, true,
 				checkAirspeed, (status.rc_input_mode == vehicle_status_s::RC_IN_MODE_DEFAULT), !status_flags.circuit_breaker_engaged_gpsfailure_check,
 				/* checkDynamic */ false, is_vtol(&status), /* reportFailures */ false, /* prearm */ false, hrt_elapsed_time(&commander_boot_timestamp));
-			set_tune_override(TONE_STARTUP_TUNE); //normal boot tune
+			set_tune_override(TONE_STARTUP_TUNE); //normal boot tune 正常启动的声音
 	}
 
 	// user adjustable duration required to assert arm/disarm via throttle/rudder stick
@@ -1720,7 +1730,7 @@ int commander_thread_main(int argc, char *argv[])
 	int32_t ef_time_thres = 1000.0f;
 	uint64_t timestamp_engine_healthy = 0; /**< absolute time when engine was healty */
 
-	int autosave_params; /**< Autosave of parameters enabled/disabled, loaded from parameter */
+	int autosave_params; /**< Autosave of parameters enabled/disabled, loaded from parameter 使能/禁用参数自动保存  */
 
 	int32_t disarm_when_landed = 0;
 	int32_t low_bat_action = 0;
@@ -1800,7 +1810,7 @@ int commander_thread_main(int argc, char *argv[])
 			param_get(_param_datalink_loss_timeout, &datalink_loss_timeout);
 			param_get(_param_rc_loss_timeout, &rc_loss_timeout);
 			param_get(_param_rc_in_off, &rc_in_off);
-			status.rc_input_mode = rc_in_off;
+			status.rc_input_mode = rc_in_off; // 遥控器输入
 			param_get(_param_rc_arm_hyst, &rc_arm_hyst);
 			rc_arm_hyst *= COMMANDER_MONITORING_LOOPSPERMSEC;
 			param_get(_param_datalink_regain_timeout, &datalink_regain_timeout);
@@ -1808,7 +1818,7 @@ int commander_thread_main(int argc, char *argv[])
 			param_get(_param_ef_current2throttle_thres, &ef_current2throttle_thres);
 			param_get(_param_ef_time_thres, &ef_time_thres);
 			param_get(_param_geofence_action, &geofence_action);
-			param_get(_param_disarm_land, &disarm_when_landed);
+			param_get(_param_disarm_land, &disarm_when_landed); // 为0时表示禁用自动上锁
 
 			// If we update parameters the first time
 			// make sure the hysteresis time gets set.
@@ -1862,6 +1872,7 @@ int commander_thread_main(int argc, char *argv[])
 			/* Set flag to autosave parameters if necessary */
 			if (updated && autosave_params != 0 && param_changed.saved == false) {
 				/* trigger an autosave */
+				// 触发自动保存
 				need_param_autosave = true;
 			}
 		}
@@ -1894,6 +1905,7 @@ int commander_thread_main(int argc, char *argv[])
 			}
 
 			/* check timer if offboard was there but now lost */
+			// 如果外部控制现在丢失则检查定时器
 			if (!status_flags.offboard_control_loss_timeout && offboard_control_mode.timestamp != 0) {
 				if (offboard_loss_timeout < FLT_EPSILON) {
 					/* execute loss action immediately */
@@ -2024,13 +2036,15 @@ int commander_thread_main(int argc, char *argv[])
 				    !system_power.brick_valid &&
 				    !system_power.usb_connected) {
 					/* flying only on servo rail, this is unsafe */
-					status_flags.condition_power_input_valid = false;
+					// 只有电机供电的飞行，不安全
+					status_flags.condition_power_input_valid = false; // 电源输入无效
 
 				} else {
 					status_flags.condition_power_input_valid = true;
 				}
 
 				/* copy avionics voltage */
+				// 复制航空电压
 				avionics_power_rail_voltage = system_power.voltage5V_v;
 
 				/* if the USB hardware connection went away, reboot */
@@ -2125,6 +2139,7 @@ int commander_thread_main(int argc, char *argv[])
 
 		if (updated) {
 			/* position changed */
+			// global位置改变
 			vehicle_global_position_s gpos;
 			orb_copy(ORB_ID(vehicle_global_position), global_position_sub, &gpos);
 
@@ -2148,6 +2163,7 @@ int commander_thread_main(int argc, char *argv[])
 
 		if (updated) {
 			/* position changed */
+			// local位置改变
 			orb_copy(ORB_ID(vehicle_local_position), local_position_sub, &local_position);
 		}
 
@@ -2155,12 +2171,13 @@ int commander_thread_main(int argc, char *argv[])
 		orb_check(attitude_sub, &updated);
 
 		if (updated) {
-			/* position changed */
+			/* attitude changed */
 			orb_copy(ORB_ID(vehicle_attitude), attitude_sub, &attitude);
 		}
 
 		// update condition_global_position_valid
 		// Global positions are only published by the estimators if they are valid
+		// 仅当global位置有效时才发布
 		if (hrt_absolute_time() - global_position.timestamp > POSITION_TIMEOUT) {
 			//We had no good fix for POSITION_TIMEOUT amount of time
 			if (status_flags.condition_global_position_valid) {
@@ -2308,6 +2325,7 @@ int commander_thread_main(int argc, char *argv[])
 					} else {
 						if (low_bat_action == 1) {
 							// let us send the critical message even if already in RTL
+							// 发送关键信息，即使已经处于RTL状态
 							if (warning_action_on || TRANSITION_CHANGED == main_state_transition(&status, commander_state_s::MAIN_STATE_AUTO_RTL, main_state_prev, &status_flags, &internal_state)) {
 								warning_action_on = true;
 								mavlink_log_emergency(&mavlink_log_pub, "CRITICAL BATTERY, RETURNING TO LAND");
@@ -2426,6 +2444,7 @@ int commander_thread_main(int argc, char *argv[])
 		}
 
 		/* Initialize map projection if gps is valid */
+		// 如果GPS有效则初始化地图投影
 		if (!map_projection_global_initialized()
 		    && (gps_position.eph < eph_threshold)
 		    && (gps_position.epv < epv_threshold)
@@ -2447,6 +2466,7 @@ int commander_thread_main(int argc, char *argv[])
 					set_tune_override(TONE_GPS_WARNING_TUNE);
 
 					//GPS suffers from signal jamming or excessive noise, disable GPS-aided flight
+					// GPS噪声大，禁用GPS辅助飞行
 					status_flags.gps_failure = true;
 					status_changed = true;
 				}
@@ -2458,7 +2478,7 @@ int commander_thread_main(int argc, char *argv[])
 					status_flags.gps_failure = false;
 					status_changed = true;
 					if (status_flags.condition_home_position_valid) {
-						mavlink_log_critical(&mavlink_log_pub, "GPS fix regained");
+						mavlink_log_critical(&mavlink_log_pub, "GPS fix regained"); // 重新获得GPS定位
 					}
 				}
 
@@ -2634,7 +2654,7 @@ int commander_thread_main(int argc, char *argv[])
 			} else {
 				if (status.rc_signal_lost) {
 					mavlink_log_info(&mavlink_log_pub, "MANUAL CONTROL REGAINED after %llums",
-							     (hrt_absolute_time() - rc_signal_lost_timestamp) / 1000);
+							     (hrt_absolute_time() - rc_signal_lost_timestamp) / 1000); // 重新获得手动控制
 					status_changed = true;
 				}
 			}
@@ -2651,7 +2671,7 @@ int commander_thread_main(int argc, char *argv[])
 			    	internal_state.main_state == commander_state_s::MAIN_STATE_STAB ||
 			    	internal_state.main_state == commander_state_s::MAIN_STATE_RATTITUDE ||
 			    	land_detector.landed) &&
-			    sp_man.r < -STICK_ON_OFF_LIMIT && sp_man.z < 0.1f) {
+			    sp_man.r < -STICK_ON_OFF_LIMIT && sp_man.z < 0.1f) { // 旋翼 ARM 手动模式  landed  俯仰杆<-0.75  油门杆 < 0.1
 
 				if (stick_off_counter > rc_arm_hyst) {
 					/* disarm to STANDBY if ARMED or to STANDBY_ERROR if ARMED_ERROR */
@@ -2784,6 +2804,7 @@ int commander_thread_main(int argc, char *argv[])
 			// 检查油门的kill开关
 			if (sp_man.kill_switch == manual_control_setpoint_s::SWITCH_POS_ON) {
 				/* set lockdown flag */
+				// 设置锁定标志
 				if (!armed.lockdown) {
 					mavlink_log_emergency(&mavlink_log_pub, "MANUAL KILL SWITCH ENGAGED");
 				}
@@ -2958,7 +2979,7 @@ int commander_thread_main(int argc, char *argv[])
 				static bool flight_termination_printed = false;
 
 				if (!flight_termination_printed) {
-					mavlink_log_critical(&mavlink_log_pub, "DL and GPS lost: flight termination");
+					mavlink_log_critical(&mavlink_log_pub, "DL and GPS lost: flight termination"); // 终止飞行
 					flight_termination_printed = true;
 				}
 
@@ -2997,11 +3018,13 @@ int commander_thread_main(int argc, char *argv[])
 		const hrt_abstime now = hrt_absolute_time();
 
 		/* First time home position update - but only if disarmed */
+		// 仅在锁定时  首次更新home点位置
 		if (!status_flags.condition_home_position_valid && !armed.armed) {
 			commander_set_home_position(home_pub, _home, local_position, global_position, attitude);
 		}
 
 		/* update home position on arming if at least 500 ms from commander start spent to avoid setting home on in-air restart */
+		// 空中重启，解锁时更新home点位置
 		else if (((!was_armed && armed.armed) || (was_landed && !land_detector.landed)) &&
 			(now > commander_boot_timestamp + INAIR_RESTART_HOLDOFF_INTERVAL)) {
 			commander_set_home_position(home_pub, _home, local_position, global_position, attitude);
@@ -3016,6 +3039,7 @@ int commander_thread_main(int argc, char *argv[])
 		}
 
 		/* now set navigation state according to failsafe and main state */
+		// 现在根据失控保护以及主状态设置导航状态
 		bool nav_state_changed = set_nav_state(&status,
 						       &internal_state,
 						       &mavlink_log_pub,
@@ -3372,6 +3396,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 	}
 
 	/* RTL switch overrides main switch */
+	// RTL开关覆盖了主开关
 	if (sp_man.return_switch == manual_control_setpoint_s::SWITCH_POS_ON) {
 		warnx("RTL switch changed and ON!");
 		res = main_state_transition(status_local, commander_state_s::MAIN_STATE_AUTO_RTL, main_state_prev, &status_flags, &internal_state);
@@ -3390,10 +3415,12 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 		}
 
 		/* if we get here mode was rejected, continue to evaluate the main system mode */
+		// 如果模式被拒绝，继续评估主系统模式
 	}
 
 	/* we know something has changed - check if we are in mode slot operation */
-	if (sp_man.mode_slot != manual_control_setpoint_s::MODE_SLOT_NONE) {
+	// 检查是否处于现有模式
+	if (sp_man.mode_slot != manual_control_setpoint_s::MODE_SLOT_NONE) { // 处于现有模式
 
 		if (sp_man.mode_slot >= sizeof(_flight_mode_slots) / sizeof(_flight_mode_slots[0])) {
 			warnx("m slot overflow");
@@ -3406,14 +3433,17 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 			/* slot is unused */
 			res = TRANSITION_NOT_CHANGED;
 
-		} else {
+		} else {  
 			res = main_state_transition(status_local, new_mode, main_state_prev, &status_flags, &internal_state);
 
 			/* ensure that the mode selection does not get stuck here */
+			// 确保模式切换不会卡在这里
 			int maxcount = 5;
 
 			/* enable the use of break */
 			/* fallback strategies, give the user the closest mode to what he wanted */
+			// 使能break的使用
+			// 降级策略，给用户他想要的最接近的模式
 			while (res == TRANSITION_DENIED && maxcount > 0) {
 
 				maxcount--;
@@ -3421,6 +3451,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 				if (new_mode == commander_state_s::MAIN_STATE_AUTO_MISSION) {
 
 					/* fall back to loiter */
+					// 降级到loiter
 					new_mode = commander_state_s::MAIN_STATE_AUTO_LOITER;
 					print_reject_mode(status_local, "AUTO MISSION");
 					res = main_state_transition(status_local, new_mode, main_state_prev, &status_flags, &internal_state);
@@ -3433,6 +3464,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 				if (new_mode == commander_state_s::MAIN_STATE_AUTO_RTL) {
 
 					/* fall back to position control */
+					// 降级到位置控制
 					new_mode = commander_state_s::MAIN_STATE_AUTO_LOITER;
 					print_reject_mode(status_local, "AUTO RTL");
 					res = main_state_transition(status_local, new_mode, main_state_prev, &status_flags, &internal_state);
@@ -3445,6 +3477,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 				if (new_mode == commander_state_s::MAIN_STATE_AUTO_LAND) {
 
 					/* fall back to position control */
+					// 降级到位置控制
 					new_mode = commander_state_s::MAIN_STATE_AUTO_LOITER;
 					print_reject_mode(status_local, "AUTO LAND");
 					res = main_state_transition(status_local, new_mode, main_state_prev, &status_flags, &internal_state);
@@ -3457,6 +3490,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 				if (new_mode == commander_state_s::MAIN_STATE_AUTO_TAKEOFF) {
 
 					/* fall back to position control */
+					// 降级到位置控制
 					new_mode = commander_state_s::MAIN_STATE_AUTO_LOITER;
 					print_reject_mode(status_local, "AUTO TAKEOFF");
 					res = main_state_transition(status_local, new_mode, main_state_prev, &status_flags, &internal_state);
@@ -3469,6 +3503,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 				if (new_mode == commander_state_s::MAIN_STATE_AUTO_FOLLOW_TARGET) {
 
 					/* fall back to position control */
+					// 降级到位置控制
 					new_mode = commander_state_s::MAIN_STATE_AUTO_LOITER;
 					print_reject_mode(status_local, "AUTO FOLLOW");
 					res = main_state_transition(status_local, new_mode, main_state_prev, &status_flags, &internal_state);
@@ -3481,6 +3516,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 				if (new_mode == commander_state_s::MAIN_STATE_AUTO_LOITER) {
 
 					/* fall back to position control */
+					// 降级到位置控制
 					new_mode = commander_state_s::MAIN_STATE_POSCTL;
 					print_reject_mode(status_local, "AUTO HOLD");
 					res = main_state_transition(status_local, new_mode, main_state_prev, &status_flags, &internal_state);
@@ -3493,6 +3529,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 				if (new_mode == commander_state_s::MAIN_STATE_POSCTL) {
 
 					/* fall back to altitude control */
+					// 降级到高度控制
 					new_mode = commander_state_s::MAIN_STATE_ALTCTL;
 					print_reject_mode(status_local, "POSITION CONTROL");
 					res = main_state_transition(status_local, new_mode, main_state_prev, &status_flags, &internal_state);
@@ -3505,6 +3542,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 				if (new_mode == commander_state_s::MAIN_STATE_ALTCTL) {
 
 					/* fall back to stabilized */
+					// 降级到增稳模式
 					new_mode = commander_state_s::MAIN_STATE_STAB;
 					print_reject_mode(status_local, "ALTITUDE CONTROL");
 					res = main_state_transition(status_local, new_mode, main_state_prev, &status_flags, &internal_state);
@@ -3517,6 +3555,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 				if (new_mode == commander_state_s::MAIN_STATE_STAB) {
 
 					/* fall back to manual */
+					// 降级到MANUAL模式
 					new_mode = commander_state_s::MAIN_STATE_MANUAL;
 					print_reject_mode(status_local, "STABILIZED");
 					res = main_state_transition(status_local, new_mode, main_state_prev, &status_flags, &internal_state);
@@ -3532,6 +3571,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 	}
 
 	/* offboard and RTL switches off or denied, check main mode switch */
+	// 外部控制以及RTL开关关闭或拒绝，检查主模式开关
 	switch (sp_man.mode_switch) {
 	case manual_control_setpoint_s::SWITCH_POS_NONE:
 		res = TRANSITION_NOT_CHANGED;
@@ -3542,6 +3582,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 
 			/* manual mode is stabilized already for multirotors, so switch to acro
 			 * for any non-manual mode
+			 * 对于多旋翼来说，手动模式以及包含增稳了。
 			 */
 			// XXX: put ACRO and STAB on separate switches
 			if (status.is_rotary_wing && !status.is_vtol) {
@@ -3556,6 +3597,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 		else if(sp_man.rattitude_switch == manual_control_setpoint_s::SWITCH_POS_ON){
 			/* Similar to acro transitions for multirotors.  FW aircraft don't need a
 			 * rattitude mode.*/
+			 // 对多旋翼，这类似于特技模式转换。
 			if (status.is_rotary_wing) {
 				res = main_state_transition(status_local, commander_state_s::MAIN_STATE_RATTITUDE, main_state_prev, &status_flags, &internal_state);
 			} else {
@@ -3580,6 +3622,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 		}
 
 		// fallback to ALTCTL
+		// 降级到定高控制
 		res = main_state_transition(status_local, commander_state_s::MAIN_STATE_ALTCTL, main_state_prev, &status_flags, &internal_state);
 
 		if (res != TRANSITION_DENIED) {
@@ -3591,6 +3634,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 		}
 
 		// fallback to MANUAL
+		// 降级到手动控制
 		res = main_state_transition(status_local, commander_state_s::MAIN_STATE_MANUAL, main_state_prev, &status_flags, &internal_state);
 		// TRANSITION_DENIED is not possible here
 		break;
@@ -3615,6 +3659,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 			print_reject_mode(status_local, "AUTO MISSION");
 
 			// fallback to LOITER if home position not set
+			// 如果没有设置home点，则降级到LOITER模式
 			res = main_state_transition(status_local, commander_state_s::MAIN_STATE_AUTO_LOITER, main_state_prev, &status_flags, &internal_state);
 
 			if (res != TRANSITION_DENIED) {
@@ -3623,6 +3668,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 		}
 
 		// fallback to POSCTL
+		// 降级到位置控制
 		res = main_state_transition(status_local, commander_state_s::MAIN_STATE_POSCTL, main_state_prev, &status_flags, &internal_state);
 
 		if (res != TRANSITION_DENIED) {
@@ -3637,6 +3683,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 		}
 
 		// fallback to MANUAL
+		// 降级到手动控制
 		res = main_state_transition(status_local, commander_state_s::MAIN_STATE_MANUAL, main_state_prev, &status_flags, &internal_state);
 		// TRANSITION_DENIED is not possible here
 		break;
@@ -3652,6 +3699,7 @@ void
 set_control_mode()
 {
 	/* set vehicle_control_mode according to set_navigation_state */
+	// 根据set_navigation_state设置vehicle_control_mode
 	control_mode.flag_armed = armed.armed;
 	control_mode.flag_external_manual_override_ok = (!status.is_rotary_wing && !status.is_vtol);
 	control_mode.flag_system_hil_enabled = status.hil_state == vehicle_status_s::HIL_STATE_ON;
@@ -3749,8 +3797,8 @@ set_control_mode()
 		control_mode.flag_control_rattitude_enabled = false;
 		control_mode.flag_control_altitude_enabled = true;
 		control_mode.flag_control_climb_rate_enabled = true;
-		control_mode.flag_control_position_enabled = !status.in_transition_mode;
-		control_mode.flag_control_velocity_enabled = !status.in_transition_mode;
+		control_mode.flag_control_position_enabled = !status.in_transition_mode; // 多旋翼为true
+		control_mode.flag_control_velocity_enabled = !status.in_transition_mode; // 多旋翼为true
 		control_mode.flag_control_acceleration_enabled = false;
 		control_mode.flag_control_termination_enabled = false;
 		break;
@@ -3800,6 +3848,7 @@ set_control_mode()
 
 	case vehicle_status_s::NAVIGATION_STATE_TERMINATION:
 		/* disable all controllers on termination */
+		// 禁用所有的控制器
 		control_mode.flag_control_manual_enabled = false;
 		control_mode.flag_control_auto_enabled = false;
 		control_mode.flag_control_rates_enabled = false;

@@ -141,11 +141,15 @@ PARAM_DEFINE_INT32(CBRK_ENGINEFAIL, 284953);
 
 /**
  * Circuit breaker for GPS failure detection
+ * 用于GPS错误检测的断路器
  *
  * Setting this parameter to 240024 will disable the GPS failure detection.
  * If this check is enabled, then the sensor check will fail if the GPS module
  * is missing. It will also check for excessive signal noise on the GPS receiver
  * and warn the user if detected.
+ * 将此值设置为240024将禁用GPS失败检测。
+ * 如果使能了这个检测，那么如果没有连接GPS的话传感器检测将失败。
+ * 他会检测GPS接收器传回的过大的噪声，并在检测到的时候警告用户
  *
  * WARNING: ENABLING THIS CIRCUIT BREAKER IS AT OWN RISK
  *
