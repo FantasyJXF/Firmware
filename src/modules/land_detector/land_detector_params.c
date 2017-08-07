@@ -34,6 +34,7 @@
 /**
  * @file land_detector.c
  * Land detector algorithm parameters.
+ * 算法参数
  *
  * @author Johan Jansen <jnsn.johan@gmail.com>
  */
@@ -85,7 +86,7 @@ PARAM_DEFINE_FLOAT(LNDMC_ROT_MAX, 20.0f);
  * 多旋翼特定的推力阈值
  *
  * Multicopter threshold on the specific force measured by accelerometers in m/s^2 for free-fall detection
- * 当加速度计检测到自由落体状态下的特定力时多旋翼的阈值
+ * 用于自由落体检测的指定力的阈值，由加速度计检测，单位m/s^2
  *
  * @unit m/s^2
  * @min 0.1

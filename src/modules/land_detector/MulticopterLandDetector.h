@@ -34,6 +34,7 @@
 /**
  * @file MulticopterLandDetector.h
  * Land detection implementation for multicopters.
+ * 多旋翼着陆检测的实现
  *
  * @author Johan Jansen <jnsn.johan@gmail.com>
  * @author Morten Lysgaard <morten@lysgaard.no>
@@ -113,7 +114,7 @@ private:
 	struct control_state_s			_ctrl_state;
 	struct vehicle_control_mode_s		_ctrl_mode;
 
-	uint64_t _min_trust_start;		///< timestamp when minimum trust was applied first
+	uint64_t _min_trust_start;		///< timestamp when minimum trust was applied first   最开始应用最小推力时的时间戳
 	uint64_t _arming_time;
 };
 

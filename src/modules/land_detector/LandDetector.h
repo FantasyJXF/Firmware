@@ -92,6 +92,7 @@ public:
 protected:
 	/*
 	 * Called once to initialize uORB topics.
+	 * 调用一次到初始化uORB主题
 	 */
 	virtual void _initialize_topics() = 0;
 
@@ -122,6 +123,7 @@ protected:
 	 * Convenience function for polling uORB subscriptions.
 	 *
 	 * @return true if there was new data and it was successfully copied
+	 *  如果有新的数据并且成功赋值则返回真
 	 */
 	static bool _orb_update(const struct orb_metadata *meta, int handle, void *buffer);
 

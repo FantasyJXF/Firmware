@@ -102,6 +102,7 @@ void LandDetector::_cycle()
 		_landDetected.freefall = false;
 
 		// Initialize uORB topics.
+		// 初始化uORB主题
 		_initialize_topics();
 
 		_check_params(true);

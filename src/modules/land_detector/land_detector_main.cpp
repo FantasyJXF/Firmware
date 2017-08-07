@@ -102,8 +102,9 @@ static void land_detector_stop()
 }
 
 /**
-* Start new task, fails if it is already running. Returns OK if successful
-**/
+ * Start new task, fails if it is already running. Returns OK if successful
+ * 开始新任务
+ **/
 static int land_detector_start(const char *mode)
 {
 	if (land_detector_task != nullptr) {
@@ -133,6 +134,7 @@ static int land_detector_start(const char *mode)
 	}
 
 	//Start new thread task
+	// 开始新的线程任务，根据上面选中的类
 	int ret = land_detector_task->start();
 
 	if (ret) {
@@ -141,6 +143,7 @@ static int land_detector_start(const char *mode)
 	}
 
 	/* avoid memory fragmentation by not exiting start handler until the task has fully started */
+	// 在任务完全启动之前，不要退出启动处理程序，避免内存碎片化
 	const uint64_t timeout = hrt_absolute_time() + 5000000; //5 second timeout
 
 	/* avoid printing dots just yet and do one sleep before the first check */
