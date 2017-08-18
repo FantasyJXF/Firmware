@@ -154,7 +154,7 @@ bool MulticopterLandDetector::_get_landed_state()
 	// 检查推力输出是否小于最小自动油门参数
 	bool minimalThrust = (_actuators.control[3] <= sys_min_throttle); // 遥控器通道3对应油门
 
-	if (minimalThrust && _min_trust_start == 0) { // 推力输出小于0.13  并且 刚开始推
+	if (minimalThrust && _min_trust_start == 0) { // 推力输出小于0.13  并且 刚开始达到最小推力
 		_min_trust_start = now;
 
 	} else if (!minimalThrust) {
@@ -211,7 +211,7 @@ bool MulticopterLandDetector::_get_landed_state()
 	// so that motor spool-up and other effects do not trigger false negatives.
 	// 解锁后广泛接受油门阈值用于着陆状态
 	// 因此电机加速并且其他的影响没有触发错误
-	if (hrt_elapsed_time(&_arming_time) < LAND_DETECTOR_ARM_PHASE_TIME_US) { // 解锁后2s内就起飞了
+	if (hrt_elapsed_time(&_arming_time) < LAND_DETECTOR_ARM_PHASE_TIME_US) { // 2s内解锁
 		armThresholdFactor = 2.5f;
 	}
 

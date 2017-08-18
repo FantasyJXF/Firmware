@@ -98,6 +98,25 @@ PARAM_DEFINE_FLOAT(LNDMC_ROT_MAX, 20.0f);
 PARAM_DEFINE_FLOAT(LNDMC_FFALL_THR, 2.0f);
 
 /**
+ * Multicopter sub-hover throttle scaling
+ * 多旋翼sub-hover油门缩放值
+ *
+ * The range between throttle_min and throttle_hover is scaled
+ * by this parameter to define how close to minimum throttle
+ * the current throttle value needs to be in order to get
+ * accepted as landed.
+ * throttle_min与throttle_max之间的范围由此值进行缩放，
+ * 用来定义最小油门与当前油门多么接近才被认为是着陆了
+ *
+ * @min 0.05
+ * @max 0.5
+ * @decimal 2
+ *
+ * @group Land Detector
+ */
+PARAM_DEFINE_FLOAT(LNDMC_THR_RANGE, 0.1f);
+
+/**
  * Multicopter free-fall trigger time
  * 多旋翼自由落体的触发时间
  *
@@ -114,6 +133,42 @@ PARAM_DEFINE_FLOAT(LNDMC_FFALL_THR, 2.0f);
  * @group Land Detector
  */
 PARAM_DEFINE_FLOAT(LNDMC_FFALL_TTRI, 0.3);
+
+/**
+ * Manual flight stick down threshold for landing
+ * 手动飞行时用于着陆的摇杆最低的阈值
+ *
+ * When controlling manually the throttle stick value (0 to 1)
+ * has to be bellow this threshold in order to pass the check for landing.
+ * So if set to 1 it's allowed to land with any stick position.
+ * 当手动控制时，油门杆的值必须低于此值时才能通过着陆判断的检验。
+ * 因此如果想在任何遥杆位置着陆，可以将此值设置为0
+ *
+ * @min 0
+ * @max 1
+ * @unit norm
+ * @decimal 2
+ *
+ * @group Land Detector
+ */
+PARAM_DEFINE_FLOAT(LNDMC_MAN_DWNTHR, 0.15f);
+
+
+/**
+ * Manual position flight stick up threshold for taking off
+ * 用于起飞的最大摇杆量
+ *
+ * When controlling manually in position mode the throttle stick value (0 to 1)
+ * has to get above this threshold after arming in order to take off.
+ *
+ * @min 0
+ * @max 1
+ * @unit norm
+ * @decimal 2
+ *
+ * @group Land Detector
+ */
+PARAM_DEFINE_FLOAT(LNDMC_POS_UPTHR, 0.65f);
 
 /**
  * Fixedwing max horizontal velocity
@@ -170,3 +225,47 @@ PARAM_DEFINE_FLOAT(LNDFW_VELI_MAX, 4.0f);
  * @group Land Detector
  */
 PARAM_DEFINE_FLOAT(LNDFW_AIRSPD_MAX, 8.00f);
+
+/**
+ * Total flight time in microseconds.
+ * 总飞行时间(微秒)高32位数
+ *
+ * Total flight time of this autopilot. Higher 32 bits of the value.
+ * Flight time in microseconds = (LND_FLIGHT_T_HI << 32) | LND_FLIGHT_T_LO.
+ *
+ * @min 0
+ * @group Land Detector
+ *
+ */
+PARAM_DEFINE_INT32(LND_FLIGHT_T_HI, 0);
+
+/**
+ * Total flight time in microseconds
+ * 总飞行时间(微秒)低32位数
+ *
+ * Total flight time of this autopilot. Lower 32 bits of the value.
+ * Flight time in microseconds = (LND_FLIGHT_T_HI << 32) | LND_FLIGHT_T_LO.
+ *
+ * @min 0
+ * @group Land Detector
+ *
+ */
+PARAM_DEFINE_INT32(LND_FLIGHT_T_LO, 0);
+
+/**
+ * Maximum altitude for multicopters
+ * 多旋翼最大飞行高度
+ *
+ * The system will obey this limit as a
+ * hard altitude limit. This setting will
+ * be consolidated with the GF_MAX_VER_DIST
+ * parameter.
+ *
+ * @unit m
+ * @min 1.5
+ * @max 10000
+ * @decimal 2
+ * @group Land Detector
+ *
+ */
+PARAM_DEFINE_FLOAT(LNDMC_ALT_MAX, 10000.0f);

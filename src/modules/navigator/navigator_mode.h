@@ -71,18 +71,21 @@ public:
 	/**
 	 * This function is called while the mode is inactive
 	 * 模式未激活时调用此函数
+	 * 模式失效
 	 */
 	virtual void on_inactive();
 
 	/**
 	 * This function is called one time when mode become active, pos_sp_triplet must be initialized here
 	 * 当模式激活时此函数会被调用一次，pos_sp_triplet必须在此初始化
+	 * 初始化
 	 */
 	virtual void on_activation();
 
 	/**
 	 * This function is called while the mode is active
 	 * 模式已激活时调用此函数
+	 * 正常运行:检查更新，更新后重置航点，任务完成后的航点更新
 	 */
 	virtual void on_active();
 

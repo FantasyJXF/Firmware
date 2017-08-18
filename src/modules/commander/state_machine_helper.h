@@ -63,7 +63,7 @@ typedef enum {
 struct status_flags_s {
 	bool condition_calibration_enabled;
 	bool condition_system_sensors_initialized;
-	bool condition_system_prearm_error_reported;	// true if errors have already been reported 错误已报告
+	bool condition_system_prearm_error_reported;	// true if errors have already been reported 错误已报告则为真
 	bool condition_system_hotplug_timeout;		// true if the hotplug sensor search is over 热拔插传感器搜索超时
 	bool condition_system_returned_to_home;
 	bool condition_auto_mission_available;
@@ -92,7 +92,7 @@ struct status_flags_s {
 	bool vtol_transition_failure;			// Set to true if vtol transition failed
 	bool vtol_transition_failure_cmd;		// Set to true if vtol transition failure mode is commanded
 	bool gps_failure;				// Set to true if a gps failure is detected
-	bool gps_failure_cmd;				// Set to true if a gps failure mode is commanded
+	bool gps_failure_cmd;				// Set to true if a gps failure mode is commanded 命令控制GPS失效
 	bool barometer_failure;				// Set to true if a barometer failure is detected
 	bool ever_had_barometer_data;			// Set to true if ever had valid barometer data before 如果之前有过有效的气压值则为真
 };

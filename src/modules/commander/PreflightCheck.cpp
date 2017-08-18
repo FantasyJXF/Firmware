@@ -172,7 +172,7 @@ static bool imuConsistencyCheck(orb_advert_t *mavlink_log_pub, bool checkAcc, bo
 	// Use the difference between IMU's to detect a bad calibration. If a single IMU is fitted, the value being checked will be zero so this check will always pass.
 	bool success = true;
 	float test_limit;
-	param_get(param_find("COM_ARM_IMU_ACC"), &test_limit);
+	param_get(param_find("COM_ARM_IMU_ACC"), &test_limit); // 加速度最大不一致度 0.7m/s^2
 	if (checkAcc) {
 		if (sensors.accel_inconsistency_m_s_s > test_limit) {
 			if (report_status) {
@@ -189,7 +189,7 @@ static bool imuConsistencyCheck(orb_advert_t *mavlink_log_pub, bool checkAcc, bo
 		}
 	}
 	// Fail if gyro difference greater than 5 deg/sec and notify if greater than 2.5 deg/sec
-	param_get(param_find("COM_ARM_IMU_GYR"), &test_limit);
+	param_get(param_find("COM_ARM_IMU_GYR"), &test_limit);  // 陀螺仪最大不一致度 0.09rad/s
 	if (checkGyro) {
 		if (sensors.gyro_inconsistency_rad_s > test_limit) {
 			if (report_status) {
@@ -556,6 +556,7 @@ bool preflightCheck(orb_advert_t *mavlink_log_pub, bool checkMag, bool checkAcc,
 		param_get(param_find("CAL_MAG_PRIME"), &prime_id);
 
 		/* check all sensors, but fail only for mandatory ones */
+		// 检查所有传感器，但是仅当主传感器失效时fail
 		for (unsigned i = 0; i < max_optional_mag_count; i++) {
 			bool required = (i < max_mandatory_mag_count);
 			int device_id = -1;

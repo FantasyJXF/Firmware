@@ -761,7 +761,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 					   !status_flags->gps_failure) { 
 					status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND; // 自动着陆
 
-				} else if (status_flags->condition_local_altitude_valid) {
+				} else if (status_flags->condition_local_altitude_valid) {// local高度有效 
 					status->nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND; // 下降模式
 
 				} else {
@@ -772,7 +772,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 				/* A local position estimate is enough for POSCTL for multirotors,
 				 * this enables POSCTL using e.g. flow.
 				 * For fixedwing, a global position is needed. */
-				 // 只有有遥控器，就可以回退到ACLCTL或者STAB
+				 // 只要有遥控器，就可以回退到ACLCTL或者STAB
 				 // 本地位置估计对于多旋翼来说是足够进行POSCTL的
 				 // 例如可以使用光流进行POSCTL
 
@@ -827,6 +827,8 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 			status->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_RTL;
 
 			/* finished handling commands which have priority, now handle failures */
+			// 先处理优先级高的
+			// 再处理错误
 
 		} else if (status_flags->gps_failure) {
 			status->nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND;
@@ -843,6 +845,8 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 
 			/* datalink loss enabled:
 			 * check for datalink lost: this should always trigger RTGS */
+			 // 使能数据链丢失
+			 // 检查数据链丢失:触发RTGS
 
 		} else if (data_link_loss_enabled && status->data_link_lost) {
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_datalink);
@@ -866,7 +870,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 			 // 检测是否RC和数据链都在任务过程中丢失
 			 // 或者所有的连接都在任务完成后飞机仍在空中时丢失
 
-		} else if (!data_link_loss_enabled && status->rc_signal_lost && status->data_link_lost && !landed && mission_finished) {
+		} else if (!data_link_loss_enabled && status->rc_signal_lost && status->data_link_lost && !landed && mission_finished) { 
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_datalink);
 
 			if (status_flags->condition_global_position_valid && status_flags->condition_home_position_valid) {

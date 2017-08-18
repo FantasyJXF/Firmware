@@ -44,7 +44,9 @@
 namespace systemlib
 {
 
-
+/* 
+ * 如果检测到状态改变，并且持续了一定的时间后，最终的_state状态才更新
+ */
 void
 Hysteresis::set_state_and_update(const bool new_state)
 {

@@ -299,8 +299,8 @@ PARAM_DEFINE_INT32(COM_DISARM_LAND, 0);
  * @group Commander
  * @min 0
  * @max 1
- * @value 0 Don't allow arming without GPS
- * @value 1 Allow arming without GPS
+ * @value 0 Don't allow arming without GPS 不允许
+ * @value 1 Allow arming without GPS 允许
  */
 PARAM_DEFINE_INT32(COM_ARM_WO_GPS, 1);
 
@@ -312,9 +312,9 @@ PARAM_DEFINE_INT32(COM_ARM_WO_GPS, 1);
  * 电池电量低时系统将采取的措施。默认为0，发出警告
  *
  * @group Commander
- * @value 0 Warning
- * @value 1 Return to Land
- * @value 2 Land at current position
+ * @value 0 Warning  警告
+ * @value 1 Return to Land  返回着陆
+ * @value 2 Land at current position  在当前位置着陆
  * @decimal 0
  * @increment 1
  */
@@ -580,6 +580,7 @@ PARAM_DEFINE_FLOAT(COM_ARM_EKF_GB, 8.7e-4f);
 
 /**
  * Maximum accelerometer inconsistency between IMU units that will allow arming
+ * 解锁允许的加速度计与IMU单元之间的最大不一致度
  *
  * @group Commander
  * @unit m/s/s

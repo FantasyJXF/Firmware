@@ -57,6 +57,7 @@
 
 /*
  * Azimuthal Equidistant Projection
+ * 方位等距投影
  * formulas according to: http://mathworld.wolfram.com/AzimuthalEquidistantProjection.html
  */
 

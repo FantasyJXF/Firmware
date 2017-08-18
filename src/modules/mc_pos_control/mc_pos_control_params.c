@@ -40,7 +40,7 @@
 
 /**
  * Minimum thrust in auto thrust control
- * 自动推力控制下的最小推力
+ * 自动模式推力控制下的最小推力
  *
  * It's recommended to set it > 0 to avoid free fall with zero thrust.
  * 建议将其设置成一个大于0的数以避免在推力为0时自由落体

@@ -55,7 +55,7 @@
  * @min 0
  * @max 4
  * @value 0 None
- * @value 1 Warning
+ * @value 1 Warning ¾¯¸æ
  * @value 2 Loiter
  * @value 3 Return to Land
  * @value 4 Flight terminate

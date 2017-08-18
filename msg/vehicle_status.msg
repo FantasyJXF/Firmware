@@ -22,7 +22,7 @@ uint8 NAVIGATION_STATE_AUTO_RTL = 5		# Auto return to launch mode
 uint8 NAVIGATION_STATE_AUTO_RCRECOVER = 6	# RC recover mode
 uint8 NAVIGATION_STATE_AUTO_RTGS = 7		# Auto return to groundstation on data link loss
 uint8 NAVIGATION_STATE_AUTO_LANDENGFAIL = 8 	# Auto land on engine failure 
-uint8 NAVIGATION_STATE_AUTO_LANDGPSFAIL = 9	# Auto land on gps failure (e.g. open loop loiter down)
+uint8 NAVIGATION_STATE_AUTO_LANDGPSFAIL = 9	# Auto land on gps failure (e.g. open loop loiter down) GPS错误时自动着陆
 uint8 NAVIGATION_STATE_ACRO = 10		# Acro mode
 uint8 NAVIGATION_STATE_UNUSED = 11		# Free slot
 uint8 NAVIGATION_STATE_DESCEND = 12		# Descend mode (no position control) 不带位置控制的下降
@@ -43,29 +43,29 @@ uint8 RC_IN_MODE_GENERATED = 2
 # Encodes the complete system state and is set by the commander app.
 
 uint8 nav_state			# set navigation state machine to specified value
-uint8 arming_state			# current arming state
+uint8 arming_state			# current arming state 当前解锁状态
 uint8 hil_state				# current hil state
 bool failsafe				# true if system is in failsafe state
 
-uint8 system_type			# system type, contains mavlink MAV_TYPE
+uint8 system_type			# system type, contains mavlink MAV_TYPE 机型
 uint32 system_id			# system id, contains MAVLink's system ID field
 uint32 component_id		# subsystem / component id, contains MAVLink's component ID field
 
 bool is_rotary_wing		# True if system is in rotary wing configuration, so for a VTOL this is only true while flying as a multicopter
-                                      # 如果系统处于旋转翼配置，则为真，因此对于垂直起落架来说，这只有在作为多机器飞行时才为真
+                                      # 如果系统处于旋转翼配置，则为真，因此对于垂直起落架来说，这只有在作为多旋翼飞行时才为真
 bool is_vtol				# True if the system is VTOL capable 如果系统具有VTOL功能，则为真
 bool vtol_fw_permanent_stab		# True if vtol should stabilize attitude for fw in manual mode 如果vtol应该在手动模式下稳定fw的姿态，则为真
 bool in_transition_mode			# True if VTOL is doing a transition 如果VTOL正在进行转换，则为真
 bool in_transition_to_fw		# True if VTOL is doing a transition from MC to FW 如果VTOL正在从MC转换到FW，则为真
 
 bool rc_signal_lost				# true if RC reception lost
-uint8 rc_input_mode				# set to 1 to disable the RC input, 2 to enable manual control to RC in mapping.
+uint8 rc_input_mode				# set to 1 to disable the RC input, 2 to enable manual control to RC in mapping. 1:禁用遥控器输入2:使能手动控制
 
-bool data_link_lost				# datalink to GCS lost
+bool data_link_lost				# datalink to GCS lost 与地面站的数据链丢失
 uint8 data_link_lost_counter			# counts unique data link lost events
 bool engine_failure				# Set to true if an engine failure is detected
 bool engine_failure_cmd				# Set to true if an engine failure mode is commanded
-bool mission_failure				# Set to true if mission could not continue/finish
+bool mission_failure				# Set to true if mission could not continue/finish 如果任务无法继续/完成则设置为真
 
 # see SYS_STATUS mavlink message for the following
 uint32 onboard_control_sensors_present

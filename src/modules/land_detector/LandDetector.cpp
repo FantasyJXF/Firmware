@@ -60,7 +60,7 @@ LandDetector::LandDetector() :
 {
 	// Use Trigger time when transitioning from in-air (false) to landed (true).
 	// 当从空中(false)到着陆(true)时使用触发器时间
-	_landed_hysteresis.set_hysteresis_time_from(false, LAND_DETECTOR_TRIGGER_TIME_US);
+	_landed_hysteresis.set_hysteresis_time_from(false, LAND_DETECTOR_TRIGGER_TIME_US); // 着陆后
 }
 
 LandDetector::~LandDetector()

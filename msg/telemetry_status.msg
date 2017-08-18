@@ -4,9 +4,9 @@ uint8 TELEMETRY_STATUS_RADIO_TYPE_UBIQUITY_BULLET = 2
 uint8 TELEMETRY_STATUS_RADIO_TYPE_WIRE = 3
 uint8 TELEMETRY_STATUS_RADIO_TYPE_USB = 4
 
-uint64 heartbeat_time			# Time of last received heartbeat from remote system
-uint64 telem_time			# Time of last received telemetry status packet, 0 for none
-uint8 type				# type of the radio hardware
+uint64 heartbeat_time			# Time of last received heartbeat from remote system 上一次从远程系统收到心跳包的时间
+uint64 telem_time			# Time of last received telemetry status packet, 0 for none 上一次接收到数传状态包的时间，0表示没有
+uint8 type				# type of the radio hardware 
 uint8 rssi				# local signal strength
 uint8 remote_rssi			# remote signal strength
 uint16 rxerrors				# receive errors
