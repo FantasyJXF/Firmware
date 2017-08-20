@@ -153,7 +153,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 		int prearm_ret = OK; // OK = 0
 
 		/* only perform the pre-arm check if we have to */
-		// 只在必要时执行解锁前检测
+		// 只在必要时执行   解锁前检测
 		if (fRunPreArmChecks && new_arming_state == vehicle_status_s::ARMING_STATE_ARMED
 		    && status->hil_state == vehicle_status_s::HIL_STATE_OFF) {// 目标状态为解锁 && 非HIL模式
 
@@ -162,7 +162,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 		}
 
 		/* re-run the pre-flight check as long as sensors are failing */
-		// 只要传感器依然失败就重新进行飞行前检查
+		// 只要传感器依然失败就重新进行   飞行前检查
 		if (!status_flags->condition_system_sensors_initialized /* 传感器未初始化 */
 		    && (new_arming_state == vehicle_status_s::ARMING_STATE_ARMED
 			|| new_arming_state == vehicle_status_s::ARMING_STATE_STANDBY)
@@ -221,7 +221,7 @@ transition_result_t arming_state_transition(struct vehicle_status_s *status, /* 
 
 					// Fail transition if pre-arm check fails
 					// 若解锁前检查失败，则转换失败
-					if (prearm_ret) { // 解锁前检查失败
+					if (prearm_ret) { // 解锁前检查失败(OK=0)
 						/* the prearm check already prints the reject reason */
 						// 飞行前检查已经打印了拒绝原因
 						feedback_provided = true;
@@ -410,6 +410,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	case commander_state_s::MAIN_STATE_ALTCTL:
 
 		/* need at minimum altitude estimate */
+		// 定高模式至少需要local高度或者global位置估计
 		if (status_flags->condition_local_altitude_valid ||
 		    status_flags->condition_global_position_valid) {
 			ret = TRANSITION_CHANGED;
@@ -420,7 +421,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	case commander_state_s::MAIN_STATE_POSCTL:
 
 		/* need at minimum local position estimate */
-		// 定高模式至少需要local位置估计
+		// 定点模式至少需要local位置估计或global位置估计
 		if (status_flags->condition_local_position_valid ||
 		    status_flags->condition_global_position_valid) {
 			ret = TRANSITION_CHANGED;
@@ -467,7 +468,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	}
 
 	if (ret == TRANSITION_CHANGED) {
-		if (internal_state->main_state != new_main_state) { // 中间状态跟期望的新状态不同
+		if (internal_state->main_state != new_main_state) { // 内部状态跟期望的新状态不同
 			main_state_prev = internal_state->main_state;
 			internal_state->main_state = new_main_state;
 			internal_state->timestamp = hrt_absolute_time();
@@ -662,6 +663,7 @@ transition_result_t hil_state_transition(hil_state_t new_state, orb_advert_t sta
 
 /**
  * Enable failsafe and repot to user
+ * 使能故障保护并报告给用户
  */
 void enable_failsafe(struct vehicle_status_s *status,
 		bool old_failsafe,

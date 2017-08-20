@@ -3380,7 +3380,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 		 (_last_sp_man.rattitude_switch == sp_man.rattitude_switch) &&
 		 (_last_sp_man.posctl_switch == sp_man.posctl_switch) &&
 		 (_last_sp_man.loiter_switch == sp_man.loiter_switch) &&
-		 (_last_sp_man.mode_slot == sp_man.mode_slot))) {
+		 (_last_sp_man.mode_slot == sp_man.mode_slot))) { // 模式开关未改变
 
 		// update these fields for the geofence system
 		// 为地理围栏系统更新这些字段
@@ -3601,12 +3601,13 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 
 			/* manual mode is stabilized already for multirotors, so switch to acro
 			 * for any non-manual mode
-			 * 对于多旋翼来说，手动模式以及包含增稳了。
+			 * 对于多旋翼来说，手动模式已经包含增稳了。
 			 */
 			// XXX: put ACRO and STAB on separate switches
-			if (status.is_rotary_wing && !status.is_vtol) {
+			// XXX: 将ACRO和STAB放到单独的开关上
+			if (status.is_rotary_wing && !status.is_vtol) { // 旋翼机
 				res = main_state_transition(status_local, commander_state_s::MAIN_STATE_ACRO, main_state_prev, &status_flags, &internal_state);
-			} else if (!status.is_rotary_wing) {
+			} else if (!status.is_rotary_wing) { //不是旋翼机
 				res = main_state_transition(status_local, commander_state_s::MAIN_STATE_STAB, main_state_prev, &status_flags, &internal_state);
 			} else {
 				res = main_state_transition(status_local, commander_state_s::MAIN_STATE_MANUAL, main_state_prev, &status_flags, &internal_state);
