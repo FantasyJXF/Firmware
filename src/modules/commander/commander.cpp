@@ -3597,7 +3597,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 		break;
 
 	case manual_control_setpoint_s::SWITCH_POS_OFF:		// MANUAL
-		if (sp_man.acro_switch == manual_control_setpoint_s::SWITCH_POS_ON) {
+		if (sp_man.acro_switch == manual_control_setpoint_s::SWITCH_POS_ON) { // 特技模式
 
 			/* manual mode is stabilized already for multirotors, so switch to acro
 			 * for any non-manual mode
@@ -3613,7 +3613,7 @@ set_main_state_rc(struct vehicle_status_s *status_local)
 			}
 
 		}
-		else if(sp_man.rattitude_switch == manual_control_setpoint_s::SWITCH_POS_ON){
+		else if(sp_man.rattitude_switch == manual_control_setpoint_s::SWITCH_POS_ON){ // 角速度
 			/* Similar to acro transitions for multirotors.  FW aircraft don't need a
 			 * rattitude mode.*/
 			 // 对多旋翼，这类似于特技模式转换。
@@ -3720,7 +3720,7 @@ set_control_mode()
 	/* set vehicle_control_mode according to set_navigation_state */
 	// 根据set_navigation_state设置vehicle_control_mode
 	control_mode.flag_armed = armed.armed;
-	control_mode.flag_external_manual_override_ok = (!status.is_rotary_wing && !status.is_vtol);
+	control_mode.flag_external_manual_override_ok = (!status.is_rotary_wing && !status.is_vtol); // 仅固定翼时为真
 	control_mode.flag_system_hil_enabled = status.hil_state == vehicle_status_s::HIL_STATE_ON;
 	control_mode.flag_control_offboard_enabled = false;
 
