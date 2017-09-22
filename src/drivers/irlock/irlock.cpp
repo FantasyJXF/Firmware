@@ -264,7 +264,9 @@ void IRLOCK::start()
 	_reports->flush();
 
 	/** start work queue cycle **/
-	work_queue(HPWORK, &_work, (worker_t)&IRLOCK::cycle_trampoline, this, 1);
+	work_queue(HPWORK, &_work, (worker_t)&IRLOCK::cycle_trampoline, this, 1); // 延迟为一个时钟节拍
+	// 初始化任务的回调函数、回调函数参数和加入链表的时间，最后将任务添加到工作队列链表中
+	
 }
 
 /** stop periodic reads from sensor **/
