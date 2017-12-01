@@ -36,8 +36,8 @@
  * Handles mission items, geo fencing and failsafe navigation behavior.
  * Published the position setpoint triplet for the position controller.
  *
- * å¤„ç†ä»»åŠ¡ã€åœ°ç†å›´æ ä»¥åŠå¤±æ§ä¿æŠ¤ä¸‹çš„å¯¼èˆªè¡Œä¸º
- * å‘ä½ç½®æ§åˆ¶å™¨å‘å¸ƒä½ç½®è®¾å®šå€¼triplet
+ * ´¦ÀíÈÎÎñ¡¢µØÀíÎ§À¸ÒÔ¼°Ê§¿Ø±£»¤ÏÂµÄµ¼º½ĞĞÎª
+ * ÏòÎ»ÖÃ¿ØÖÆÆ÷·¢²¼Î»ÖÃÉè¶¨Öµtriplet
  *
  * @author Lorenz Meier <lm@inf.ethz.ch>
  * @author Jean Cyr <jean.m.cyr@gmail.com>
@@ -93,7 +93,7 @@
  */
 extern "C" __EXPORT int navigator_main(int argc, char *argv[]);
 
-#define GEOFENCE_CHECK_INTERVAL 200000 // 2ç§’
+#define GEOFENCE_CHECK_INTERVAL 200000 // 2Ãë
 
 namespace navigator
 {
@@ -249,6 +249,7 @@ Navigator::vehicle_status_update()
 {
 	if (orb_copy(ORB_ID(vehicle_status), _vstatus_sub, &_vstatus) != OK) {
 		/* in case the commander is not be running */
+		// ÍòÒ»commanderÃ»ÓĞÔÚÔËĞĞ
 		_vstatus.arming_state = vehicle_status_s::ARMING_STATE_STANDBY;
 	}
 }
@@ -290,7 +291,7 @@ Navigator::task_main()
 	/* Try to load the geofence:
 	 * if /fs/microsd/etc/geofence.txt load from this file
 	 * else clear geofence data in datamanager */
-	 // åŠ è½½åœ°ç†å›´æ   å­˜æ”¾åœ¨SDå¡ä¸­
+	 // ¼ÓÔØµØÀíÎ§À¸  ´æ·ÅÔÚSD¿¨ÖĞ
 	struct stat buffer;
 
 	if (stat(GEOFENCE_FILENAME, &buffer) == 0) {
@@ -318,7 +319,7 @@ Navigator::task_main()
 	_vehicle_command_sub = orb_subscribe(ORB_ID(vehicle_command));
 
 	/* copy all topics first time */
-	// ç¬¬ä¸€æ¬¡å¤åˆ¶æ‰€æœ‰çš„è¯é¢˜
+	// µÚÒ»´Î¸´ÖÆËùÓĞµÄ»°Ìâ
 	vehicle_status_update();
 	vehicle_land_detected_update();
 	vehicle_control_mode_update();
@@ -333,9 +334,9 @@ Navigator::task_main()
 	px4_pollfd_struct_t fds[1] = {};
 
 	/* Setup of loop */
-	// å¾ªç¯è®¾ç½®
-	fds[0].fd = _global_pos_sub; // ä½ç½®è®¢é˜…
-	fds[0].events = POLLIN; //æ™®é€šæˆ–ä¼˜å…ˆçº§å¸¦æ•°æ®å¯è¯»
+	// Ñ­»·ÉèÖÃ
+	fds[0].fd = _global_pos_sub; // Î»ÖÃ¶©ÔÄ
+	fds[0].events = POLLIN; //ÆÕÍ¨»òÓÅÏÈ¼¶´øÊı¾İ¿É¶Á
 
 	bool global_pos_available_once = false;
 
@@ -344,7 +345,7 @@ Navigator::task_main()
 		/* wait for up to 1000ms for data */
 		int pret = px4_poll(&fds[0], (sizeof(fds) / sizeof(fds[0])), 1000);
 
-		if (pret == 0) { // ç­‰å¾…timeoutè®¾å®šçš„æ—¶é—´åè¿”å›
+		if (pret == 0) { // µÈ´ıtimeoutÉè¶¨µÄÊ±¼äºó·µ»Ø
 			/* timed out - periodic check for _task_should_exit, etc. */
 			if (global_pos_available_once) {
 				global_pos_available_once = false;
@@ -352,17 +353,17 @@ Navigator::task_main()
 			}
 			/* Let the loop run anyway, don't do `continue` here. */
 
-		} else if (pret < 0) { // æŠ¥é”™
+		} else if (pret < 0) { // ±¨´í
 			/* this is undesirable but not much we can do - might want to flag unhappy status */
 			PX4_ERR("nav: poll error %d, %d", pret, errno);
 			usleep(10000);
 			continue;
-		} else { // æ­£å¸¸æƒ…å†µä¸‹ï¼Œè½®è¯¢åˆ°äº†è®¢é˜…çš„æ•°æ®
+		} else { // Õı³£Çé¿öÏÂ£¬ÂÖÑ¯µ½ÁË¶©ÔÄµÄÊı¾İ
 
 			if (fds[0].revents & POLLIN) {
 				/* success, global pos is available */
-				global_position_update(); // å¤åˆ¶å…¨çƒä½ç½®æ•°æ®
-				if (_geofence.getSource() == Geofence::GF_SOURCE_GLOBALPOS) { // GFæºï¼Œå…¨çƒä½ç½®
+				global_position_update(); // ¸´ÖÆÈ«ÇòÎ»ÖÃÊı¾İ
+				if (_geofence.getSource() == Geofence::GF_SOURCE_GLOBALPOS) { // GFÔ´£¬È«ÇòÎ»ÖÃ
 					have_geofence_position_data = true;
 				}
 				global_pos_available_once = true;
@@ -376,8 +377,8 @@ Navigator::task_main()
 		/* gps updated */
 		orb_check(_gps_pos_sub, &updated);
 		if (updated) {
-			gps_position_update(); // å¤åˆ¶GPSåŸå§‹æ•°æ®
-			if (_geofence.getSource() == Geofence::GF_SOURCE_GPS) { // GFæºï¼ŒGPSä½ç½®
+			gps_position_update(); // ¸´ÖÆGPSÔ­Ê¼Êı¾İ
+			if (_geofence.getSource() == Geofence::GF_SOURCE_GPS) { // GFÔ´£¬GPSÎ»ÖÃ
 				have_geofence_position_data = true;
 			}
 		}
@@ -391,8 +392,8 @@ Navigator::task_main()
 		/* parameters updated */
 		orb_check(_param_update_sub, &updated);
 		if (updated) {
-			params_update();// ä¿å­˜æ•°æ® 
-			updateParams(); // #### æ›´æ–°çš„ä»€ä¹ˆå‚æ•° 
+			params_update();// ±£´æÊı¾İ 
+			updateParams(); // #### ¸üĞÂµÄÊ²Ã´²ÎÊı 
 		}
 
 		/* vehicle control mode updated */
@@ -425,7 +426,7 @@ Navigator::task_main()
 			home_position_update();
 		}
 		
-///////////////// commander æ›´æ–°
+///////////////// commander ¸üĞÂ
 		orb_check(_vehicle_command_sub, &updated);
 		if (updated) {
 			vehicle_command_s cmd;
@@ -433,11 +434,11 @@ Navigator::task_main()
 
 			if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_REPOSITION) {
 				/*
-				 * MAV_CMD_DO_REPOSITION 	 å°†é£è¡Œå™¨é‡æ–°å®šä½åˆ°ç‰¹å®šçš„WGS84å…¨çƒä½ç½®ã€‚
+				 * MAV_CMD_DO_REPOSITION 	 ½«·ÉĞĞÆ÷ÖØĞÂ¶¨Î»µ½ÌØ¶¨µÄWGS84È«ÇòÎ»ÖÃ¡£
 				 * Mission Param #1	Ground speed, less than 0 (-1) for default
 				 * Mission Param #2	Bitmask of option flags, see the MAV_DO_REPOSITION_FLAGS enum.
 				 * Mission Param #3	Reserved
-				 * Mission Param #4	åèˆªèˆªå‘, NaNæ—¶ä¸å˜. å¯¹äºé£æœºè¡¨ç¤ºloiteræ–¹å‘(0: é¡ºæ—¶é’ˆ, 1: é€†æ—¶é’ˆ)
+				 * Mission Param #4	Æ«º½º½Ïò, NaNÊ±²»±ä. ¶ÔÓÚ·É»ú±íÊ¾loiter·½Ïò(0: Ë³Ê±Õë, 1: ÄæÊ±Õë)
 				 * Mission Param #5	Latitude (deg * 1E7)
 				 * Mission Param #6	Longitude (deg * 1E7)
 				 * Mission Param #7	Altitude (meters)				 
@@ -446,18 +447,18 @@ Navigator::task_main()
 				struct position_setpoint_triplet_s *rep = get_reposition_triplet();
 
 				// store current position as previous position and goal as next
-				// å°†å½“å‰çš„ä½ç½®ä¿å­˜ä¸ºä¹‹å‰çš„ä½ç½®ï¼Œå¹¶å°†ç›®æ ‡ä½ç½®ä½œä¸ºä¸‹ä¸€ä¸ªä½ç½®è®¾å®šå€¼
+				// ½«µ±Ç°µÄÎ»ÖÃ±£´æÎªÖ®Ç°µÄÎ»ÖÃ£¬²¢½«Ä¿±êÎ»ÖÃ×÷ÎªÏÂÒ»¸öÎ»ÖÃÉè¶¨Öµ
 				rep->previous.yaw = get_global_position()->yaw;
 				rep->previous.lat = get_global_position()->lat;
 				rep->previous.lon = get_global_position()->lon;
 				rep->previous.alt = get_global_position()->alt;
 
 				rep->current.loiter_radius = get_loiter_radius();
-				rep->current.loiter_direction = 1; // é¡ºæ—¶é’ˆ
+				rep->current.loiter_direction = 1; // Ë³Ê±Õë
 				rep->current.type = position_setpoint_s::SETPOINT_TYPE_LOITER;
 
 				// Go on and check which changes had been requested
-				if (PX4_ISFINITE(cmd.param4)) { // åèˆª
+				if (PX4_ISFINITE(cmd.param4)) { // Æ«º½
 					rep->current.yaw = cmd.param4;
 				} else {
 					rep->current.yaw = NAN;
@@ -482,20 +483,20 @@ Navigator::task_main()
 				rep->current.valid = true;
 				rep->next.valid = false;
 			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF) {
-///////////////// TAKEOFF èµ·é£
+///////////////// TAKEOFF Æğ·É
 				struct position_setpoint_triplet_s *rep = get_takeoff_triplet(); // takeoff_triplet
 
 				// store current position as previous position and goal as next
-				// å°†ç°åœ¨çš„ä½ç½®ä½œä¸ºä¹‹å‰çš„ä½ç½®å­˜èµ·æ¥ï¼Œå°†ç›®æ ‡ä½ç½®ä½œä¸ºä¸‹ä¸€ä¸ªèˆªç‚¹
+				// ½«ÏÖÔÚµÄÎ»ÖÃ×÷ÎªÖ®Ç°µÄÎ»ÖÃ´æÆğÀ´£¬½«Ä¿±êÎ»ÖÃ×÷ÎªÏÂÒ»¸öº½µã
 				rep->previous.yaw = get_global_position()->yaw;
 				rep->previous.lat = get_global_position()->lat;
 				rep->previous.lon = get_global_position()->lon;
 				rep->previous.alt = get_global_position()->alt;
 
 				rep->current.loiter_radius = get_loiter_radius();
-				rep->current.loiter_direction = 1; // é¡ºæ—¶é’ˆ
+				rep->current.loiter_direction = 1; // Ë³Ê±Õë
 				rep->current.type = position_setpoint_s::SETPOINT_TYPE_TAKEOFF;
-				rep->current.yaw = cmd.param4; // åèˆªè§’(if magnetometer present), ignored without magnetometer
+				rep->current.yaw = cmd.param4; // Æ«º½½Ç(if magnetometer present), ignored without magnetometer
 
 				/****
 				 * MAV_CMD_NAV_TAKEOFF	Takeoff from ground / hand
@@ -524,19 +525,19 @@ Navigator::task_main()
 				rep->next.valid = false;
 
 			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_LAND_START) {
-///////////////// LAND ç€é™†
+///////////////// LAND ×ÅÂ½
 
 				/* find NAV_CMD_DO_LAND_START in the mission and
 				 * use MAV_CMD_MISSION_START to start the mission there
 				 */
 				 
 				 /*
-				  * MAV_CMD_MISSION_START	å¼€å§‹è¿è¡Œä»»åŠ¡
-				  * Mission Param #1	first_item: ç¬¬ä¸€ä¸ªä»»åŠ¡
-				  * Mission Param #2	last_item: æœ€åä¸€ä¸ªä»»åŠ¡ 
+				  * MAV_CMD_MISSION_START	¿ªÊ¼ÔËĞĞÈÎÎñ
+				  * Mission Param #1	first_item: µÚÒ»¸öÈÎÎñ
+				  * Mission Param #2	last_item: ×îºóÒ»¸öÈÎÎñ 
 				  */
-				unsigned land_start = _mission.find_offboard_land_start(); // è¿”å›-1æ—¶è¡¨ç¤ºæ²¡æœ‰æ‰¾åˆ°ç€é™†ä»»åŠ¡ã€€
-				if (land_start != -1) { // æ¥æ”¶åˆ°ç€é™†ä»»åŠ¡
+				unsigned land_start = _mission.find_offboard_land_start(); // ·µ»Ø-1Ê±±íÊ¾Ã»ÓĞÕÒµ½×ÅÂ½ÈÎÎñ¡¡
+				if (land_start != -1) { // ½ÓÊÕµ½×ÅÂ½ÈÎÎñ
 					vehicle_command_s vcmd = {};
 					vcmd.target_system = get_vstatus()->system_id;
 					vcmd.target_component = get_vstatus()->component_id;
@@ -544,25 +545,25 @@ Navigator::task_main()
 					vcmd.param1 = land_start;
 					vcmd.param2 = 0;
 
-					orb_advert_t pub = orb_advertise_queue(ORB_ID(vehicle_command), &vcmd, vehicle_command_s::ORB_QUEUE_LENGTH); // é˜Ÿåˆ—é•¿åº¦ä¸º3
+					orb_advert_t pub = orb_advertise_queue(ORB_ID(vehicle_command), &vcmd, vehicle_command_s::ORB_QUEUE_LENGTH); // ¶ÓÁĞ³¤¶ÈÎª3
 					(void)orb_unadvertise(pub);
 				}
 
 			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_MISSION_START) {
-////////////////  MISSION ä»»åŠ¡æ¨¡å¼
+////////////////  MISSION ÈÎÎñÄ£Ê½
 				if (get_mission_result()->valid &&
 					PX4_ISFINITE(cmd.param1) && (cmd.param1 >= 0) && (cmd.param1 < _mission_result.seq_total)) {
 
 					_mission.set_current_offboard_mission_index(cmd.param1);
 				}
 
-			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_PAUSE_CONTINUE) { // å¦‚æœåœ¨GPSä½ç½®æ§åˆ¶æ¨¡å¼ä¸‹ï¼Œä¿æŒå½“å‰ä½ç½®æˆ–ç»§ç»­ã€‚
+			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_PAUSE_CONTINUE) { // Èç¹ûÔÚGPSÎ»ÖÃ¿ØÖÆÄ£Ê½ÏÂ£¬±£³Öµ±Ç°Î»ÖÃ»ò¼ÌĞø¡£
 				PX4_INFO("got pause/continue command");
 			}
 		}
 
 		/* Check geofence violation */
-		// åœ°ç†å›´æ è¿åæ£€æŸ¥
+		// µØÀíÎ§À¸Î¥·´¼ì²é
 		static hrt_abstime last_geofence_check = 0;
 		if (have_geofence_position_data &&
 			(_geofence.getGeofenceAction() != geofence_result_s::GF_ACTION_NONE) &&
@@ -575,19 +576,19 @@ Navigator::task_main()
 			_geofence_result.geofence_action = _geofence.getGeofenceAction();
 			if (!inside) {
 				/* inform other apps via the mission result */
-				// é€šè¿‡ä»»åŠ¡ç»“æœé€šçŸ¥å…¶ä»–åº”ç”¨
+				// Í¨¹ıÈÎÎñ½á¹ûÍ¨ÖªÆäËûÓ¦ÓÃ
 				_geofence_result.geofence_violated = true;
-				publish_geofence_result(); // å‘å¸ƒå›´æ ç»“æœ
+				publish_geofence_result(); // ·¢²¼Î§À¸½á¹û
 
 				/* Issue a warning about the geofence violation once */
-				// å‘å‡ºä¸€æ¬¡æœ‰å…³åœ°ç†å›´æ è¿è§„çš„è­¦å‘Š
+				// ·¢³öÒ»´ÎÓĞ¹ØµØÀíÎ§À¸Î¥¹æµÄ¾¯¸æ
 				if (!_geofence_violation_warning_sent) {
 					mavlink_log_critical(&_mavlink_log_pub, "Geofence violation");
 					_geofence_violation_warning_sent = true;
 				}
 			} else {
 				/* inform other apps via the mission result */
-				// é€šè¿‡ä»»åŠ¡ç»“æœé€šçŸ¥å…¶ä»–åº”ç”¨
+				// Í¨¹ıÈÎÎñ½á¹ûÍ¨ÖªÆäËûÓ¦ÓÃ
 				_geofence_result.geofence_violated = false;
 				publish_geofence_result();
 				/* Reset the _geofence_violation_warning_sent field */
@@ -596,7 +597,7 @@ Navigator::task_main()
 		}
 
 		/* Do stuff according to navigation state set by commander */
-		// æ ¹æ®commanderè®¾å®šçš„å¯¼èˆªçŠ¶æ€åšäº‹æƒ…
+		// ¸ù¾İcommanderÉè¶¨µÄµ¼º½×´Ì¬×öÊÂÇé
 		switch (_vstatus.nav_state) {
 			case vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION:
 				_pos_sp_triplet_published_invalid_once = false;
@@ -634,7 +635,7 @@ Navigator::task_main()
 				_pos_sp_triplet_published_invalid_once = false;
 				_navigation_mode = &_land;
 				break;
-			case vehicle_status_s::NAVIGATION_STATE_AUTO_RTGS: // æ•°æ®é“¾ä¸¢å¤±æ—¶å›åˆ°åœ°é¢ç«™
+			case vehicle_status_s::NAVIGATION_STATE_AUTO_RTGS: // Êı¾İÁ´¶ªÊ§Ê±»Øµ½µØÃæÕ¾
 				/* Use complex data link loss mode only when enabled via param
 				 * otherwise use rtl */
 				_pos_sp_triplet_published_invalid_once = false;
@@ -675,13 +676,13 @@ Navigator::task_main()
 		}
 
 		/* iterate through navigation modes and set active/inactive for each */
-		// éå†å¯¼èˆªæ¨¡å¼ï¼Œå¹¶ä¸ºæ¯ä¸ªæ¨¡å¼è®¾ç½®active/inactive
+		// ±éÀúµ¼º½Ä£Ê½£¬²¢ÎªÃ¿¸öÄ£Ê½ÉèÖÃactive/inactive
 		for (unsigned int i = 0; i < NAVIGATOR_MODE_ARRAY_SIZE; i++) {
 			_navigation_mode_array[i]->run(_navigation_mode == _navigation_mode_array[i]);
 		}
 
 		/* if nothing is running, set position setpoint triplet invalid once */
-		// å¦‚æœæ²¡æœ‰è¿è¡Œï¼Œåˆ™è®¾ç½®ä½ç½®è®¾å®šå€¼ä¸‰å…ƒç»„æ— æ•ˆä¸€æ¬¡
+		// Èç¹ûÃ»ÓĞÔËĞĞ£¬ÔòÉèÖÃÎ»ÖÃÉè¶¨ÖµÈıÔª×éÎŞĞ§Ò»´Î
 		if (_navigation_mode == nullptr && !_pos_sp_triplet_published_invalid_once) {
 			_pos_sp_triplet_published_invalid_once = true;
 			_pos_sp_triplet.previous.valid = false;
@@ -690,14 +691,14 @@ Navigator::task_main()
 			_pos_sp_triplet_updated = true;
 		}
 
-		if (_pos_sp_triplet_updated) { // å¦‚æœä»»åŠ¡è®¾å®šå€¼éœ€è¦å‘å¸ƒï¼Œåˆ™ç½®ä½
+		if (_pos_sp_triplet_updated) { // Èç¹ûÈÎÎñÉè¶¨ÖµĞèÒª·¢²¼£¬ÔòÖÃÎ»
 			_pos_sp_triplet.timestamp = hrt_absolute_time();
-			publish_position_setpoint_triplet(); // å‘å¸ƒä½ç½®è®¾å®šå€¼triplet
+			publish_position_setpoint_triplet(); // ·¢²¼Î»ÖÃÉè¶¨Öµtriplet
 			_pos_sp_triplet_updated = false;
 		}
 
-		if (_mission_result_updated) { // å¦‚æœä»»åŠ¡ç»“æœå·²ç»æ›´æ–°ï¼Œåˆ™ç½®ä½
-			publish_mission_result();  // å‘å¸ƒä»»åŠ¡ç»“æœ
+		if (_mission_result_updated) { // Èç¹ûÈÎÎñ½á¹ûÒÑ¾­¸üĞÂ£¬ÔòÖÃÎ»
+			publish_mission_result();  // ·¢²¼ÈÎÎñ½á¹û
 			_mission_result_updated = false;
 		}
 
@@ -761,11 +762,11 @@ void
 Navigator::publish_position_setpoint_triplet()
 {
 	/* update navigation state */
-	// æ›´æ–°å¯¼èˆªçŠ¶æ€
+	// ¸üĞÂµ¼º½×´Ì¬
 	_pos_sp_triplet.nav_state = _vstatus.nav_state;
 
 	/* do not publish an empty triplet */
-	// ä¸è¦å‘å¸ƒç©ºçš„ä½ç½®è®¾å®šå€¼triplet
+	// ²»Òª·¢²¼¿ÕµÄÎ»ÖÃÉè¶¨Öµtriplet
 	if (!_pos_sp_triplet.current.valid) {
 		return;
 	}
@@ -830,7 +831,7 @@ Navigator::get_acceptance_radius(float mission_item_radius)
 {
 	float radius = mission_item_radius;
 
-	// XXX only use navigation capabilities for now ç°åœ¨åªèƒ½ä½¿ç”¨å¯¼èˆªåŠŸèƒ½
+	// XXX only use navigation capabilities for now ÏÖÔÚÖ»ÄÜÊ¹ÓÃµ¼º½¹¦ÄÜ
 	// when in fixed wing mode
 	// this might need locking against a commanded transition
 	// so that a stale _vstatus doesn't trigger an accepted mission item.
@@ -949,7 +950,7 @@ Navigator::publish_mission_result()
 	}
 
 	/* reset some of the flags */
-	// é‡ç½®ä¸€äº›æ ‡å¿—ä½
+	// ÖØÖÃÒ»Ğ©±êÖ¾Î»
 	_mission_result.seq_current = 0;
 	_mission_result.item_do_jump_changed = false;
 	_mission_result.item_changed_index = 0;
@@ -962,7 +963,7 @@ Navigator::publish_geofence_result()
 {
 
 	/* lazily publish the geofence result only once available */
-	// åªèƒ½ä¸€æ¬¡æ€§å‘å¸ƒåœ°ç†å›´æ ç»“æœ
+	// Ö»ÄÜÒ»´ÎĞÔ·¢²¼µØÀíÎ§À¸½á¹û
 	if (_geofence_result_pub != nullptr) {
 		/* publish mission result */
 		orb_publish(ORB_ID(geofence_result), _geofence_result_pub, &_geofence_result);

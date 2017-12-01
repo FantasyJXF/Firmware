@@ -700,7 +700,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 	/* request to set different system mode */
 	// 请求设置不同的系统模式
 	switch (cmd->command) {
-	case vehicle_command_s::VEHICLE_CMD_DO_REPOSITION: {
+	case vehicle_command_s::VEHICLE_CMD_DO_REPOSITION: { // 将飞行器重新定位到特定的WGS84全球位置 
 
 		// Just switch the flight mode here, the navigator takes care of
 		// doing something sensible with the coordinates. Its designed
@@ -726,9 +726,9 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 	}
 	break;
 	case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE: { // 设置系统模式
-			uint8_t base_mode = (uint8_t)cmd->param1;
-			uint8_t custom_main_mode = (uint8_t)cmd->param2;
-			uint8_t custom_sub_mode = (uint8_t)cmd->param3;
+			uint8_t base_mode = (uint8_t)cmd->param1; // 根据MAV_MODE所设置的模式
+			uint8_t custom_main_mode = (uint8_t)cmd->param2; // Custom mode
+			uint8_t custom_sub_mode = (uint8_t)cmd->param3;  // custom sub mode
 
 			transition_result_t arming_ret = TRANSITION_NOT_CHANGED;
 
@@ -915,19 +915,22 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 
 	case vehicle_command_s::VEHICLE_CMD_OVERRIDE_GOTO: { // 保持/继续当前动作
 			// TODO listen vehicle_command topic directly from navigator (?)
+			// 直接监听来自navigator的vehicle_command主题
 
 			// Increase by 0.5f and rely on the integer cast
 			// implicit floor(). This is the *safest* way to
 			// convert from floats representing small ints to actual ints.
+			// 增加0.5并依靠整型来表示floor.
+			// 这是将用float表达的小的整型数转换到实际的整型数的最安全的方法
 			unsigned int mav_goto = (cmd->param1 + 0.5f);
 
 			if (mav_goto == 0) {	// MAV_GOTO_DO_HOLD
-				status_local->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER;
+				status_local->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER; // LOITER
 				mavlink_log_critical(&mavlink_log_pub, "Pause mission cmd");
 				cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
 
 			} else if (mav_goto == 1) {	// MAV_GOTO_DO_CONTINUE
-				status_local->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION;
+				status_local->nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION; // MISSION
 				mavlink_log_critical(&mavlink_log_pub, "Continue mission cmd");
 				cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
 
@@ -956,6 +959,7 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 				warnx("forcing failsafe (termination)");
 
 				/* param2 is currently used for other failsafe modes */
+				// 参数2目前用于其他故障保护模式
 				status_local->engine_failure_cmd = false;
 				status_flags.data_link_lost_cmd = false;
 				status_flags.gps_failure_cmd = false;
@@ -964,20 +968,24 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 
 				if ((int)cmd->param2 <= 0) {
 					/* reset all commanded failure modes */
+					// 复位所有命令的故障保护模式
 					warnx("reset all non-flighttermination failsafe commands");
 
 				} else if ((int)cmd->param2 == 1) {
 					/* trigger engine failure mode */
+					// 触发电机故障保护模式
 					status_local->engine_failure_cmd = true;
 					warnx("engine failure mode commanded");
 
 				} else if ((int)cmd->param2 == 2) {
 					/* trigger data link loss mode */
+					// 触发数据链丢失模式
 					status_flags.data_link_lost_cmd = true;
 					warnx("data link loss mode commanded");
 
 				} else if ((int)cmd->param2 == 3) {
 					/* trigger gps loss mode */
+					// 触发GPS丢失模式
 					status_flags.gps_failure_cmd = true;
 					warnx("GPS loss mode commanded");
 
@@ -3066,7 +3074,7 @@ int commander_thread_main(int argc, char *argv[])
 						       _mission_result.stay_in_failsafe, 
 						       &status_flags,
 						       land_detector.landed,
-						       (rc_loss_enabled > 0),
+						       (rc_loss_enabled > 0),// 默认为2，着陆，此项为真
 						       offboard_loss_act,
 						       offboard_loss_rc_act);
 
@@ -3801,7 +3809,8 @@ set_control_mode()
 	case vehicle_status_s::NAVIGATION_STATE_AUTO_RTL:
 	case vehicle_status_s::NAVIGATION_STATE_AUTO_RCRECOVER:
 		/* override is not ok for the RTL and recovery mode */
-		control_mode.flag_external_manual_override_ok = false;
+		// 对于RTL以及复位模式，不能进行覆盖
+		control_mode.flag_external_manual_override_ok = false; // 仅用于固定翼
 		/* fallthrough */
 	case vehicle_status_s::NAVIGATION_STATE_AUTO_FOLLOW_TARGET:
 	case vehicle_status_s::NAVIGATION_STATE_AUTO_RTGS:
@@ -3853,6 +3862,7 @@ set_control_mode()
 
 	case vehicle_status_s::NAVIGATION_STATE_DESCEND:
 		/* TODO: check if this makes sense */
+		// 检查这是否有意义
 		control_mode.flag_control_manual_enabled = false;
 		control_mode.flag_control_auto_enabled = true;
 		control_mode.flag_control_rates_enabled = true;
@@ -3890,29 +3900,31 @@ set_control_mode()
 		/*
 		 * The control flags depend on what is ignored according to the offboard control mode topic
 		 * Inner loop flags (e.g. attitude) also depend on outer loop ignore flags (e.g. position)
+		 * 控制标志位取决于根据外部控制模式主题所忽略的内容
+		 * 内环标志位(例如姿态)也取决于外环所忽略的标志位(例如位置)
 		 */
-		control_mode.flag_control_rates_enabled = !offboard_control_mode.ignore_bodyrate ||
-			!offboard_control_mode.ignore_attitude ||
-			!offboard_control_mode.ignore_position ||
-			!offboard_control_mode.ignore_velocity ||
-			!offboard_control_mode.ignore_acceleration_force;
+		control_mode.flag_control_rates_enabled = !offboard_control_mode.ignore_bodyrate || // 不忽略机体角速度
+			!offboard_control_mode.ignore_attitude ||// 不忽略姿态
+			!offboard_control_mode.ignore_position ||// 不忽略位置
+			!offboard_control_mode.ignore_velocity ||// 不忽略速度
+			!offboard_control_mode.ignore_acceleration_force; // 不忽略推力
 
-		control_mode.flag_control_attitude_enabled = !offboard_control_mode.ignore_attitude ||
-			!offboard_control_mode.ignore_position ||
-			!offboard_control_mode.ignore_velocity ||
-			!offboard_control_mode.ignore_acceleration_force;
+		control_mode.flag_control_attitude_enabled = !offboard_control_mode.ignore_attitude ||// 不忽略姿态
+			!offboard_control_mode.ignore_position || // 不忽略位置
+			!offboard_control_mode.ignore_velocity || // 不忽略速度
+			!offboard_control_mode.ignore_acceleration_force; // 不忽略加速度
 
 		control_mode.flag_control_rattitude_enabled = false;
 
-		control_mode.flag_control_acceleration_enabled = !offboard_control_mode.ignore_acceleration_force &&
-		  !status.in_transition_mode;
+		control_mode.flag_control_acceleration_enabled = !offboard_control_mode.ignore_acceleration_force && // 不忽略加速度
+		  !status.in_transition_mode; // 非VTOL
 
 		control_mode.flag_control_velocity_enabled = (!offboard_control_mode.ignore_velocity ||
-			!offboard_control_mode.ignore_position) && !status.in_transition_mode &&
-			!control_mode.flag_control_acceleration_enabled;
+			!offboard_control_mode.ignore_position) && !status.in_transition_mode && // 不忽略速度||
+			!control_mode.flag_control_acceleration_enabled; // 不控加速度
 
-		control_mode.flag_control_climb_rate_enabled = (!offboard_control_mode.ignore_velocity ||
-			!offboard_control_mode.ignore_position) && !control_mode.flag_control_acceleration_enabled;
+		control_mode.flag_control_climb_rate_enabled = (!offboard_control_mode.ignore_velocity || // 不忽略速度
+			!offboard_control_mode.ignore_position) && !control_mode.flag_control_acceleration_enabled; // 不控加速度
 
 		control_mode.flag_control_position_enabled = !offboard_control_mode.ignore_position && !status.in_transition_mode &&
 		  !control_mode.flag_control_acceleration_enabled;

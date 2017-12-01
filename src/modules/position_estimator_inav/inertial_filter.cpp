@@ -16,7 +16,11 @@ void inertial_filter_predict(float dt, float x[2], float acc)
 			acc = 0.0f;
 		}
 
-		x[0] += x[1] * dt + acc * dt * dt / 2.0f;
+		//  距离计算公式
+		// s = v * t + 0.5 * a * t^2
+		x[0] += x[1] * dt + acc * dt * dt / 2.0f; 
+		// 速度计算公式
+		// v = a * t
 		x[1] += acc * dt;
 	}
 }

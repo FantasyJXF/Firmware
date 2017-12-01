@@ -273,7 +273,7 @@ private:
 
 	bool		_can_loiter_at_sp;			/**< flags if current position SP can be used to loiter 当前设定值可用于悬停 */
 	bool		_pos_sp_triplet_updated;	/**< flags if position SP triplet needs to be published 如果任务设定值需要发布，则置位 */
-	bool 	_pos_sp_triplet_published_invalid_once;	/**< flags if position SP triplet has been published once to UORB */
+	bool 	_pos_sp_triplet_published_invalid_once;	/**< flags if position SP triplet has been published once to UORB如果位置设定值已经发布给UORB一次则置位 */
 	bool		_mission_result_updated;		/**< flags if mission result has seen an update 如果任务结果已经更新，则置位 */
 
 	NavigatorMode	*_navigation_mode;		/**< abstract pointer to current navigation mode class 抽象指针 */

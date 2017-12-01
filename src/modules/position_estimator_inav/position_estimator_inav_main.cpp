@@ -1052,7 +1052,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		/* accelerometer bias correction for GPS (use buffered rotation matrix) */
 		float accel_bias_corr[3] = { 0.0f, 0.0f, 0.0f };
 
-		if (use_gps_xy) {
+		if (use_gps_xy) {// 使用校正后的GPS水平速度、位置来计算加速度计在水平方向上的矫正量
 			accel_bias_corr[0] -= corr_gps[0][0] * w_xy_gps_p * w_xy_gps_p;
 			accel_bias_corr[0] -= corr_gps[0][1] * w_xy_gps_v;
 			accel_bias_corr[1] -= corr_gps[1][0] * w_xy_gps_p * w_xy_gps_p;
@@ -1065,6 +1065,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		}
 
 		/* transform error vector from NED frame to body frame */
+		// 将误差向量从地理坐标系转移到机体坐标系下
+		// 三轴加速度计校正量
 		for (int i = 0; i < 3; i++) {
 			float c = 0.0f;
 
@@ -1148,7 +1150,7 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 		}
 
 		/* inertial filter prediction for altitude */
-		inertial_filter_predict(dt, z_est, acc[2]);
+		inertial_filter_predict(dt, z_est, acc[2]); // 估计est
 
 		if (!(PX4_ISFINITE(z_est[0]) && PX4_ISFINITE(z_est[1]))) {
 			write_debug_log("BAD ESTIMATE AFTER Z PREDICTION", dt, x_est, y_est, z_est, x_est_prev, y_est_prev, z_est_prev,

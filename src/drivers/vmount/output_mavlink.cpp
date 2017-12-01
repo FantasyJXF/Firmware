@@ -33,7 +33,7 @@
 
 /**
  * @file output_mavlink.cpp
- * @author Leon Müller (thedevleon)
+ * @author Leon Meiller (thedevleon)
  * @author Beat Küng <beat-kueng@gmx.net>
  *
  */

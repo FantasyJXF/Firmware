@@ -44,6 +44,7 @@
 
 /**
  * Empty cell voltage (5C load)
+ * 电量空
  *
  * Defines the voltage where a single cell of the battery is considered empty.
  * The voltage should be chosen before the steep dropoff to 2.8V. A typical
@@ -59,6 +60,7 @@ PARAM_DEFINE_FLOAT(BAT_V_EMPTY, 3.4f);
 
 /**
  * Full cell voltage (5C load)
+ * 电量满
  *
  * Defines the voltage where a single cell of the battery is considered full
  * under a mild load. This will never be the nominal voltage of 4.2V
@@ -72,6 +74,7 @@ PARAM_DEFINE_FLOAT(BAT_V_CHARGED, 4.05f);
 
 /**
  * Low threshold
+ * 电量低阈值
  *
  * Sets the threshold when the battery will be reported as low.
  * This has to be higher than the critical threshold.
@@ -87,6 +90,7 @@ PARAM_DEFINE_FLOAT(BAT_LOW_THR, 0.15f);
 
 /**
  * Critical threshold
+ * 警告阈值
  *
  * Sets the threshold when the battery will be reported as critically low.
  * This has to be lower than the low threshold. This threshold commonly

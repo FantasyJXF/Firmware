@@ -3596,6 +3596,151 @@ protected:
 	}
 };
 
+class MavlinkStreamLogisticsInfo : public MavlinkStream
+{
+public:
+	const char *get_name() const
+	{
+		return MavlinkStreamLogisticsInfo::get_name_static();
+	}
+
+	static const char *get_name_static()
+	{
+		return "LOGISTICS_INFO";
+	}
+
+	static uint16_t get_id_static()
+	{
+		return MAVLINK_MSG_ID_LOGISTICS_INFO;
+	}
+
+	uint16_t get_id()
+	{
+		return get_id_static();
+	}
+
+	static MavlinkStream *new_instance(Mavlink *mavlink)
+	{
+		return new MavlinkStreamLogisticsInfo(mavlink);
+	}
+
+	unsigned get_size()
+	{
+		return  MAVLINK_MSG_ID_LOGISTICS_INFO_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
+	}
+
+private:
+	MavlinkOrbSubscription *_logistics_info_sub;
+	uint64_t _logistics_info_time;
+
+	MavlinkOrbSubscription *_distance_sensor_sub;
+	uint64_t _distance_sensor_time;
+
+	/* do not allow top copying this class */
+	MavlinkStreamLogisticsInfo(MavlinkStreamLogisticsInfo &);
+	MavlinkStreamLogisticsInfo &operator = (const MavlinkStreamLogisticsInfo &);
+
+	struct SensorData
+	{
+		SensorData()
+			: last_best_vote(0),
+			  subscription_count(0),
+			  last_failover_count(0)
+		{
+			for (unsigned i = 0; i < 4; i++)
+			{
+				subscription[i] = -1;
+			}
+		}
+
+		int subscription[4]; /**< raw sensor data subscription */
+		uint8_t priority[4]; /**< sensor priority */
+		uint8_t last_best_vote;				/**< index of the latest best vote */
+		int subscription_count;
+		unsigned int last_failover_count;
+	};
+
+	SensorData _distance;
+
+	void init_distance_class(const struct orb_metadata *meta, SensorData &sensor_data)
+	{
+		unsigned group_count = orb_group_count(meta);
+
+		if (group_count > 4)
+		{
+			group_count = 4;
+		}
+
+		for (unsigned i = 0; i < group_count; i++)
+		{
+			if (sensor_data.subscription[i] < 0)
+			{
+				sensor_data.subscription[i] = orb_subscribe_multi(meta, i);
+			}
+
+			int32_t priority;
+			orb_priority(sensor_data.subscription[i], &priority);
+			sensor_data.priority[i] = (uint8_t)priority;
+		}
+
+		sensor_data.subscription_count = group_count;
+	}
+
+protected:
+	explicit MavlinkStreamLogisticsInfo(Mavlink *mavlink) : MavlinkStream(mavlink),
+		_logistics_info_sub(_mavlink->add_orb_subscription(ORB_ID(logistics_info))),
+		_logistics_info_time(0),
+		_distance_sensor_sub(_mavlink->add_orb_subscription(ORB_ID(distance_sensor1))),
+		_distance_sensor_time(0)
+	{}
+
+	void send(const hrt_abstime t)
+	{
+		struct logistics_info_s logistics_info = {};
+
+		bool unload_updated = _logistics_info_sub->update(&_logistics_info_time, &logistics_info);
+
+		if (unload_updated) {
+
+			mavlink_logistics_info_t msg = {};
+
+			msg.IsUnload = logistics_info.IsUnload;
+			msg.IsReturn = logistics_info.IsReturn;
+			msg.FlightState = logistics_info.FlightState;
+
+			init_distance_class(ORB_ID(distance_sensor1), _distance);
+
+			for (unsigned i = 0; i < _distance.subscription_count; i++)
+			{
+				bool sensor_updated;
+				orb_check(_distance.subscription[i], &sensor_updated);
+				struct distance_sensor_s report;
+				memset(&report,0,sizeof(report));
+
+				if (sensor_updated)
+				{					
+					orb_copy(ORB_ID(distance_sensor1), _distance.subscription[i], &report);
+
+					if(report.type == distance_sensor_s::MAV_DISTANCE_SENSOR_NRA24)
+					{
+						msg.Dis_NRA = report.current_distance;
+					}
+					else if(report.type == distance_sensor_s::MAV_DISTANCE_SENSOR_RADAR)
+					{
+						msg.Dis_TF = report.current_distance;
+					}
+					else
+					{
+						continue;
+					}
+				}
+			}	
+
+			mavlink_msg_logistics_info_send_struct(_mavlink->get_channel(), &msg);
+		}
+	}
+};
+
 const StreamListItem *streams_list[] = {
 	new StreamListItem(&MavlinkStreamHeartbeat::new_instance, &MavlinkStreamHeartbeat::get_name_static, &MavlinkStreamHeartbeat::get_id_static),
 	new StreamListItem(&MavlinkStreamStatustext::new_instance, &MavlinkStreamStatustext::get_name_static, &MavlinkStreamStatustext::get_id_static),

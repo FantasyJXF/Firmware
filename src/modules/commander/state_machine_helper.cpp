@@ -692,7 +692,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 	status->failsafe = false;
 
 	/* evaluate main state to decide in normal (non-failsafe) mode */
-	// 评估主状态已确定normal模式
+	// 评估主状态以确定normal模式
 	switch (internal_state->main_state) {
 	case commander_state_s::MAIN_STATE_ACRO:
 	case commander_state_s::MAIN_STATE_MANUAL:
@@ -751,7 +751,7 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 	case commander_state_s::MAIN_STATE_POSCTL: {
 			const bool rc_lost = rc_loss_enabled && (status->rc_signal_lost || status_flags->rc_signal_lost_cmd);
 
-			if (rc_lost && armed) {
+			if (rc_lost && armed) { // 遥控器丢失并且已解锁
 				enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_rc);
 
 				if (status_flags->condition_global_position_valid &&
@@ -778,19 +778,19 @@ bool set_nav_state(struct vehicle_status_s *status, struct commander_state_s *in
 				 // 本地位置估计对于多旋翼来说是足够进行POSCTL的
 				 // 例如可以使用光流进行POSCTL
 
-			} else if (((status->is_rotary_wing && !status_flags->condition_local_position_valid) ||
-				    (!status->is_rotary_wing && !status_flags->condition_global_position_valid))
+			} else if (((status->is_rotary_wing && !status_flags->condition_local_position_valid) ||/* 旋翼无local位置 */
+				    (!status->is_rotary_wing && !status_flags->condition_global_position_valid)) /* 非旋翼无global位置 */
 				   && armed) {
 				enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_rc);
 
-				if (status_flags->condition_local_altitude_valid) {
+				if (status_flags->condition_local_altitude_valid) { // 本地高度有效
 					status->nav_state = vehicle_status_s::NAVIGATION_STATE_ALTCTL; // 定高
 
 				} else {
 					status->nav_state = vehicle_status_s::NAVIGATION_STATE_STAB; // 增稳
 				}
 
-			} else {
+			} else { // 状态良好
 				status->nav_state = vehicle_status_s::NAVIGATION_STATE_POSCTL;
 			}
 		}
