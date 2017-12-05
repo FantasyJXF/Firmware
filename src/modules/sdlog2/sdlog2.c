@@ -187,12 +187,14 @@ static unsigned long log_msgs_written = 0;
 static unsigned long log_msgs_skipped = 0;
 
 /* GPS time, used for log files naming */
+// GPS时间，用于日志文件命名
 static uint64_t gps_time_sec = 0;
 static bool has_gps_3d_fix = false;
 
 /* current state of logging */
 static bool logging_enabled = false;
 /* use date/time for naming directories and files (-t option) */
+// 使用date/time来命名文件夹和文件
 static bool log_name_timestamp = false;
 
 /* helper flag to track system state changes */
@@ -212,6 +214,8 @@ static bool sess_folder_created = false;
 
 /**
  * Log buffer writing thread. Open and close file here.
+ * 日志缓存写线程
+ * 在此打开并关闭文件
  */
 static void *logwriter_thread(void *arg);
 
@@ -332,7 +336,7 @@ int sdlog2_main(int argc, char *argv[])
 
 		// get sdlog priority boost parameter. This can be used to avoid message drops
 		// in the log file. However, it considered to be used only for developers.
-		param_t prio_boost_handle = param_find("SDLOG_PRIO_BOOST");
+		param_t prio_boost_handle = param_find("SDLOG_PRIO_BOOST"); // SDLOG优先级
 		int prio_boost = 0;
 		param_get(prio_boost_handle, &prio_boost);
 		int task_priority = SCHED_PRIORITY_DEFAULT - 30;
@@ -419,9 +423,10 @@ int sdlog2_main(int argc, char *argv[])
 }
 
 bool get_log_time_tt(struct tm *tt, bool boot_time) {
-	struct timespec ts;
+	struct timespec ts; // 秒  纳秒
 	px4_clock_gettime(CLOCK_REALTIME, &ts);
 	/* use RTC time for log file naming, e.g. /fs/microsd/2014-01-19/19_37_52.px4log */
+	/* 使用RTC时间命名日志文件 */
 	time_t utc_time_sec = 0;
 
 	if (_gpstime_only && has_gps_3d_fix) {
@@ -432,6 +437,7 @@ bool get_log_time_tt(struct tm *tt, bool boot_time) {
 
 	if (utc_time_sec > PX4_EPOCH_SECS) {
 		/* strip the time elapsed since boot */
+		// 除去从启动后经过的时间
 		if (boot_time) {
 			utc_time_sec -= hrt_absolute_time() / 1e6;
 		}
@@ -627,13 +633,14 @@ static void *logwriter_thread(void *arg)
 	struct logbuffer_s *logbuf = (struct logbuffer_s *)arg;
 
 	/* write log messages formats, version and parameters */
+	// 写入日志消息的格式  版本 以及参数
 	log_bytes_written += write_formats(log_fd);
 
 	log_bytes_written += write_version(log_fd);
 
 	log_bytes_written += write_parameters(log_fd);
 
-	fsync(log_fd);
+	fsync(log_fd); // 同步内存中所有已修改的文件数据到储存设备
 
 	int poll_count = 0;
 
@@ -647,16 +654,20 @@ static void *logwriter_thread(void *arg)
 
 	while (true) {
 		/* make sure threads are synchronized */
+		// 确保线程已同步
 		pthread_mutex_lock(&logbuffer_mutex);
 
 		/* update read pointer if needed */
+		// 必要时更新读指针
 		if (n > 0) {
 			logbuffer_mark_read(&lb, n);
 		}
 
 		/* only wait if no data is available to process */
+		// 仅当没有数据要处理时进行等待
 		if (should_wait && !logwriter_should_exit) {
 			/* blocking wait for new data at this line */
+			// 阻塞等待新的数据
 			pthread_cond_wait(&logbuffer_cond, &logbuffer_mutex);
 		}
 
@@ -696,6 +707,7 @@ static void *logwriter_thread(void *arg)
 			n = 0;
 
 			/* exit only with empty buffer */
+			// 仅当缓存为空时退出
 			if (main_thread_should_exit || logwriter_should_exit) {
 				break;
 			}
@@ -761,9 +773,11 @@ void sdlog2_start_log()
 	logwriter_should_exit = false;
 
 	/* allocate write performance counter */
-	perf_write = perf_alloc(PC_ELAPSED, "sd write");
+	// 分配写入性能的计数器
+	perf_write = perf_alloc(PC_ELAPSED, "sd write"); // 写 性能计数器
 
 	/* start log buffer emptying thread */
+	// 开始记录缓存  清空线程
 	if (0 != pthread_create(&logwriter_pthread, &logwriter_attr, logwriter_thread, &lb)) {
 		PX4_WARN("error creating logwriter thread");
 	}
@@ -772,8 +786,8 @@ void sdlog2_start_log()
 	hrt_abstime curr_time = hrt_absolute_time();
 	struct print_load_s load;
 	int perf_fd = open_perf_file("preflight");
-	init_print_load_s(curr_time, &load);
-	print_load(curr_time, perf_fd, &load);
+	init_print_load_s(curr_time, &load); // 初始化时间 new_time interval_start_time
+	print_load(curr_time, perf_fd, &load); // 打印系统负载
 	dprintf(perf_fd, "PERFORMANCE COUNTERS PRE-FLIGHT\n\n");
 	perf_print_all(perf_fd);
 	dprintf(perf_fd, "\nLOAD PRE-FLIGHT\n\n");
@@ -782,6 +796,7 @@ void sdlog2_start_log()
 	close(perf_fd);
 
 	/* reset performance counters to get in-flight min and max values in post flight log */
+	// 复位性能计数器 
 	perf_reset_all();
 
 	logging_enabled = true;
@@ -1064,6 +1079,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	gps_time_sec = 0;
 
 	/* interpret logging params */
+	// 日志参数的解释 
 	int32_t param_log_rate = -1;
 	param_t log_rate_ph = param_find("SDLOG_RATE");
 
@@ -1102,7 +1118,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 
 	}
 
-	param_t log_gpstime_ph = param_find("SDLOG_GPSTIME");
+	param_t log_gpstime_ph = param_find("SDLOG_GPSTIME"); // 1
 
 	if (log_gpstime_ph != PARAM_INVALID) {
 
@@ -1160,6 +1176,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	memset(&buf_commander_state, 0, sizeof(buf_commander_state));
 
 	/* There are different log types possible on different platforms. */
+	// 不同平台上的日志类型可能有所不同
 	enum {
 		LOG_TYPE_NORMAL,
 		LOG_TYPE_REPLAY_ONLY,
@@ -1179,7 +1196,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		log_type = LOG_TYPE_REPLAY_ONLY;
 #endif
 	} else {
-		log_type = LOG_TYPE_NORMAL;
+		log_type = LOG_TYPE_NORMAL; // 默认选择NORMAL模式
 	}
 
 	/* warning! using union here to save memory, elements should be used separately! */
@@ -1229,7 +1246,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 	memset(&buf, 0, sizeof(buf));
 
 	/* log message buffer: header + body */
-#pragma pack(push, 1)
+	// 日志信息缓冲区: header + body
+#pragma pack(push, 1) /* 是指把原来对齐方式设置压栈，并设新的对齐方式设置为一个字节对齐 */
 	struct {
 		LOG_PACKET_HEADER;
 		union {
@@ -1392,6 +1410,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	subs.sat_info_sub = -1;
 
 	/* initialize thread synchronization */
+	// 初始化线程同步
 	pthread_mutex_init(&logbuffer_mutex, NULL);
 	pthread_cond_init(&logbuffer_cond, NULL);
 
@@ -1405,6 +1424,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	float snr_mean = 0.0f;
 
 	/* enable logging on start if needed */
+	// 必要时使能上电开始记日志
 	if (log_on_start) {
 		/* check GPS topic to get GPS time */
 		if (log_name_timestamp) {
@@ -1479,6 +1499,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		/* Check below's topics first even if logging is not enabled.
 		 * We need to do this because should only poll further below if we're
 		 * actually going to orb_copy the data after the poll. */
+		 // 即使日志记录还未使能，首先检查下面的主题更新；
 
 		/* --- VEHICLE COMMAND - LOG MANAGEMENT --- */
 		if (copy_if_updated(ORB_ID(vehicle_command), &subs.cmd_sub, &buf_cmd)) {
@@ -1556,11 +1577,13 @@ int sdlog2_thread_main(int argc, char *argv[])
 		}
 
 		/* write time stamp message */
+		// 写入时间戳消息
 		log_msg.msg_type = LOG_TIME_MSG;
 		log_msg.body.log_TIME.t = hrt_absolute_time();
 		LOGBUFFER_WRITE_AND_COUNT(TIME);
 
 		/* --- COMMANDER INTERNAL STATE --- */
+		// commander内部状态
 		copy_if_updated(ORB_ID(commander_state), &subs.commander_state_sub,
 				&buf_commander_state);
 
@@ -1686,7 +1709,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 				bool write_IMU = false;
 				bool write_SENS = false;
 
-				if (buf.sensor.timestamp != gyro_timestamp) {
+				if (buf.sensor.timestamp != gyro_timestamp) { // 陀螺仪时间更新
 					gyro_timestamp = buf.sensor.timestamp;
 					write_IMU = true;
 				}
@@ -2422,6 +2445,7 @@ void handle_command(struct vehicle_command_s *cmd)
 	int param;
 
 	/* request to set different system mode */
+	// 请求设置不同的系统模式
 	switch (cmd->command) {
 
 	case VEHICLE_CMD_PREFLIGHT_STORAGE:
@@ -2447,9 +2471,9 @@ void handle_command(struct vehicle_command_s *cmd)
 void handle_status(struct vehicle_status_s *status)
 {
 	// TODO use flag from actuator_armed here?
-	bool armed = status->arming_state == ARMING_STATE_ARMED || status->arming_state == ARMING_STATE_ARMED_ERROR;
+	bool armed = status->arming_state == ARMING_STATE_ARMED || status->arming_state == ARMING_STATE_ARMED_ERROR; // 解锁错误也会将arm标志位置1
 
-	if (armed != flag_system_armed) {
+	if (armed != flag_system_armed) { // 解锁状态改变
 		flag_system_armed = armed;
 
 		if (flag_system_armed) {

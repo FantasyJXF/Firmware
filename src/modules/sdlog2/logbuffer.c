@@ -74,6 +74,7 @@ int logbuffer_is_empty(struct logbuffer_s *lb)
 bool logbuffer_write(struct logbuffer_s *lb, void *ptr, int size)
 {
 	// allocate buffer if not yet present
+	// 如果还不存在 则分配内存
 	if (lb->data == NULL) {
 		lb->data = malloc(lb->size);
 	}
@@ -84,6 +85,7 @@ bool logbuffer_write(struct logbuffer_s *lb, void *ptr, int size)
 	}
 
 	// bytes available to write
+	// 字节可写
 	int available = lb->read_ptr - lb->write_ptr - 1;
 
 	if (available < 0) {
@@ -92,6 +94,7 @@ bool logbuffer_write(struct logbuffer_s *lb, void *ptr, int size)
 
 	if (size > available) {
 		// buffer overflow
+		// 内存溢出
 		perf_count(lb->perf_dropped);
 		return false;
 	}
@@ -109,7 +112,8 @@ bool logbuffer_write(struct logbuffer_s *lb, void *ptr, int size)
 	}
 
 	// now: n = bytes already written
-	int p = size - n;	// number of bytes to write
+	// n 表示已经写入的字节
+	int p = size - n;	// number of bytes to write 还有些多少个字节
 	memcpy(&(lb->data[lb->write_ptr]), &(c[n]), p);
 	lb->write_ptr = (lb->write_ptr + p) % lb->size;
 	return true;
@@ -118,6 +122,7 @@ bool logbuffer_write(struct logbuffer_s *lb, void *ptr, int size)
 int logbuffer_get_ptr(struct logbuffer_s *lb, void **ptr, bool *is_part)
 {
 	// bytes available to read
+	// 可读字节
 	int available = lb->write_ptr - lb->read_ptr;
 
 	if (available == 0) {

@@ -1810,10 +1810,12 @@ MPU6000::check_registers(void)
 		  try to fix the bad register value. We only try to
 		  fix one per loop to prevent a bad sensor hogging the
 		  bus.
+		  尝试修复不好的寄存器值
 		 */
 		if (_register_wait == 0 || _checked_next == 0) {
 			// if the product_id is wrong then reset the
 			// sensor completely
+			// 如果product_id是错的，那么完全复位传感器
 			write_reg(MPUREG_PWR_MGMT_1, BIT_H_RESET); // 0x80
 			// after doing a reset we need to wait a long
 			// time before we do any other register writes
@@ -1880,7 +1882,7 @@ MPU6000::measure()
 		return -EIO;
 	}
 
-	check_registers(); // 寄存器数据检查
+	check_registers(); // 寄存器数据检查，写入寄存器的值是否与测得的值一致
 
 	/*
 	   see if this is duplicate accelerometer data. Note that we
@@ -1889,9 +1891,12 @@ MPU6000::measure()
 	   we run with BITS_DLPF_CFG_256HZ_NOLPF2 the gyro is being
 	   sampled at 8kHz, so we would incorrectly think we have new
 	   data when we are in fact getting duplicate accelerometer data.
+	   检查这是否是重复的加速度计数据。
+	   因为可能陀螺仪的 更新频率太快，加速度计其实没有更新，其值是重复的
 	*/
 	if (!_got_duplicate && memcmp(&mpu_report.accel_x[0], &_last_accel[0], 6) == 0) { // 查看数据是否重复
 		// it isn't new data - wait for next timer
+		// 这不是新数据 - 等下一个定时器
 		perf_end(_sample_perf);
 		perf_count(_duplicates);
 		_got_duplicate = true;

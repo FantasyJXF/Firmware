@@ -35,6 +35,7 @@
  * @file sdlog2_messages.h
  *
  * Log messages and structures definition.
+ * 日志消息以及结构体的定义
  *
  * @author Anton Babushkin <anton.babushkin@me.com>
  * @author Lorenz Meier <lorenz@px4.io>
@@ -670,6 +671,7 @@ struct log_TOF_s {
 #ifndef __cplusplus
 
 /* construct list of all message formats */
+// 构造所有消息格式的列表
 static const struct log_format_s log_formats[] = {
 	/* business-level messages, ID < 0x80 */
 	LOG_FORMAT(ATT, "ffffffffff",	"qw,qx,qy,qz,Roll,Pitch,Yaw,RollRate,PitchRate,YawRate"),

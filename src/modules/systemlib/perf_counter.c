@@ -258,7 +258,7 @@ perf_end(perf_counter_t handle)
 			struct perf_ctr_elapsed *pce = (struct perf_ctr_elapsed *)handle;
 
 			if (pce->time_start != 0) {
-				int64_t elapsed = hrt_absolute_time() - pce->time_start;
+				int64_t elapsed = hrt_absolute_time() - pce->time_start; // 经过的时间
 
 				if (elapsed < 0) {
 					pce->event_overruns++;
@@ -457,12 +457,12 @@ perf_print_counter_fd(int fd, perf_counter_t handle)
 
 	case PC_INTERVAL: {
 			struct perf_ctr_interval *pci = (struct perf_ctr_interval *)handle;
-			float rms = sqrtf(pci->M2 / (pci->event_count - 1));
+			float rms = sqrtf(pci->M2 / (pci->event_count - 1)); // 均方根
 
 			dprintf(fd, "%s: %llu events, %lluus avg, min %lluus max %lluus %5.3fus rms\n",
 				handle->name,
 				(unsigned long long)pci->event_count,
-				(pci->event_count == 0) ? 0 : (unsigned long long)(pci->time_last - pci->time_first) / pci->event_count,
+				(pci->event_count == 0) ? 0 : (unsigned long long)(pci->time_last - pci->time_first) / pci->event_count,/* 总时间/事件数 */
 				(unsigned long long)pci->time_least,
 				(unsigned long long)pci->time_most,
 				(double)(1e6f * rms));

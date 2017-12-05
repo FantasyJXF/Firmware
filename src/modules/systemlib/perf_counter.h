@@ -44,6 +44,7 @@
 
 /**
  * Counter types.
+ * 性能计数器
  */
 enum perf_counter_type {
 	PC_COUNT,		/**< count the number of times an event occurs  计算事件发生的次数 */

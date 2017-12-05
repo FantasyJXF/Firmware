@@ -124,12 +124,12 @@ void print_load(uint64_t t, int fd, struct print_load_s *print_state)
 
 	/* print system information */
 	if (fd == 1) {
-		dprintf(fd, "\033[H"); /* move cursor home and clear screen */
+		dprintf(fd, "\033[H"); /* 清屏move cursor home and clear screen */
 		clear_line = CL;
 	}
 
-	curr_time_us = t;
-	idle_time_us = system_load.tasks[0].total_runtime;
+	curr_time_us = t; // 当前时间
+	idle_time_us = system_load.tasks[0].total_runtime; // task[0](idle task的PID号是0)运行的总时间，
 
 	if (print_state->new_time > print_state->interval_start_time) {
 		print_state->interval_time_ms_inv = 1.f / ((float)((print_state->new_time - print_state->interval_start_time) / 1000));
@@ -144,15 +144,15 @@ void print_load(uint64_t t, int fd, struct print_load_s *print_state)
 
 		if (system_load.tasks[i].valid) {
 			switch (system_load.tasks[i].tcb->task_state) {
-			case TSTATE_TASK_PENDING:
-			case TSTATE_TASK_READYTORUN:
-			case TSTATE_TASK_RUNNING:
-				print_state->running_count++;
+			case TSTATE_TASK_PENDING: // 挂起
+			case TSTATE_TASK_READYTORUN: // 待命
+			case TSTATE_TASK_RUNNING: //运行中
+				print_state->running_count++; // 运行计数器+1
 				break;
 
-			case TSTATE_TASK_INVALID:
-			case TSTATE_TASK_INACTIVE:
-			case TSTATE_WAIT_SEM:
+			case TSTATE_TASK_INVALID: // 无效
+			case TSTATE_TASK_INACTIVE: // 未激活
+			case TSTATE_WAIT_SEM: // 信号
 #ifndef CONFIG_DISABLE_SIGNALS
 			case TSTATE_WAIT_SIG:
 #endif
@@ -163,7 +163,7 @@ void print_load(uint64_t t, int fd, struct print_load_s *print_state)
 #ifdef CONFIG_PAGING
 			case TSTATE_WAIT_PAGEFILL:
 #endif
-				print_state->blocked_count++;
+				print_state->blocked_count++; // 阻塞计数器+1
 				break;
 			}
 		}
@@ -176,7 +176,7 @@ void print_load(uint64_t t, int fd, struct print_load_s *print_state)
 		print_state->last_times[i] = system_load.tasks[i].total_runtime;
 
 		if (system_load.tasks[i].valid && (print_state->new_time > print_state->interval_start_time)) {
-			print_state->curr_loads[i] = interval_runtime * print_state->interval_time_ms_inv;
+			print_state->curr_loads[i] = interval_runtime * print_state->interval_time_ms_inv; // 任务运行时间/整个循环时间=此任务的运行时间百分比
 
 			if (i > 0) {
 				print_state->total_user_time += interval_runtime;
@@ -212,9 +212,9 @@ void print_load(uint64_t t, int fd, struct print_load_s *print_state)
 					print_state->blocked_count);
 				dprintf(fd, "%sCPU usage: %.2f%% tasks, %.2f%% sched, %.2f%% idle\n",
 					clear_line,
-					(double)(task_load * 100.f),
-					(double)(sched_load * 100.f),
-					(double)(idle * 100.f));
+					(double)(task_load * 100.f), /* 任务执行时间 */
+					(double)(sched_load * 100.f), /* 调度时间 */
+					(double)(idle * 100.f)); /* 其他时间 */
 #if defined(BOARD_DMA_ALLOC_POOL_SIZE)
 				uint16_t dma_total;
 				uint16_t dma_used;

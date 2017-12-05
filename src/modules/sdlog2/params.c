@@ -67,6 +67,7 @@ PARAM_DEFINE_INT32(SDLOG_EXT, -1);
 
 /**
  * Use timestamps only if GPS 3D fix is available
+ * 仅当GPS为3D fix状态时使用时间戳
  *
  * Constrain the log folder creation
  * to only use the time stamp if a 3D GPS lock is

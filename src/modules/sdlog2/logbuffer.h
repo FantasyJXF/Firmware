@@ -48,6 +48,7 @@
 
 struct logbuffer_s {
 	// pointers and size are in bytes
+	// 以字节为单位的指针和大小
 	int write_ptr;
 	int read_ptr;
 	int size;

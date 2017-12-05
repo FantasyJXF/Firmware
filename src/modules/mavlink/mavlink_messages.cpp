@@ -379,7 +379,7 @@ private:
 	MavlinkStreamStatustext &operator = (const MavlinkStreamStatustext &);
 
 	unsigned _write_err_count = 0;
-	static const unsigned write_err_threshold = 5;
+	static const unsigned write_err_threshold = 5; // 写入错误的阈值
 #ifndef __PX4_POSIX_EAGLE
 	FILE *_fp = nullptr;
 #endif
@@ -402,11 +402,11 @@ protected:
 
 	void send(const hrt_abstime t)
 	{
-		if (!_mavlink->get_logbuffer()->empty()) {
+		if (!_mavlink->get_logbuffer()->empty()) { // 缓存区有值
 
 			struct mavlink_log_s mavlink_log;
 
-			if (_mavlink->get_logbuffer()->get(&mavlink_log)) {
+			if (_mavlink->get_logbuffer()->get(&mavlink_log)) { // 取mavlink_log地址
 
 				mavlink_statustext_t msg;
 				msg.severity = mavlink_log.severity;
@@ -422,10 +422,10 @@ protected:
 				 * gps时间
 				 */
 				timespec ts;
-				px4_clock_gettime(CLOCK_REALTIME, &ts);
-				time_t gps_time_sec = ts.tv_sec + (ts.tv_nsec / 1e9);
+				px4_clock_gettime(CLOCK_REALTIME, &ts);  // 得到基于CLOCK_REALTIME的秒数 和 纳秒数
+				time_t gps_time_sec = ts.tv_sec + (ts.tv_nsec / 1e9); // GPS秒数
 				struct tm tt;
-				gmtime_r(&gps_time_sec, &tt);
+				gmtime_r(&gps_time_sec, &tt); // 将秒数转换成年-月-日-时-分-秒
 				char tstamp[22];
 				strftime(tstamp, sizeof(tstamp) - 1, "%Y_%m_%d_%H_%M_%S", &tt);
 
@@ -458,6 +458,7 @@ protected:
 						char log_file_path[128];
 
 						/* use GPS time for log file naming, e.g. /fs/microsd/2014-01-19/19_37_52.bin */
+						// 使用GPS时间命名log文件
 
 						/* store the log file in the root directory */
 						snprintf(log_file_path, sizeof(log_file_path) - 1, PX4_ROOTFSDIR"/fs/microsd/msgs_%s.txt", tstamp);
