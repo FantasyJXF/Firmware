@@ -672,6 +672,7 @@ static void *logwriter_thread(void *arg)
 		}
 
 		/* only get pointer to thread-safe data, do heavy I/O a few lines down */
+		// 仅获取指向安全线程的指针
 		int available = logbuffer_get_ptr(logbuf, &read_ptr, &is_part);
 
 		/* continue */
@@ -691,7 +692,7 @@ static void *logwriter_thread(void *arg)
 			n = write(log_fd, read_ptr, n);
 			perf_end(perf_write);
 
-			should_wait = (n == available) && !is_part;
+			should_wait = (n == available) && !is_part; // 已经全部写入并且没有is_part时
 
 			if (n < 0) {
 				main_thread_should_exit = true;
@@ -869,9 +870,10 @@ int write_formats(int fd)
 	int written = 0;
 
 	/* fill message format packet for each format and write it */
-	for (unsigned i = 0; i < log_formats_num; i++) {
+	// 为每种格式填充消息格式的包并写入
+	for (unsigned i = 0; i < log_formats_num; i++) { // 一共有log_formats_num种消息格式
 		log_msg_format.body = log_formats[i];
-		written += write(fd, &log_msg_format, sizeof(log_msg_format));
+		written += write(fd, &log_msg_format, sizeof(log_msg_format)); // 写入的字节数
 	}
 
 	return written;
@@ -908,7 +910,8 @@ int write_parameters(int fd)
 
 	for (param_t param = 0; param < params_cnt; param++) {
 		/* fill parameter message and write it */
-		strncpy(log_msg_PARM.body.name, param_name(param), sizeof(log_msg_PARM.body.name));
+		// 填充参数消息并写入
+		strncpy(log_msg_PARM.body.name, param_name(param), sizeof(log_msg_PARM.body.name)); // 根据参数名获取参数值
 		float value = NAN;
 
 		switch (param_type(param)) {

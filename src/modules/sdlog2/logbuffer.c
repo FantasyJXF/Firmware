@@ -85,7 +85,7 @@ bool logbuffer_write(struct logbuffer_s *lb, void *ptr, int size)
 	}
 
 	// bytes available to write
-	// 字节可写
+	// 可写的字节
 	int available = lb->read_ptr - lb->write_ptr - 1;
 
 	if (available < 0) {
@@ -100,7 +100,7 @@ bool logbuffer_write(struct logbuffer_s *lb, void *ptr, int size)
 	}
 
 	char *c = (char *) ptr;
-	int n = lb->size - lb->write_ptr;	// bytes to end of the buffer
+	int n = lb->size - lb->write_ptr;	// bytes to end of the buffer 到缓存末尾的字节
 
 	if (n < size) {
 		// message goes over end of the buffer
@@ -133,11 +133,13 @@ int logbuffer_get_ptr(struct logbuffer_s *lb, void **ptr, bool *is_part)
 
 	if (available > 0) {
 		// read pointer is before write pointer, all available bytes can be read
+		// 读指针在写指针的前面，所有的可用字节都为可读
 		n = available;
 		*is_part = false;
 
 	} else {
 		// read pointer is after write pointer, read bytes from read_ptr to end of the buffer
+		// 读指针在写指针的后面，读取从read_ptr到缓冲区末尾的字节
 		n = lb->size - lb->read_ptr;
 		*is_part = lb->write_ptr > 0;
 	}
